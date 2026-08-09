@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun HomeScreen(
     onOpenKeyLearning: () -> Unit,
+    onOpenDeveloper: () -> Unit,
 ) {
     Scaffold(
         topBar = { TopAppBar(title = { Text("Nord AI Remapper") }) },
@@ -40,6 +41,9 @@ fun HomeScreen(
             )
             Button(onClick = onOpenKeyLearning, modifier = Modifier.fillMaxWidth()) {
                 Text("Key setup (debug)")
+            }
+            Button(onClick = onOpenDeveloper, modifier = Modifier.fillMaxWidth()) {
+                Text("Developer settings")
             }
         }
     }
