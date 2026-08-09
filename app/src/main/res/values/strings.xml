@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Nord AI Remapper</string>
+    <string name="accessibility_service_label">Nord AI Remapper key detection</string>
+    <string name="accessibility_service_description">Detects presses of the physical Plus Key so they can be remapped to custom actions. The service only observes hardware key events — it does not read screen content, passwords, or any personal data.</string>
 </resources>
