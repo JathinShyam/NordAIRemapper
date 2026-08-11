@@ -47,7 +47,17 @@ The design targets OnePlus Sans, which is not freely redistributable. The app sh
 with the system font; see `ui/theme/Type.kt` for how to drop in the OnePlus Sans
 `.ttf` files locally.
 
+## Docs
+
+| Document | Purpose |
+|---|---|
+| [docs/PRD.md](docs/PRD.md) | Product requirements, journeys, success criteria |
+| [docs/TRD.md](docs/TRD.md) | Technical requirements, APIs, permissions, build gates |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, packages, pipelines, ADRs |
+| [docs/roadmap/README.md](docs/roadmap/README.md) | Phase-by-phase implementation roadmap |
+
 ## Status
 
-Work in progress. Current milestone: key detection engine + on-device key learning
-debug screen, so the Plus Key's identity can be confirmed on real hardware first.
+Work in progress. Phases 1–5 (scaffold → detection → action executors) are in tree.
+Next: Home UI, Remap Config, onboarding, overlay, backup, settings, resilience.
+Validate Plus Key detection on a Nord 5 before investing heavily in chrome.
