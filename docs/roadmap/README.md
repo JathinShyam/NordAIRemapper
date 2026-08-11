@@ -17,8 +17,8 @@ Each phase has its own detailed plan under this folder. **Do not start the next 
 | 4 | Logcat watcher + Developer settings | ✅ Done | [phase-04.md](./phase-04.md) |
 | 5 | RemapAction executors | ✅ Done | [phase-05.md](./phase-05.md) |
 | 6 | Home Screen (diagram, cards, status, toggle) | ✅ Done | [phase-06.md](./phase-06.md) |
-| 7 | Remap Config Screen + app picker | 🔄 Next | [phase-07.md](./phase-07.md) |
-| 8 | Onboarding permission flow | ⏳ Pending | [phase-08.md](./phase-08.md) |
+| 7 | Remap Config Screen + app picker | ✅ Done | [phase-07.md](./phase-07.md) |
+| 8 | Onboarding permission flow | 🔄 Next | [phase-08.md](./phase-08.md) |
 | 9 | Floating overlay + Overlay Settings | ⏳ Pending | [phase-09.md](./phase-09.md) |
 | 10 | Backup & Restore (SAF) | ⏳ Pending | [phase-10.md](./phase-10.md) |
 | 11 | Settings + per-app exclusions | ⏳ Pending | [phase-11.md](./phase-11.md) |

@@ -1,6 +1,6 @@
 # Phase 7 — Remap Config Screen + app picker
 
-**Status:** ⏳ Pending  
+**Status:** ✅ Done  
 **Depends on:** Phase 6 (navigation + ActionCard helpers)  
 **Gate:** `./gradlew assembleDebug`  
 **Commit:** `Phase 7: Remap Config — categorized actions, app picker, test button`

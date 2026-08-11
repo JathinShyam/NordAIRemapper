@@ -10,7 +10,7 @@ import com.nordairemapper.domain.model.PressType
 import com.nordairemapper.presentation.developer.DeveloperScreen
 import com.nordairemapper.presentation.developer.KeyLearningScreen
 import com.nordairemapper.presentation.home.HomeScreen
-import com.nordairemapper.presentation.remap.RemapPlaceholderScreen
+import com.nordairemapper.presentation.remap.RemapScreen
 import com.nordairemapper.presentation.settings.SettingsPlaceholderScreen
 
 object Routes {
@@ -50,12 +50,8 @@ fun NordNavHost() {
         composable(
             route = Routes.REMAP,
             arguments = listOf(navArgument("pressType") { type = NavType.StringType }),
-        ) { entry ->
-            val key = entry.arguments?.getString("pressType") ?: PressType.SINGLE.key
-            RemapPlaceholderScreen(
-                pressType = PressType.fromKey(key),
-                onBack = { navController.popBackStack() },
-            )
+        ) {
+            RemapScreen(onBack = { navController.popBackStack() })
         }
     }
 }
