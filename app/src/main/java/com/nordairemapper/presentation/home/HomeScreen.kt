@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.UploadFile
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -57,6 +58,7 @@ fun HomeScreen(
     onOpenDeveloper: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenOverlaySettings: () -> Unit,
+    onOpenBackup: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -75,6 +77,9 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text("Nord AI Remapper") },
                 actions = {
+                    IconButton(onClick = onOpenBackup) {
+                        Icon(Icons.Outlined.UploadFile, contentDescription = "Backup")
+                    }
                     IconButton(onClick = onOpenOverlaySettings) {
                         Icon(Icons.Outlined.Layers, contentDescription = "Overlay")
                     }

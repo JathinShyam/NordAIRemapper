@@ -7,7 +7,9 @@ import com.nordairemapper.data.local.ConfigSnapshotDao
 import com.nordairemapper.data.local.NordDatabase
 import com.nordairemapper.data.local.OverlayConfigDao
 import com.nordairemapper.data.local.RemapConfigDao
+import com.nordairemapper.data.repository.BackupRepositoryImpl
 import com.nordairemapper.data.repository.RemapConfigRepositoryImpl
+import com.nordairemapper.domain.repository.BackupRepository
 import com.nordairemapper.domain.repository.RemapConfigRepository
 import com.nordairemapper.domain.repository.SettingsRepository
 import dagger.Binds
@@ -54,4 +56,7 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindSettingsRepository(impl: SettingsRepositoryImpl): SettingsRepository
+
+    @Binds
+    abstract fun bindBackupRepository(impl: BackupRepositoryImpl): BackupRepository
 }

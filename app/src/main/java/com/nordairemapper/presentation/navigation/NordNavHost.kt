@@ -19,6 +19,7 @@ import com.nordairemapper.presentation.developer.DeveloperScreen
 import com.nordairemapper.presentation.developer.KeyLearningScreen
 import com.nordairemapper.presentation.home.HomeScreen
 import com.nordairemapper.presentation.onboarding.OnboardingScreen
+import com.nordairemapper.presentation.backup.BackupScreen
 import com.nordairemapper.presentation.overlay.OverlaySettingsScreen
 import com.nordairemapper.presentation.remap.RemapScreen
 import com.nordairemapper.presentation.settings.SettingsPlaceholderScreen
@@ -30,6 +31,7 @@ object Routes {
     const val DEVELOPER = "developer"
     const val SETTINGS = "settings"
     const val OVERLAY_SETTINGS = "overlay_settings"
+    const val BACKUP = "backup"
     const val REMAP = "remap/{pressType}"
 
     fun remap(pressType: PressType) = "remap/${pressType.key}"
@@ -79,6 +81,7 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
                 onOpenDeveloper = { navController.navigate(Routes.DEVELOPER) },
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 onOpenOverlaySettings = { navController.navigate(Routes.OVERLAY_SETTINGS) },
+                onOpenBackup = { navController.navigate(Routes.BACKUP) },
             )
         }
         composable(Routes.KEY_LEARNING) {
@@ -95,6 +98,9 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
         }
         composable(Routes.OVERLAY_SETTINGS) {
             OverlaySettingsScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.BACKUP) {
+            BackupScreen(onBack = { navController.popBackStack() })
         }
         composable(
             route = Routes.REMAP,
