@@ -1,6 +1,6 @@
 # Phase 10 — Backup & Restore (SAF)
 
-**Status:** ⏳ Pending  
+**Status:** ✅ Done  
 **Depends on:** Phase 2 (Room); better after 7 & 9 so payload is meaningful  
 **Gate:** `./gradlew assembleDebug`  
 **Commit:** `Phase 10: Backup & Restore — SAF export/import + local snapshots`

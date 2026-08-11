@@ -1,6 +1,6 @@
 # Phase 11 — Settings Screen + per-app exclusions
 
-**Status:** ⏳ Pending  
+**Status:** ✅ Done  
 **Depends on:** Phase 6 placeholders; Phase 4 Developer; Phase 8 onboarding flag  
 **Gate:** `./gradlew assembleDebug`  
 **Commit:** `Phase 11: Settings — theme, haptics, exclusions, links to Developer/Backup`

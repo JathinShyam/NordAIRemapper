@@ -1,6 +1,6 @@
 # Phase 12 — Service resilience
 
-**Status:** ⏳ Pending  
+**Status:** ✅ Done  
 **Depends on:** Phases 3, 4, 9 (services exist)  
 **Gate:** `./gradlew assembleDebug`  
 **Commit:** `Phase 12: Resilience — BootReceiver, death notification, battery handling`

@@ -22,7 +22,7 @@ import com.nordairemapper.presentation.onboarding.OnboardingScreen
 import com.nordairemapper.presentation.backup.BackupScreen
 import com.nordairemapper.presentation.overlay.OverlaySettingsScreen
 import com.nordairemapper.presentation.remap.RemapScreen
-import com.nordairemapper.presentation.settings.SettingsPlaceholderScreen
+import com.nordairemapper.presentation.settings.SettingsScreen
 
 object Routes {
     const val ONBOARDING = "onboarding"
@@ -94,7 +94,18 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
             )
         }
         composable(Routes.SETTINGS) {
-            SettingsPlaceholderScreen(onBack = { navController.popBackStack() })
+            SettingsScreen(
+                onBack = { navController.popBackStack() },
+                onOpenDeveloper = { navController.navigate(Routes.DEVELOPER) },
+                onOpenKeyLearning = { navController.navigate(Routes.KEY_LEARNING) },
+                onOpenBackup = { navController.navigate(Routes.BACKUP) },
+                onOpenOverlay = { navController.navigate(Routes.OVERLAY_SETTINGS) },
+                onRestartOnboarding = {
+                    navController.navigate(Routes.ONBOARDING) {
+                        popUpTo(Routes.HOME) { inclusive = true }
+                    }
+                },
+            )
         }
         composable(Routes.OVERLAY_SETTINGS) {
             OverlaySettingsScreen(onBack = { navController.popBackStack() })

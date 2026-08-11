@@ -20,9 +20,9 @@ Each phase has its own detailed plan under this folder. **Do not start the next 
 | 7 | Remap Config Screen + app picker | ✅ Done | [phase-07.md](./phase-07.md) |
 | 8 | Onboarding permission flow | ✅ Done | [phase-08.md](./phase-08.md) |
 | 9 | Floating overlay + Overlay Settings | ✅ Done | [phase-09.md](./phase-09.md) |
-| 10 | Backup & Restore (SAF) | 🔄 Next | [phase-10.md](./phase-10.md) |
-| 11 | Settings + per-app exclusions | ⏳ Pending | [phase-11.md](./phase-11.md) |
-| 12 | Service resilience (boot, death, battery) | ⏳ Pending | [phase-12.md](./phase-12.md) |
+| 10 | Backup & Restore (SAF) | ✅ Done | [phase-10.md](./phase-10.md) |
+| 11 | Settings + per-app exclusions | ✅ Done | [phase-11.md](./phase-11.md) |
+| 12 | Service resilience (boot, death, battery) | ✅ Done | [phase-12.md](./phase-12.md) |
 
 ---
 
@@ -47,4 +47,4 @@ Each phase has its own detailed plan under this folder. **Do not start the next 
            3/4/9 → 12 (BootReceiver + death notifications)
 ```
 
-Phases **6–12** are the remaining end-to-end product surface. Phases **1–5** are documented for completeness and onboarding new contributors.
+**All planned implementation phases are complete in code.** Remaining work is on-device Nord 5 validation of Plus Key detection (Strategy A and/or B).

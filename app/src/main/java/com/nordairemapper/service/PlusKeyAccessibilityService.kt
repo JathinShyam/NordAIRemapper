@@ -19,6 +19,7 @@ class PlusKeyAccessibilityService : AccessibilityService() {
 
     @Inject lateinit var keyEventBus: KeyEventBus
     @Inject lateinit var remapEngine: RemapEngine
+    @Inject lateinit var foregroundAppTracker: ForegroundAppTracker
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -49,13 +50,16 @@ class PlusKeyAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        // Window events will drive per-app exclusions in a later phase.
+        if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+        val pkg = event.packageName?.toString() ?: return
+        foregroundAppTracker.packageName = pkg
     }
 
     override fun onInterrupt() = Unit
 
     override fun onDestroy() {
         AccessibilityServiceHolder.service = null
+        ServiceNotifications.notifyDetectionStopped(this)
         super.onDestroy()
     }
 }

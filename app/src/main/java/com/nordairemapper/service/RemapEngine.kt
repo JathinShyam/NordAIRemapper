@@ -25,6 +25,7 @@ class RemapEngine @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val remapConfigRepository: RemapConfigRepository,
     private val actionDispatcher: ActionDispatcher,
+    private val foregroundAppTracker: ForegroundAppTracker,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
@@ -93,6 +94,11 @@ class RemapEngine @Inject constructor(
             Gesture.LONG_PRESS -> PressType.LONG
         }
         scope.launch {
+            val foreground = foregroundAppTracker.packageName
+            if (foreground != null && foreground in settings.excludedApps) {
+                Log.d(TAG, "Skipping gesture in excluded app: $foreground")
+                return@launch
+            }
             val action = remapConfigRepository.getAction(pressType)
             Log.d(TAG, "Gesture $gesture -> $action")
             actionDispatcher.execute(action)

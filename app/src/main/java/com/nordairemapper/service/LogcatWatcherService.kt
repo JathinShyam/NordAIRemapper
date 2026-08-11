@@ -131,6 +131,7 @@ class LogcatWatcherService : Service() {
     override fun onDestroy() {
         logcatProcess?.destroy()
         scope.cancel()
+        ServiceNotifications.notifyDetectionStopped(this)
         super.onDestroy()
     }
 
