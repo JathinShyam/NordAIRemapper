@@ -83,7 +83,7 @@ class RemapActionExecutor @Inject constructor(
             is RemapAction.LockScreen -> globalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN)
             is RemapAction.ToggleAutoRotate -> toggleAutoRotate()
             is RemapAction.OpenUrl -> openUrl(action.url)
-            is RemapAction.ShowOverlay -> Log.i(TAG, "Overlay not implemented yet (Phase 9)")
+            is RemapAction.ShowOverlay -> FloatingOverlayService.show(context)
             is RemapAction.None -> Unit
         }
     }

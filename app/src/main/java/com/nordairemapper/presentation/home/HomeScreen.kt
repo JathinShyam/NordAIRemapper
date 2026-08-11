@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -55,6 +56,7 @@ fun HomeScreen(
     onOpenKeyLearning: () -> Unit,
     onOpenDeveloper: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenOverlaySettings: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -73,6 +75,9 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text("Nord AI Remapper") },
                 actions = {
+                    IconButton(onClick = onOpenOverlaySettings) {
+                        Icon(Icons.Outlined.Layers, contentDescription = "Overlay")
+                    }
                     IconButton(onClick = onOpenDeveloper) {
                         Icon(Icons.Outlined.BugReport, contentDescription = "Developer")
                     }

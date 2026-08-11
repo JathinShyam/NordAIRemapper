@@ -19,8 +19,8 @@ Each phase has its own detailed plan under this folder. **Do not start the next 
 | 6 | Home Screen (diagram, cards, status, toggle) | ✅ Done | [phase-06.md](./phase-06.md) |
 | 7 | Remap Config Screen + app picker | ✅ Done | [phase-07.md](./phase-07.md) |
 | 8 | Onboarding permission flow | ✅ Done | [phase-08.md](./phase-08.md) |
-| 9 | Floating overlay + Overlay Settings | 🔄 Next | [phase-09.md](./phase-09.md) |
-| 10 | Backup & Restore (SAF) | ⏳ Pending | [phase-10.md](./phase-10.md) |
+| 9 | Floating overlay + Overlay Settings | ✅ Done | [phase-09.md](./phase-09.md) |
+| 10 | Backup & Restore (SAF) | 🔄 Next | [phase-10.md](./phase-10.md) |
 | 11 | Settings + per-app exclusions | ⏳ Pending | [phase-11.md](./phase-11.md) |
 | 12 | Service resilience (boot, death, battery) | ⏳ Pending | [phase-12.md](./phase-12.md) |
 

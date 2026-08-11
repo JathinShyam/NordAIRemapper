@@ -19,6 +19,7 @@ import com.nordairemapper.presentation.developer.DeveloperScreen
 import com.nordairemapper.presentation.developer.KeyLearningScreen
 import com.nordairemapper.presentation.home.HomeScreen
 import com.nordairemapper.presentation.onboarding.OnboardingScreen
+import com.nordairemapper.presentation.overlay.OverlaySettingsScreen
 import com.nordairemapper.presentation.remap.RemapScreen
 import com.nordairemapper.presentation.settings.SettingsPlaceholderScreen
 
@@ -28,6 +29,7 @@ object Routes {
     const val KEY_LEARNING = "key_learning"
     const val DEVELOPER = "developer"
     const val SETTINGS = "settings"
+    const val OVERLAY_SETTINGS = "overlay_settings"
     const val REMAP = "remap/{pressType}"
 
     fun remap(pressType: PressType) = "remap/${pressType.key}"
@@ -76,6 +78,7 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
                 onOpenKeyLearning = { navController.navigate(Routes.KEY_LEARNING) },
                 onOpenDeveloper = { navController.navigate(Routes.DEVELOPER) },
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                onOpenOverlaySettings = { navController.navigate(Routes.OVERLAY_SETTINGS) },
             )
         }
         composable(Routes.KEY_LEARNING) {
@@ -89,6 +92,9 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
         }
         composable(Routes.SETTINGS) {
             SettingsPlaceholderScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.OVERLAY_SETTINGS) {
+            OverlaySettingsScreen(onBack = { navController.popBackStack() })
         }
         composable(
             route = Routes.REMAP,

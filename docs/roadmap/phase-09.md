@@ -1,6 +1,6 @@
 # Phase 9 — Floating overlay + Overlay Settings
 
-**Status:** ⏳ Pending  
+**Status:** ✅ Done  
 **Depends on:** Phases 5–7 (executor + action catalog)  
 **Gate:** `./gradlew assembleDebug`  
 **Commit:** `Phase 9: Floating overlay service + Overlay Settings with live preview`
