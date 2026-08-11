@@ -41,6 +41,7 @@ class SettingsRepositoryImpl @Inject constructor(
         val SHOW_NOTIFICATION = booleanPreferencesKey("show_service_notification")
         val HAPTIC_FEEDBACK = booleanPreferencesKey("haptic_feedback")
         val EXCLUDED_APPS = stringSetPreferencesKey("excluded_apps")
+        val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
     }
 
     private val defaults = AppSettings()
@@ -64,6 +65,7 @@ class SettingsRepositoryImpl @Inject constructor(
             showServiceNotification = prefs[Keys.SHOW_NOTIFICATION] ?: defaults.showServiceNotification,
             hapticFeedback = prefs[Keys.HAPTIC_FEEDBACK] ?: defaults.hapticFeedback,
             excludedApps = prefs[Keys.EXCLUDED_APPS] ?: defaults.excludedApps,
+            onboardingCompleted = prefs[Keys.ONBOARDING_COMPLETED] ?: defaults.onboardingCompleted,
         )
     }
 
@@ -116,5 +118,9 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setExcludedApps(packages: Set<String>) {
         context.settingsDataStore.edit { it[Keys.EXCLUDED_APPS] = packages }
+    }
+
+    override suspend fun setOnboardingCompleted(completed: Boolean) {
+        context.settingsDataStore.edit { it[Keys.ONBOARDING_COMPLETED] = completed }
     }
 }

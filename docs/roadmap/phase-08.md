@@ -1,6 +1,6 @@
 # Phase 8 — Onboarding permission flow
 
-**Status:** ⏳ Pending  
+**Status:** ✅ Done  
 **Depends on:** Phase 6 (Home exists as destination)  
 **Gate:** `./gradlew assembleDebug`  
 **Commit:** `Phase 8: Onboarding — five-step permission flow`

@@ -20,4 +20,5 @@ interface SettingsRepository {
     suspend fun setShowServiceNotification(enabled: Boolean)
     suspend fun setHapticFeedback(enabled: Boolean)
     suspend fun setExcludedApps(packages: Set<String>)
+    suspend fun setOnboardingCompleted(completed: Boolean)
 }

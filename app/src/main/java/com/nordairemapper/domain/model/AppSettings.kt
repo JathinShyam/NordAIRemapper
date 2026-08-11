@@ -14,6 +14,7 @@ data class AppSettings(
     val showServiceNotification: Boolean = true,
     val hapticFeedback: Boolean = true,
     val excludedApps: Set<String> = emptySet(),
+    val onboardingCompleted: Boolean = false,
 ) {
     companion object {
         val DOUBLE_PRESS_WINDOW_RANGE = 200L..500L
