@@ -1,0 +1,77 @@
+name: Build Debug APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: debug-apk-release
+  cancel-in-progress: true
+
+jobs:
+  build-and-release:
+    name: Assemble debug APK + update release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Grant Gradle wrapper execute permission
+        run: chmod +x gradlew
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Name APK for release
+        id: apk
+        run: |
+          mkdir -p dist
+          SHORT_SHA="${GITHUB_SHA::7}"
+          OUT="dist/NordAIRemapper-debug-${SHORT_SHA}.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$OUT"
+          # Stable name so the download link stays the same across updates
+          cp app/build/outputs/apk/debug/app-debug.apk dist/NordAIRemapper-debug-latest.apk
+          echo "sha_apk=$OUT" >> "$GITHUB_OUTPUT"
+          ls -lh dist/
+
+      - name: Publish / update Latest Debug release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-debug
+          name: Latest Debug Build
+          prerelease: true
+          make_latest: false
+          generate_release_notes: true
+          body: |
+            Automatic **debug** build from `main`.
+
+            - Commit: `${{ github.sha }}`
+            - Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            ### Install on phone (no PC required)
+            1. Download **NordAIRemapper-debug-latest.apk** below.
+            2. Open it on the phone and allow “Install unknown apps” if asked.
+            3. Complete in-app onboarding (Accessibility, etc.).
+
+            > If Accessibility never sees the Plus Key, you may still need a one-time PC command later:
+            > `adb shell pm grant com.nordairemapper android.permission.READ_LOGS`
+          files: |
+            dist/NordAIRemapper-debug-latest.apk
+            ${{ steps.apk.outputs.sha_apk }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
