@@ -58,6 +58,6 @@ with the system font; see `ui/theme/Type.kt` for how to drop in the OnePlus Sans
 
 ## Status
 
-Work in progress. Phases 1–5 (scaffold → detection → action executors) are in tree.
-Next: Home UI, Remap Config, onboarding, overlay, backup, settings, resilience.
-Validate Plus Key detection on a Nord 5 before investing heavily in chrome.
+All planned build phases (1–12) are implemented and compile. Validate Plus Key
+detection on a Nord 5 (Accessibility and/or Logcat) before treating remapping as
+production-ready. See [docs/roadmap/README.md](docs/roadmap/README.md).

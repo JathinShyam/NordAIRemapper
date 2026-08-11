@@ -261,13 +261,13 @@ Each phase ends with **green** `./gradlew assembleDebug`.
 | 3 | Accessibility detector, classifier, key learning UI | Done |
 | 4 | Logcat detector + Developer screen | Done |
 | 5 | RemapAction executors | Done |
-| 6 | Home (diagram, cards, status, toggle) | Pending |
-| 7 | Remap Config + app picker | Pending |
-| 8 | Onboarding | Pending |
-| 9 | FloatingOverlayService + Overlay Settings | Pending |
-| 10 | Backup & Restore (SAF) | Pending |
-| 11 | Settings + per-app exclusions | Pending |
-| 12 | BootReceiver, death notification, battery handling | Pending |
+| 6 | Home (diagram, cards, status, toggle) | Done |
+| 7 | Remap Config + app picker | Done |
+| 8 | Onboarding | Done |
+| 9 | FloatingOverlayService + Overlay Settings | Done |
+| 10 | Backup & Restore (SAF) | Done |
+| 11 | Settings + per-app exclusions | Done |
+| 12 | BootReceiver, death notification, battery handling | Done |
 
 ---
 
