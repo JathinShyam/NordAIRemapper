@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.nordairemapper.service.RawKeyEvent
 import com.nordairemapper.ui.theme.StatusActive
 import com.nordairemapper.ui.theme.StatusInactive
 import java.text.SimpleDateFormat
@@ -40,7 +40,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Debug screen that surfaces every hardware key event the detectors can see,
+ * Debug screen that surfaces every hardware key press the detectors can see,
  * so the Plus Key's keyCode/scanCode can be confirmed on real hardware and
  * saved as the learned identity.
  */
@@ -48,11 +48,13 @@ import java.util.Locale
 @Composable
 fun KeyLearningScreen(
     onBack: () -> Unit,
+    onOpenDeveloper: () -> Unit,
     viewModel: KeyLearningViewModel = hiltViewModel(),
 ) {
-    val events by viewModel.capturedEvents.collectAsStateWithLifecycle()
+    val presses by viewModel.capturedPresses.collectAsStateWithLifecycle()
     val serviceActive by viewModel.serviceActive.collectAsStateWithLifecycle()
     val learnedIdentity by viewModel.learnedIdentity.collectAsStateWithLifecycle()
+    val plusKeyMissingHint by viewModel.plusKeyMissingHint.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.refreshServiceState() }
 
@@ -116,8 +118,31 @@ fun KeyLearningScreen(
                 }
             }
 
+            if (plusKeyMissingHint) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "Plus Key not reaching Accessibility",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(
+                            text = "Volume and other buttons are visible, but the Plus Key is handled by OnePlus system code and usually never arrives here. Switch to Logcat watcher in Developer, grant READ_LOGS via ADB, then press the Plus Key again.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Button(onClick = onOpenDeveloper) { Text("Open Developer") }
+                    }
+                }
+            }
+
             Text(
-                text = "Press the Plus Key (or any hardware button). Every event the service can see appears below — save the one that matches your press.",
+                text = "Each row is one physical press (down + up are merged). Press the Plus Key — if it never appears, use Logcat detection.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -126,8 +151,8 @@ fun KeyLearningScreen(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(events) { event ->
-                    KeyEventRow(event = event, onSave = { viewModel.saveAsPlusKey(event) })
+                items(presses, key = { it.id }) { press ->
+                    PressRow(press = press, onSave = { viewModel.saveAsPlusKey(press) })
                 }
             }
         }
@@ -135,8 +160,9 @@ fun KeyLearningScreen(
 }
 
 @Composable
-private fun KeyEventRow(event: RawKeyEvent, onSave: () -> Unit) {
+private fun PressRow(press: CapturedPress, onSave: () -> Unit) {
     val timeFormat = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
+    val duration = press.durationMs?.let { " · ${it}ms" }.orEmpty()
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -147,11 +173,11 @@ private fun KeyEventRow(event: RawKeyEvent, onSave: () -> Unit) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "keyCode=${event.keyCode}  scanCode=${event.scanCode}  ${event.action}",
+                    text = "${press.label}  keyCode=${press.keyCode}  scanCode=${press.scanCode}",
                     style = MaterialTheme.typography.labelLarge,
                 )
                 Text(
-                    text = "${timeFormat.format(Date(event.timestampMs))} · ${event.source.name.lowercase()}",
+                    text = "${timeFormat.format(Date(press.timestampMs))}$duration · ${press.source.name.lowercase()}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

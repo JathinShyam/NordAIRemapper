@@ -1,11 +1,14 @@
 package com.nordairemapper.presentation.developer
 
 import android.content.Context
+import android.view.KeyEvent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nordairemapper.domain.model.DetectionStrategy
 import com.nordairemapper.domain.model.KeyIdentity
 import com.nordairemapper.domain.repository.SettingsRepository
 import com.nordairemapper.service.AccessibilityUtils
+import com.nordairemapper.service.KeyAction
 import com.nordairemapper.service.KeyEventBus
 import com.nordairemapper.service.RawKeyEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,6 +23,35 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/** One physical press (DOWN+UP merged, or a logcat PULSE). */
+data class CapturedPress(
+    val id: Long,
+    val keyCode: Int,
+    val scanCode: Int,
+    val source: DetectionStrategy,
+    val timestampMs: Long,
+    val durationMs: Long?,
+    val complete: Boolean,
+) {
+    val label: String
+        get() = when (keyCode) {
+            KeyEvent.KEYCODE_VOLUME_UP -> "Volume up"
+            KeyEvent.KEYCODE_VOLUME_DOWN -> "Volume down"
+            KeyEvent.KEYCODE_POWER -> "Power"
+            KeyEvent.KEYCODE_ASSIST, KeyEvent.KEYCODE_VOICE_ASSIST -> "Assist"
+            KeyEvent.KEYCODE_UNKNOWN, 0 -> "Unknown key"
+            else -> KeyEvent.keyCodeToString(keyCode).removePrefix("KEYCODE_")
+        }
+
+    fun toRawEvent(): RawKeyEvent = RawKeyEvent(
+        keyCode = keyCode,
+        scanCode = scanCode,
+        action = if (complete) KeyAction.PULSE else KeyAction.DOWN,
+        timestampMs = timestampMs,
+        source = source,
+    )
+}
+
 @HiltViewModel
 class KeyLearningViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -27,8 +59,10 @@ class KeyLearningViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
-    private val _capturedEvents = MutableStateFlow<List<RawKeyEvent>>(emptyList())
-    val capturedEvents: StateFlow<List<RawKeyEvent>> = _capturedEvents.asStateFlow()
+    private var nextId = 0L
+
+    private val _capturedPresses = MutableStateFlow<List<CapturedPress>>(emptyList())
+    val capturedPresses: StateFlow<List<CapturedPress>> = _capturedPresses.asStateFlow()
 
     private val _serviceActive = MutableStateFlow(false)
     val serviceActive: StateFlow<Boolean> = _serviceActive.asStateFlow()
@@ -37,12 +71,22 @@ class KeyLearningViewModel @Inject constructor(
         .map { it.keyIdentity }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), KeyIdentity.UNCONFIGURED)
 
+    /** True when we have seen normal keys (volume, etc.) but nothing that looks like an unmapped Plus Key. */
+    val plusKeyMissingHint: StateFlow<Boolean> = _capturedPresses
+        .map { presses ->
+            presses.isNotEmpty() && presses.none { press ->
+                press.keyCode == KeyEvent.KEYCODE_UNKNOWN ||
+                    press.keyCode == 0 ||
+                    press.keyCode == KeyEvent.KEYCODE_ASSIST ||
+                    press.keyCode == KeyEvent.KEYCODE_VOICE_ASSIST
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
     init {
         refreshServiceState()
         viewModelScope.launch {
-            keyEventBus.rawEvents.collect { event ->
-                _capturedEvents.update { (listOf(event) + it).take(MAX_EVENTS) }
-            }
+            keyEventBus.rawEvents.collect(::onRawEvent)
         }
     }
 
@@ -52,19 +96,78 @@ class KeyLearningViewModel @Inject constructor(
 
     fun openAccessibilitySettings() = AccessibilityUtils.openAccessibilitySettings(context)
 
-    fun saveAsPlusKey(event: RawKeyEvent) {
+    fun saveAsPlusKey(press: CapturedPress) {
         viewModelScope.launch {
             settingsRepository.setKeyIdentity(
-                KeyIdentity(keyCode = event.keyCode, scanCode = event.scanCode)
+                KeyIdentity(keyCode = press.keyCode, scanCode = press.scanCode)
             )
         }
     }
 
     fun clearEvents() {
-        _capturedEvents.value = emptyList()
+        _capturedPresses.value = emptyList()
+    }
+
+    private fun onRawEvent(event: RawKeyEvent) {
+        _capturedPresses.update { current ->
+            when (event.action) {
+                KeyAction.DOWN -> {
+                    val press = CapturedPress(
+                        id = nextId++,
+                        keyCode = event.keyCode,
+                        scanCode = event.scanCode,
+                        source = event.source,
+                        timestampMs = event.timestampMs,
+                        durationMs = null,
+                        complete = false,
+                    )
+                    (listOf(press) + current).take(MAX_PRESSES)
+                }
+                KeyAction.UP -> {
+                    val index = current.indexOfFirst {
+                        !it.complete &&
+                            it.keyCode == event.keyCode &&
+                            it.scanCode == event.scanCode &&
+                            it.source == event.source
+                    }
+                    if (index < 0) {
+                        val press = CapturedPress(
+                            id = nextId++,
+                            keyCode = event.keyCode,
+                            scanCode = event.scanCode,
+                            source = event.source,
+                            timestampMs = event.timestampMs,
+                            durationMs = null,
+                            complete = true,
+                        )
+                        (listOf(press) + current).take(MAX_PRESSES)
+                    } else {
+                        val down = current[index]
+                        current.toMutableList().apply {
+                            this[index] = down.copy(
+                                complete = true,
+                                durationMs = (event.timestampMs - down.timestampMs).coerceAtLeast(0),
+                            )
+                        }
+                    }
+                }
+                KeyAction.PULSE -> {
+                    val press = CapturedPress(
+                        id = nextId++,
+                        keyCode = event.keyCode,
+                        scanCode = event.scanCode,
+                        source = event.source,
+                        timestampMs = event.timestampMs,
+                        durationMs = null,
+                        complete = true,
+                    )
+                    (listOf(press) + current).take(MAX_PRESSES)
+                }
+            }
+        }
     }
 
     private companion object {
-        const val MAX_EVENTS = 100
+        const val MAX_PRESSES = 50
     }
 }

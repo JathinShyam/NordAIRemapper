@@ -57,14 +57,22 @@ class RemapEngine @Inject constructor(
                 if (!settings.serviceEnabled) return@collect
                 if (event.source != settings.detectionStrategy) return@collect
                 when (event.action) {
-                    KeyAction.DOWN -> if (matchesPlusKey(event.keyCode, event.scanCode)) classifier.onKeyDown()
-                    KeyAction.UP -> if (matchesPlusKey(event.keyCode, event.scanCode)) classifier.onKeyUp()
-                    // Logcat events are pre-matched by the log pattern
+                    KeyAction.DOWN -> if (isPlusKeyEvent(event)) classifier.onKeyDown()
+                    KeyAction.UP -> if (isPlusKeyEvent(event)) classifier.onKeyUp()
                     KeyAction.PULSE -> classifier.onPulse()
                 }
             }
         }
     }
+
+    /**
+     * Logcat events are already filtered by the match pattern and use
+     * placeholder key codes (-1). Accessibility events must match the
+     * learned Plus Key identity.
+     */
+    private fun isPlusKeyEvent(event: RawKeyEvent): Boolean =
+        event.source == DetectionStrategy.LOGCAT ||
+            matchesPlusKey(event.keyCode, event.scanCode)
 
     /**
      * Whether an accessibility key event belongs to the learned Plus Key.

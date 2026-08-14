@@ -28,8 +28,11 @@ class GestureClassifier(
     private var longPressJob: Job? = null
     private var decideJob: Job? = null
     private var longPressFired = false
+    private var isDown = false
 
     fun onKeyDown() {
+        if (isDown) return
+        isDown = true
         decideJob?.cancel()
         decideJob = null
         longPressFired = false
@@ -37,12 +40,15 @@ class GestureClassifier(
         longPressJob = scope.launch {
             delay(timings().longPressThresholdMs)
             longPressFired = true
-            reset()
+            isDown = false
+            resetTaps()
             onGesture(Gesture.LONG_PRESS)
         }
     }
 
     fun onKeyUp() {
+        if (!isDown && !longPressFired) return
+        isDown = false
         longPressJob?.cancel()
         longPressJob = null
         if (longPressFired) {
@@ -52,26 +58,34 @@ class GestureClassifier(
         registerCompletedPress()
     }
 
-    /** For sources that only report completed presses (logcat pulses). */
+    /**
+     * Logcat lines with no down/up hint. Prefer converting those to down/up
+     * in the watcher; this remains a fallback completed-tap.
+     */
     fun onPulse() {
-        registerCompletedPress()
+        if (isDown) {
+            onKeyUp()
+        } else {
+            onKeyDown()
+            onKeyUp()
+        }
     }
 
     private fun registerCompletedPress() {
         tapCount++
         if (tapCount >= 2) {
-            reset()
+            resetTaps()
             onGesture(Gesture.DOUBLE_PRESS)
         } else {
             decideJob = scope.launch {
                 delay(timings().doublePressWindowMs)
-                reset()
+                resetTaps()
                 onGesture(Gesture.SINGLE_PRESS)
             }
         }
     }
 
-    private fun reset() {
+    private fun resetTaps() {
         tapCount = 0
         decideJob?.cancel()
         decideJob = null

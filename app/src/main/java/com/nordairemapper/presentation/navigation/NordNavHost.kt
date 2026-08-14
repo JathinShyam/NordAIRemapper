@@ -85,7 +85,10 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
             )
         }
         composable(Routes.KEY_LEARNING) {
-            KeyLearningScreen(onBack = { navController.popBackStack() })
+            KeyLearningScreen(
+                onBack = { navController.popBackStack() },
+                onOpenDeveloper = { navController.navigate(Routes.DEVELOPER) },
+            )
         }
         composable(Routes.DEVELOPER) {
             DeveloperScreen(
