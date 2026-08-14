@@ -34,14 +34,17 @@ data class CapturedPress(
     val complete: Boolean,
 ) {
     val label: String
-        get() = when (keyCode) {
-            KeyEvent.KEYCODE_VOLUME_UP -> "Volume up"
-            KeyEvent.KEYCODE_VOLUME_DOWN -> "Volume down"
-            KeyEvent.KEYCODE_POWER -> "Power"
-            KeyEvent.KEYCODE_ASSIST, KeyEvent.KEYCODE_VOICE_ASSIST -> "Assist"
-            KeyEvent.KEYCODE_UNKNOWN, 0 -> "Unknown key"
+        get() = when {
+            source == DetectionStrategy.LOGCAT -> "Plus Key (logcat)"
+            keyCode == KeyEvent.KEYCODE_VOLUME_UP -> "Volume up"
+            keyCode == KeyEvent.KEYCODE_VOLUME_DOWN -> "Volume down"
+            keyCode == KeyEvent.KEYCODE_POWER -> "Power"
+            keyCode == KeyEvent.KEYCODE_ASSIST || keyCode == KeyEvent.KEYCODE_VOICE_ASSIST -> "Assist"
+            keyCode == KeyEvent.KEYCODE_UNKNOWN || keyCode == 0 -> "Unknown key"
             else -> KeyEvent.keyCodeToString(keyCode).removePrefix("KEYCODE_")
         }
+
+    val isLogcatPlusKey: Boolean get() = source == DetectionStrategy.LOGCAT
 
     fun toRawEvent(): RawKeyEvent = RawKeyEvent(
         keyCode = keyCode,
@@ -71,16 +74,22 @@ class KeyLearningViewModel @Inject constructor(
         .map { it.keyIdentity }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), KeyIdentity.UNCONFIGURED)
 
-    /** True when we have seen normal keys (volume, etc.) but nothing that looks like an unmapped Plus Key. */
+    /** Volume keys arrived via Accessibility, but the Plus Key did not. */
     val plusKeyMissingHint: StateFlow<Boolean> = _capturedPresses
         .map { presses ->
-            presses.isNotEmpty() && presses.none { press ->
-                press.keyCode == KeyEvent.KEYCODE_UNKNOWN ||
-                    press.keyCode == 0 ||
-                    press.keyCode == KeyEvent.KEYCODE_ASSIST ||
-                    press.keyCode == KeyEvent.KEYCODE_VOICE_ASSIST
-            }
+            presses.isNotEmpty() &&
+                presses.none { it.isLogcatPlusKey } &&
+                presses.none { press ->
+                    press.keyCode == KeyEvent.KEYCODE_UNKNOWN ||
+                        press.keyCode == 0 ||
+                        press.keyCode == KeyEvent.KEYCODE_ASSIST ||
+                        press.keyCode == KeyEvent.KEYCODE_VOICE_ASSIST
+                }
         }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    val logcatPlusKeySeen: StateFlow<Boolean> = _capturedPresses
+        .map { presses -> presses.any { it.isLogcatPlusKey } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     init {
@@ -112,16 +121,22 @@ class KeyLearningViewModel @Inject constructor(
         _capturedPresses.update { current ->
             when (event.action) {
                 KeyAction.DOWN -> {
-                    val press = CapturedPress(
-                        id = nextId++,
-                        keyCode = event.keyCode,
-                        scanCode = event.scanCode,
-                        source = event.source,
-                        timestampMs = event.timestampMs,
-                        durationMs = null,
-                        complete = false,
-                    )
-                    (listOf(press) + current).take(MAX_PRESSES)
+                    val openLogcat = event.source == DetectionStrategy.LOGCAT &&
+                        current.any { !it.complete && it.source == DetectionStrategy.LOGCAT }
+                    if (openLogcat) {
+                        current
+                    } else {
+                        val press = CapturedPress(
+                            id = nextId++,
+                            keyCode = event.keyCode,
+                            scanCode = event.scanCode,
+                            source = event.source,
+                            timestampMs = event.timestampMs,
+                            durationMs = null,
+                            complete = false,
+                        )
+                        (listOf(press) + current).take(MAX_PRESSES)
+                    }
                 }
                 KeyAction.UP -> {
                     val index = current.indexOfFirst {

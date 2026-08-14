@@ -55,6 +55,7 @@ fun KeyLearningScreen(
     val serviceActive by viewModel.serviceActive.collectAsStateWithLifecycle()
     val learnedIdentity by viewModel.learnedIdentity.collectAsStateWithLifecycle()
     val plusKeyMissingHint by viewModel.plusKeyMissingHint.collectAsStateWithLifecycle()
+    val logcatPlusKeySeen by viewModel.logcatPlusKeySeen.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.refreshServiceState() }
 
@@ -103,10 +104,11 @@ fun KeyLearningScreen(
                             style = MaterialTheme.typography.titleMedium,
                         )
                         Text(
-                            text = if (learnedIdentity.isConfigured) {
-                                "Learned key: keyCode=${learnedIdentity.keyCode}, scanCode=${learnedIdentity.scanCode}"
-                            } else {
-                                "No key learned yet — press the Plus Key below"
+                            text = when {
+                                logcatPlusKeySeen -> "Plus Key seen via logcat — no keyCode to save"
+                                learnedIdentity.isConfigured ->
+                                    "Learned key: keyCode=${learnedIdentity.keyCode}, scanCode=${learnedIdentity.scanCode}"
+                                else -> "No key learned yet — press the Plus Key below"
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -118,7 +120,27 @@ fun KeyLearningScreen(
                 }
             }
 
-            if (plusKeyMissingHint) {
+            if (logcatPlusKeySeen) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "Plus Key detected via logcat",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(
+                            text = "OnePlus never sends this button to Accessibility, so that warning does not apply. You do not need to tap Set as Plus Key. Go back to Home and test single / double / hold.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            } else if (plusKeyMissingHint) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -142,7 +164,7 @@ fun KeyLearningScreen(
             }
 
             Text(
-                text = "Each row is one physical press (down + up are merged). Press the Plus Key — if it never appears, use Logcat detection.",
+                text = "Each row is one physical press. Volume keys come from Accessibility. The Plus Key usually appears only as a logcat row.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -182,7 +204,9 @@ private fun PressRow(press: CapturedPress, onSave: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            TextButton(onClick = onSave) { Text("Set as Plus Key") }
+            TextButton(onClick = onSave, enabled = !press.isLogcatPlusKey) {
+                Text(if (press.isLogcatPlusKey) "Logcat" else "Set as Plus Key")
+            }
         }
     }
 }

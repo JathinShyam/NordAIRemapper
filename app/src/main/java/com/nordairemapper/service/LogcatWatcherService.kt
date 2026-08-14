@@ -80,6 +80,9 @@ class LogcatWatcherService : Service() {
         BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
             while (scope.isActive) {
                 val line = reader.readLine() ?: break
+                // Our own debug logs include the match pattern and would
+                // otherwise re-enter this loop (one press → many fake edges).
+                if (line.contains("LogcatWatcher") || line.contains("RemapEngine")) continue
                 if (!line.contains(pattern, ignoreCase = true)) continue
 
                 val now = System.currentTimeMillis()
@@ -89,13 +92,11 @@ class LogcatWatcherService : Service() {
                     KeyAction.UP -> if (pressed) KeyAction.UP else null
                     KeyAction.PULSE -> when {
                         !pressed -> KeyAction.DOWN
-                        // Same-press echo (ACTION_DOWN + KEYLOG a few ms later)
                         now - downAtMs < ECHO_DEBOUNCE_MS -> null
                         else -> KeyAction.UP
                     }
                 } ?: continue
 
-                // Collapse duplicate lines for the same physical edge
                 if (action == lastEmitted && now - lastEmittedAtMs < EDGE_DEBOUNCE_MS) continue
 
                 if (action == KeyAction.DOWN) {
@@ -107,7 +108,7 @@ class LogcatWatcherService : Service() {
                 lastEmitted = action
                 lastEmittedAtMs = now
 
-                Log.d(TAG, "edge=$action from: ${line.take(180)}")
+                Log.d(TAG, "edge=$action")
                 keyEventBus.emit(
                     RawKeyEvent(
                         keyCode = -1,
