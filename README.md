@@ -147,9 +147,10 @@ Every push to `main` builds a **debug APK** and updates a rolling GitHub Release
 
 **[Latest Debug Build](https://github.com/JathinShyam/NordAIRemapper/releases/tag/latest-debug)**
 
-1. Open that release.
-2. Download `NordAIRemapper-debug-latest.apk` (always the newest) — or the `…-debug-<sha>.apk` for a specific commit.
-3. Install on the phone (allow Install unknown apps).
+1. Open that release. The title is `Latest Debug · <sha> · <date>` for the commit that built it.
+2. Download `NordAIRemapper-debug-latest.apk` (always this push) — or `NordAIRemapper-debug-<sha>.apk` for that commit. Older SHA APKs are removed on each push.
+3. The same APK is also attached on the **Actions** run (Artifacts), kept for 14 days.
+4. Install on the phone (allow Install unknown apps).
 
 You can also trigger a rebuild manually: **Actions → Build Debug APK → Run workflow**.
 
