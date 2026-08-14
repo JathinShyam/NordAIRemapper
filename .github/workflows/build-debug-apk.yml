@@ -50,6 +50,7 @@ jobs:
           echo "short_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
           echo "built_at=$BUILT_AT" >> "$GITHUB_OUTPUT"
           echo "sha_apk=$OUT" >> "$GITHUB_OUTPUT"
+          echo "version_tag=debug-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
           ls -lh dist/
 
       - name: Attach APK to this workflow run
@@ -60,52 +61,57 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Prune old SHA APKs from latest-debug
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          SHORT_SHA="${{ steps.apk.outputs.short_sha }}"
-          if ! gh release view latest-debug >/dev/null 2>&1; then
-            echo "No latest-debug release yet; skip prune."
-            exit 0
-          fi
-          gh release view latest-debug --json assets --jq '.assets[].name' | while read -r name; do
-            [ -z "$name" ] && continue
-            if [ "$name" = "NordAIRemapper-debug-latest.apk" ]; then
-              continue
-            fi
-            if [ "$name" = "NordAIRemapper-debug-${SHORT_SHA}.apk" ]; then
-              continue
-            fi
-            echo "Deleting stale asset: $name"
-            gh release delete-asset latest-debug "$name" --yes
-          done
-
-      - name: Publish / update Latest Debug release
+      - name: Publish versioned debug release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: latest-debug
-          name: Latest Debug · ${{ steps.apk.outputs.short_sha }} · ${{ steps.apk.outputs.built_at }}
+          tag_name: ${{ steps.apk.outputs.version_tag }}
+          name: Debug · ${{ steps.apk.outputs.short_sha }} · ${{ steps.apk.outputs.built_at }}
+          target_commitish: ${{ github.sha }}
           prerelease: true
           make_latest: false
           overwrite_files: true
           generate_release_notes: true
           body: |
-            Automatic **debug** build from `main`.
+            Debug APK for commit `${{ github.sha }}` (${{ steps.apk.outputs.built_at }}).
 
-            - Version: `${{ steps.apk.outputs.short_sha }}` (${{ steps.apk.outputs.built_at }})
+            - Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            - Always-current build: ${{ github.server_url }}/${{ github.repository }}/releases/tag/latest-debug
+
+            ### Install
+            Download **NordAIRemapper-debug-${{ steps.apk.outputs.short_sha }}.apk**.
+
+            > If Accessibility never sees the Plus Key:
+            > `adb shell pm grant com.nordairemapper android.permission.READ_LOGS`
+          files: ${{ steps.apk.outputs.sha_apk }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Latest Debug pointer
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-debug
+          name: Latest Debug · ${{ steps.apk.outputs.short_sha }} · ${{ steps.apk.outputs.built_at }}
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          make_latest: false
+          overwrite_files: true
+          generate_release_notes: false
+          body: |
+            Rolling **latest** debug build from `main`. Older builds are kept as separate releases tagged `debug-<sha>`.
+
+            - This version: `${{ steps.apk.outputs.short_sha }}` (${{ steps.apk.outputs.built_at }})
             - Commit: `${{ github.sha }}`
+            - This build's release: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.apk.outputs.version_tag }}
+            - All versions: ${{ github.server_url }}/${{ github.repository }}/releases
             - Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
             ### Install on phone (no PC required)
-            1. Download **NordAIRemapper-debug-latest.apk** (always this push) **or** **NordAIRemapper-debug-${{ steps.apk.outputs.short_sha }}.apk**.
-            2. Open it on the phone and allow “Install unknown apps” if asked.
-            3. Complete in-app onboarding (Accessibility, etc.).
+            1. Download **NordAIRemapper-debug-latest.apk** below (always this push).
+            2. For an older build, open **Releases** and pick `Debug · <sha> · <date>`.
+            3. Allow “Install unknown apps” if asked.
 
             > If Accessibility never sees the Plus Key, you may still need a one-time PC command later:
             > `adb shell pm grant com.nordairemapper android.permission.READ_LOGS`
-          files: |
-            dist/NordAIRemapper-debug-latest.apk
-            ${{ steps.apk.outputs.sha_apk }}
+          files: dist/NordAIRemapper-debug-latest.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -143,12 +143,15 @@ Deeper design notes: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Download (no PC build required)
 
-Every push to `main` builds a **debug APK** and updates a rolling GitHub Release:
+Every push to `main` builds a **debug APK** and publishes **two** GitHub releases:
 
-**[Latest Debug Build](https://github.com/JathinShyam/NordAIRemapper/releases/tag/latest-debug)**
+- **[Latest Debug](https://github.com/JathinShyam/NordAIRemapper/releases/tag/latest-debug)** — always the newest (`NordAIRemapper-debug-latest.apk`)
+- **`debug-<sha>`** — that commit’s APK, kept forever (e.g. `Debug · e92235f · 2026-08-14`)
 
-1. Open that release. The title is `Latest Debug · <sha> · <date>` for the commit that built it.
-2. Download `NordAIRemapper-debug-latest.apk` (always this push) — or `NordAIRemapper-debug-<sha>.apk` for that commit. Older SHA APKs are removed on each push.
+[All versions](https://github.com/JathinShyam/NordAIRemapper/releases)
+
+1. For the current build, download `NordAIRemapper-debug-latest.apk`.
+2. For an older build, open Releases and pick `Debug · <sha> · <date>`, then `NordAIRemapper-debug-<sha>.apk`.
 3. The same APK is also attached on the **Actions** run (Artifacts), kept for 14 days.
 4. Install on the phone (allow Install unknown apps).
 
