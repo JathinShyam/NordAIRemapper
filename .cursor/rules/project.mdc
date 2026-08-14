@@ -1,0 +1,14 @@
+---
+description: Nord AI Remapper project brain — always apply
+alwaysApply: true
+---
+
+# Project
+
+Follow `AGENTS.md` in the repo root. Load `.cursor/skills/` when the task matches:
+
+- Detection / gestures / logcat / accessibility → `plus-key-detection`
+- ADB / READ_LOGS / on-device debug → `device-testing`
+- APK build / install / CI release → `ship-debug-apk`
+
+Never hard-code Plus Key identity. Logcat is first-class on Nord 5. Do not run `matchesPlusKey` on logcat events. Keep accessibility `onKeyEvent` thin. Do not commit OnePlus Sans fonts or add analytics.

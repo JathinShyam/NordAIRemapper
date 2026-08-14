@@ -1,0 +1,16 @@
+---
+description: Plus Key detection and gesture classification invariants
+globs: "**/service/{LogcatWatcherService,GestureClassifier,RemapEngine,PlusKeyAccessibilityService,KeyEventBus}.kt"
+alwaysApply: false
+---
+
+# Detection invariants
+
+Read `.cursor/skills/plus-key-detection/SKILL.md` before editing these files.
+
+- Strategy A: learn identity; consume only the Plus Key.
+- Strategy B: pattern match; `keyCode/scanCode = -1`; skip `matchesPlusKey`.
+- Pair logcat down/up. Do not count each KEYLOG line as a finished tap.
+- Never substring-match `"down"` (`undefined` contains it).
+- Wait-then-decide: single waits for the double window; long press needs a real DOWN.
+- `logcat -T 1`. Debounce duplicate edges, not a fast tap’s down→up.

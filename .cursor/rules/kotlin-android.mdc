@@ -1,0 +1,16 @@
+---
+description: Kotlin, Compose, and Hilt conventions for this app
+globs: "**/*.{kt,kts}"
+alwaysApply: false
+---
+
+# Kotlin / Compose
+
+- Package `com.nordairemapper`. Layers: `presentation` → `domain` ← `data`; `service` uses domain + Android.
+- `domain` has no Compose/Activity types. Sealed `RemapAction` stays serializable.
+- UI: Compose Material 3, one `@HiltViewModel` per screen, `StateFlow` UI state.
+- Services/activities: `@AndroidEntryPoint`. Singletons (engine, bus, repos) via Hilt.
+- Settings → DataStore. Remap/overlay/snapshots → Room.
+- Prefer existing patterns over new frameworks. No drive-by refactors.
+- Theme: dark-first Nord (`#0A0A0A` / `#141414` / accent `#0AC6FF`). Font remains `FontFamily.Default`.
+- Detectors emit to `KeyEventBus`; do not put Room/network on `onKeyEvent`.
