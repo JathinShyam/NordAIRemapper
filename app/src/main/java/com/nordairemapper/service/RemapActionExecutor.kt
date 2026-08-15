@@ -175,9 +175,17 @@ class RemapActionExecutor @Inject constructor(
     }
 
     /**
-     * Android N+ silently ignores ringer changes that affect DND unless the user
-     * has granted **Do Not Disturb access** (special app access), even when the
-     * manifest permission is present.
+     * Three-state sound profile for OxygenOS / ZenModeHelper.
+     *
+     * On Nord 5, AudioService delegates ringer changes to Zen. Setting
+     * [AudioManager.RINGER_MODE_SILENT] alone often does not stick (device keeps
+     * reporting VIBRATE), so **Silent** is applied as Zen
+     * [NotificationManager.INTERRUPTION_FILTER_NONE] plus a silent ringer request.
+     * Ring / Vibrate clear Zen so they are audible/tactile again.
+     *
+     * That is also why this action seemed to “work while DND was on”: going to
+     * Ring or Vibrate forced interruption filter back to ALL (turning DND off).
+     * Plain [RemapAction.ToggleDoNotDisturb] only flips PRIORITY ↔ ALL and is separate.
      */
     private fun cycleRingerMode() {
         if (audioManager.isVolumeFixed) {
@@ -186,47 +194,62 @@ class RemapActionExecutor @Inject constructor(
         }
         if (!ensureNotificationPolicyAccess("Ring / vibrate / silent")) return
 
-        val current = audioManager.ringerMode
-        val next = when (current) {
-            AudioManager.RINGER_MODE_NORMAL -> AudioManager.RINGER_MODE_VIBRATE
-            AudioManager.RINGER_MODE_VIBRATE -> AudioManager.RINGER_MODE_SILENT
-            else -> AudioManager.RINGER_MODE_NORMAL
+        val next = when (currentSoundProfile()) {
+            SoundProfile.RING -> SoundProfile.VIBRATE
+            SoundProfile.VIBRATE -> SoundProfile.SILENT
+            SoundProfile.SILENT -> SoundProfile.RING
         }
-        audioManager.ringerMode = next
-
-        // Some OEMs keep interruption filter elevated; align filter with silent.
-        when (next) {
-            AudioManager.RINGER_MODE_SILENT -> {
-                if (notificationManager.currentInterruptionFilter ==
-                    NotificationManager.INTERRUPTION_FILTER_ALL
-                ) {
-                    notificationManager.setInterruptionFilter(
-                        NotificationManager.INTERRUPTION_FILTER_PRIORITY,
-                    )
-                }
-            }
-            AudioManager.RINGER_MODE_NORMAL, AudioManager.RINGER_MODE_VIBRATE -> {
-                if (notificationManager.currentInterruptionFilter !=
-                    NotificationManager.INTERRUPTION_FILTER_ALL
-                ) {
-                    notificationManager.setInterruptionFilter(
-                        NotificationManager.INTERRUPTION_FILTER_ALL,
-                    )
-                }
-            }
-        }
-
-        val applied = audioManager.ringerMode
+        applySoundProfile(next)
+        val applied = currentSoundProfile()
         toast(
             when (applied) {
-                AudioManager.RINGER_MODE_NORMAL -> "Ring"
-                AudioManager.RINGER_MODE_VIBRATE -> "Vibrate"
-                AudioManager.RINGER_MODE_SILENT -> "Silent"
-                else -> "Ringer updated"
+                SoundProfile.RING -> "Ring"
+                SoundProfile.VIBRATE -> "Vibrate"
+                SoundProfile.SILENT -> "Silent"
             },
         )
         if (applied != next) {
-            Log.w(TAG, "Ringer set to $next but device reports $applied")
+            Log.w(
+                TAG,
+                "Wanted $next but profile is $applied " +
+                    "(ringer=${audioManager.ringerMode}, " +
+                    "filter=${notificationManager.currentInterruptionFilter})",
+            )
+        }
+    }
+
+    private enum class SoundProfile { RING, VIBRATE, SILENT }
+
+    private fun currentSoundProfile(): SoundProfile {
+        val filter = notificationManager.currentInterruptionFilter
+        val ringer = audioManager.ringerMode
+        // Total / alarms-only Zen = Silent even when OEM still reports vibrate ringer.
+        if (filter == NotificationManager.INTERRUPTION_FILTER_NONE ||
+            filter == NotificationManager.INTERRUPTION_FILTER_ALARMS
+        ) {
+            return SoundProfile.SILENT
+        }
+        if (ringer == AudioManager.RINGER_MODE_SILENT) return SoundProfile.SILENT
+        if (ringer == AudioManager.RINGER_MODE_VIBRATE) return SoundProfile.VIBRATE
+        return SoundProfile.RING
+    }
+
+    private fun applySoundProfile(profile: SoundProfile) {
+        when (profile) {
+            SoundProfile.RING -> {
+                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
+                audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
+            }
+            SoundProfile.VIBRATE -> {
+                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
+                audioManager.ringerMode = AudioManager.RINGER_MODE_VIBRATE
+            }
+            SoundProfile.SILENT -> {
+                // Zen first — OxygenOS applies silence through ZenModeHelper.
+                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
+                runCatching { audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT }
+                    .onFailure { Log.w(TAG, "RINGER_MODE_SILENT rejected", it) }
+            }
         }
     }
 
