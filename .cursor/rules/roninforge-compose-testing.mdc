@@ -1,0 +1,204 @@
+---
+description: "Compose testing: createComposeRule, semantic matchers, Paparazzi screenshot tests, Hilt + Compose test setup, runTest for coroutines, Turbine for Flow assertions, fake repositories over mocks. Agent-requested."
+alwaysApply: false
+---
+
+# Compose / Kotlin Android Testing
+
+## Compose UI tests
+
+```kotlin
+class ProfileScreenTest {
+
+    @get:Rule
+    val rule = createComposeRule()
+
+    @Test
+    fun showsLoading() {
+        rule.setContent {
+            AppTheme { ProfileScreen(ProfileUiState.Loading, onIntent = {}) }
+        }
+        rule.onNodeWithContentDescription("Loading").assertIsDisplayed()
+    }
+
+    @Test
+    fun showsUserName_onSuccess() {
+        val user = User("alice", "Alice", "alice@example.com")
+        rule.setContent {
+            AppTheme { ProfileScreen(ProfileUiState.Success(user), onIntent = {}) }
+        }
+        rule.onNodeWithText("Alice").assertIsDisplayed()
+        rule.onNodeWithText("alice@example.com").assertIsDisplayed()
+    }
+
+    @Test
+    fun invokesOnIntent_whenButtonClicked() {
+        val user = User("alice", "Alice", "alice@example.com")
+        var intent: ProfileIntent? = null
+        rule.setContent {
+            AppTheme {
+                ProfileScreen(ProfileUiState.Success(user), onIntent = { intent = it })
+            }
+        }
+        rule.onNodeWithText("Refresh").performClick()
+        assertEquals(ProfileIntent.Refresh, intent)
+    }
+}
+```
+
+Test the stateless `Screen` composable. It takes state and lambdas, so the test never needs a ViewModel.
+
+## Semantic matchers
+
+Prefer semantic queries over node-tree introspection:
+
+- `onNodeWithText("Alice")` - visible text content.
+- `onNodeWithContentDescription("Profile avatar")` - for icons/images.
+- `onNodeWithTag("submit-button")` - via `Modifier.testTag(...)` (use sparingly; tags are not visible to users).
+- `onAllNodesWithText(...)` - when multiple nodes match.
+
+Custom matchers:
+
+```kotlin
+rule.onNode(hasText("Save") and hasClickAction()).performClick()
+```
+
+## ViewModel tests with runTest + Turbine
+
+```kotlin
+class ProfileViewModelTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()  // sets Dispatchers.Main to a test dispatcher
+
+    @Test
+    fun emitsSuccess_whenRepoReturnsUser() = runTest {
+        val user = User("alice", "Alice", "alice@example.com")
+        val repo = FakeProfileRepository(user = user)
+        // Build the route's SavedStateHandle via navigation-testing so toRoute<Profile>() works.
+        val savedState = Profile("alice").let {
+            SavedStateHandle().apply { set("userId", "alice") }  // see note below
+        }
+        val vm = ProfileViewModel(repo, savedState)
+
+        vm.state.test {
+            assertEquals(ProfileUiState.Loading, awaitItem())
+            val item = awaitItem()
+            assertTrue(item is ProfileUiState.Success)
+            assertEquals("Alice", (item as ProfileUiState.Success).user.name)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+}
+```
+
+Note: `savedState.toRoute<Profile>()` deserializes from a Navigation-specific bundle key, not a plain `userId` string. For ViewModel tests, either:
+
+- Have the production VM accept the args object directly via a factory and bypass `toRoute()` in tests, OR
+- Test the VM with a fake repository and the args injected as a constructor parameter, OR
+- Use `androidx.navigation.testing` `TestNavHostController` for an integration-level test.
+
+The bundle-key approach via `SavedStateHandle("userId" to "alice")` works only if the production code reads `savedState["userId"]` directly. If the production code uses `savedState.toRoute<Profile>()`, prefer the factory pattern in tests.
+
+Turbine's `test { }` extension on `Flow` lets you assert emissions sequentially without writing your own collector.
+
+## Fake repositories over mocks
+
+```kotlin
+class FakeProfileRepository(private val user: User?) : ProfileRepository {
+    override suspend fun getUser(id: String): User =
+        user ?: throw NoSuchElementException("not found")
+
+    override fun observeUser(id: String): Flow<User> =
+        flowOf(user ?: throw NoSuchElementException("not found"))
+}
+```
+
+A fake implementation is easier to read and maintain than a `mockk { every { ... } returns ... }` block. Mocks become brittle as the interface evolves.
+
+## Hilt + Compose tests
+
+```kotlin
+@HiltAndroidTest
+@UninstallModules(NetworkModule::class)  // swap a real module for a fake
+class HomeScreenTest {
+
+    @get:Rule(order = 0)
+    val hiltRule = HiltAndroidRule(this)
+
+    @get:Rule(order = 1)
+    val composeRule = createAndroidComposeRule<HiltTestActivity>()
+
+    private val user = User("alice", "Alice", "alice@example.com")
+
+    @BindValue
+    val fakeRepo: ProfileRepository = FakeProfileRepository(user)
+
+    @Before fun setUp() { hiltRule.inject() }
+
+    @Test
+    fun rendersUser() {
+        composeRule.setContent { AppTheme { HomeRoute() } }
+        composeRule.onNodeWithText("Alice").assertIsDisplayed()
+    }
+}
+```
+
+`@BindValue` is the most ergonomic way to swap a single binding in a test. `@UninstallModules` removes an entire module when you need full replacement.
+
+## Paparazzi for screenshot tests
+
+```kotlin
+class ProfileScreenshotTest {
+
+    @get:Rule
+    val paparazzi = Paparazzi(deviceConfig = DeviceConfig.PIXEL_5)
+
+    private val user = User("alice", "Alice", "alice@example.com")
+
+    @Test
+    fun loading() = paparazzi.snapshot {
+        AppTheme { ProfileScreen(ProfileUiState.Loading, onIntent = {}) }
+    }
+
+    @Test
+    fun success_lightTheme() = paparazzi.snapshot {
+        AppTheme(darkTheme = false) {
+            ProfileScreen(ProfileUiState.Success(user), onIntent = {})
+        }
+    }
+}
+```
+
+Paparazzi runs on the JVM (no emulator), produces deterministic PNG output, and integrates with `assert-snapshot`-style review. Pair with the `@ThemePreviews` multipreview annotation so the same composable drives previews and screenshot tests.
+
+## MainDispatcherRule
+
+```kotlin
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import org.junit.rules.TestWatcher
+import org.junit.runner.Description
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class MainDispatcherRule(
+    private val dispatcher: TestDispatcher = UnconfinedTestDispatcher(),
+) : TestWatcher() {
+    override fun starting(description: Description) { Dispatchers.setMain(dispatcher) }
+    override fun finished(description: Description) { Dispatchers.resetMain() }
+}
+```
+
+ViewModels using `viewModelScope` collect on `Dispatchers.Main`. Without this rule, tests crash because `Dispatchers.Main` requires an Android looper.
+
+## What NOT to do
+
+- Do not test composables by spinning up the full app. Test the stateless `Screen` in isolation.
+- Do not mock `Flow<T>`. Use `flowOf(...)` or a manual `MutableSharedFlow`.
+- Do not assert on `mockk` `verify { ... }` for control flow. Assert on observed state instead.
+- Do not write tests that rely on `Thread.sleep`. Use `runTest` and virtual time.
+- Do not write Espresso tests for Compose - use `ComposeTestRule`.

@@ -1,0 +1,209 @@
+---
+description: "Android architecture patterns: feature modularization, repository + data source pattern, sealed interfaces for UI state, ViewModel + StateFlow, Ktor / Retrofit + Kotlin Serialization, Room with Flow returns + KSP, coroutines structured concurrency."
+globs: ["**/*.kt"]
+alwaysApply: false
+---
+
+# Android Architecture
+
+## Modularization
+
+```
+app/                            // app entry, nav graph
+build-logic/                    // convention plugins (optional)
+core/
+  designsystem/                 // theme, tokens, shared composables
+  domain/                       // pure Kotlin business types, no Android deps
+  data/                         // repositories, data sources
+  network/                      // Ktor / Retrofit setup
+  database/                     // Room entities, DAOs
+feature/
+  home/                         // self-contained screen modules
+  profile/
+  settings/
+```
+
+Each feature module exposes a `Route` composable and a nav declaration. The app module wires them into the nav graph.
+
+## Repository pattern
+
+```kotlin
+// feature/profile/data/ProfileRepository.kt
+interface ProfileRepository {
+    suspend fun getUser(id: String): User
+    fun observeUser(id: String): Flow<User>
+}
+
+class DefaultProfileRepository @Inject constructor(
+    private val remote: ProfileRemoteDataSource,
+    private val local: ProfileLocalDataSource,
+) : ProfileRepository {
+
+    override suspend fun getUser(id: String): User {
+        val cached = local.get(id)
+        if (cached != null) return cached
+        val fresh = remote.fetch(id)
+        local.put(fresh)
+        return fresh
+    }
+
+    override fun observeUser(id: String): Flow<User> = local.observe(id)
+}
+```
+
+Rules:
+- Repository is an interface; bind the default via Hilt.
+- Data sources are package-private inside the data module - the repo is the only public contract.
+- Suspend functions for one-shot reads, `Flow<T>` for observable streams.
+
+## ViewModel patterns
+
+```kotlin
+@HiltViewModel
+class ProfileViewModel @Inject constructor(
+    private val repo: ProfileRepository,
+    savedState: SavedStateHandle,
+) : ViewModel() {
+
+    private val args = savedState.toRoute<Profile>()
+
+    val state: StateFlow<ProfileUiState> = repo.observeUser(args.userId)
+        .map { ProfileUiState.Success(it) as ProfileUiState }
+        .catch { emit(ProfileUiState.Error(it.message ?: "Unknown")) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = ProfileUiState.Loading,
+        )
+
+    fun onIntent(intent: ProfileIntent) {
+        when (intent) {
+            ProfileIntent.Refresh -> viewModelScope.launch { repo.refresh(args.userId) }
+        }
+    }
+}
+```
+
+`SharingStarted.WhileSubscribed(5_000)` keeps the upstream flow alive for 5 seconds after the last collector goes away, which survives configuration changes without leaking when the screen genuinely closes.
+
+## Sealed interfaces for UI state and intents
+
+```kotlin
+sealed interface ProfileUiState {
+    data object Loading : ProfileUiState
+    data class Success(val user: User) : ProfileUiState
+    data class Error(val message: String) : ProfileUiState
+}
+
+sealed interface ProfileIntent {
+    data object Refresh : ProfileIntent
+    data class UpdateName(val name: String) : ProfileIntent
+}
+```
+
+`when` over a sealed interface is exhaustive at compile time. Adding a new variant forces every `when` to handle it.
+
+## Networking: Ktor client + Kotlin Serialization
+
+```kotlin
+@Module @InstallIn(SingletonComponent::class)
+object NetworkModule {
+    @Provides @Singleton
+    fun httpClient(): HttpClient = HttpClient(OkHttp) {
+        install(ContentNegotiation) {
+            json(Json {
+                ignoreUnknownKeys = true
+                isLenient = true
+                explicitNulls = false
+            })
+        }
+        install(Logging) { level = LogLevel.HEADERS }
+        defaultRequest { url("https://api.example.com/") }
+    }
+}
+
+@Serializable data class UserDto(val id: String, val name: String, val email: String)
+
+class ProfileRemoteDataSource @Inject constructor(private val http: HttpClient) {
+    suspend fun fetch(id: String): UserDto = http.get("/users/$id").body()
+}
+```
+
+Ktor is preferred for new Kotlin Multiplatform work. Retrofit 2.11+ with `kotlinx.serialization` is fine for Android-only.
+
+## Room with Flow + KSP
+
+```kotlin
+@Entity(tableName = "users")
+data class UserEntity(
+    @PrimaryKey val id: String,
+    val name: String,
+    val email: String,
+    val updatedAt: Long,
+)
+
+@Dao
+interface UserDao {
+    @Query("SELECT * FROM users WHERE id = :id")
+    fun observe(id: String): Flow<UserEntity?>
+
+    @Query("SELECT * FROM users WHERE id = :id LIMIT 1")
+    suspend fun get(id: String): UserEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(user: UserEntity)
+}
+
+@Database(entities = [UserEntity::class], version = 1)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun userDao(): UserDao
+}
+```
+
+In Gradle:
+
+```kotlin
+plugins { alias(libs.plugins.ksp) }
+dependencies {
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
+}
+```
+
+## Coroutines: structured concurrency, never `GlobalScope`
+
+- `viewModelScope` for VM-tied work.
+- `lifecycleScope` for Activity / Fragment-tied work.
+- `rememberCoroutineScope()` for one-shot launches from a composable.
+- `supervisorScope { }` when sibling failures should not cancel each other (parallel fetches).
+- Custom `CoroutineExceptionHandler` for uncaught exceptions at scope creation, not in individual launches.
+
+```kotlin
+// Parallel independent fetches
+suspend fun loadDashboard(): Dashboard = supervisorScope {
+    val users = async { userRepo.getAll() }
+    val orders = async { orderRepo.getAll() }
+    val news = async { newsRepo.getAll() }
+    Dashboard(
+        users = users.await(),
+        orders = orders.await(),
+        news = runCatching { news.await() }.getOrElse { emptyList() },
+    )
+}
+```
+
+## Result vs sealed class
+
+For one-shot remote calls, `kotlin.Result<T>` (or `runCatching { }`) is fine. For screen state, prefer a sealed `UiState` interface - more variants than success/failure (Loading, Empty, Refreshing).
+
+## Hilt modules
+
+```kotlin
+@Module @InstallIn(SingletonComponent::class)
+abstract class ProfileBindings {
+    @Binds
+    abstract fun bindRepo(impl: DefaultProfileRepository): ProfileRepository
+}
+```
+
+Bind interfaces to implementations in a single module per feature. Use `@Singleton` for stateless services, `@ActivityRetainedScoped` for VM-shared state, `@ViewModelScoped` for per-VM caches.

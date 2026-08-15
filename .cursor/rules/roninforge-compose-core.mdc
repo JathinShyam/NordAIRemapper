@@ -1,0 +1,290 @@
+---
+description: "Modern Android development rules: Kotlin 2.x with K2, Jetpack Compose, Material 3, state hoisting + StateFlow + collectAsStateWithLifecycle, Hilt with hiltViewModel(), type-safe Navigation Compose, KSP, Version Catalogs, Compose Compiler as Kotlin plugin."
+alwaysApply: false
+---
+
+# Modern Android: Kotlin 2.x + Jetpack Compose
+
+You are writing Android UI with **Kotlin 2.x** and **Jetpack Compose** (Material 3, Compose BOM 2025+). Your training data likely contains View-system / XML / Material 2 / LiveData patterns. Follow these rules.
+
+## Compose Compiler is a Kotlin plugin (Kotlin 2.0+)
+
+The old `composeOptions.kotlinCompilerExtensionVersion` block is dead. Apply the Kotlin Compose plugin instead.
+
+```kotlin
+// build.gradle.kts (module)
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)      // NEW - replaces composeOptions block
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
+}
+
+android {
+    compileSdk = 36
+    defaultConfig { minSdk = 24; targetSdk = 36 }
+    buildFeatures { compose = true }
+}
+```
+
+Compose Compiler now ships with Kotlin. No version pinning the extension separately.
+
+## Material 3, not Material 2
+
+```kotlin
+// CORRECT
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
+
+// WRONG
+import androidx.compose.material.Button
+import androidx.compose.material.Text
+```
+
+The package is `androidx.compose.material3` (with the `3`). The `androidx.compose.material` package is the older Material 2 surface - mixing them produces visual and behavioural inconsistency.
+
+## State hoisting + unidirectional data flow
+
+State flows down (`UiState`), events flow up (`(Intent) -> Unit`). Stateful composables wrap stateless ones.
+
+```kotlin
+@Composable
+fun ProfileRoute(vm: ProfileViewModel = hiltViewModel()) {
+    val state by vm.state.collectAsStateWithLifecycle()
+    ProfileScreen(state, vm::onIntent)
+}
+
+@Composable
+fun ProfileScreen(state: ProfileUiState, onIntent: (ProfileIntent) -> Unit) {
+    when (state) {
+        ProfileUiState.Loading -> CircularProgressIndicator()
+        is ProfileUiState.Success -> Text(state.user.name)
+        is ProfileUiState.Error -> Text(state.message, color = MaterialTheme.colorScheme.error)
+    }
+}
+```
+
+The stateful "Route" composable owns the ViewModel. The stateless "Screen" composable is pure and easy to preview, test, and reuse.
+
+## UI state as a sealed interface
+
+```kotlin
+sealed interface ProfileUiState {
+    data object Loading : ProfileUiState
+    data class Success(val user: User) : ProfileUiState
+    data class Error(val message: String) : ProfileUiState
+}
+```
+
+Not `Result<T>` for screen state - sealed interface gives compile-time exhaustive `when` and clearer intent.
+
+## ViewModel + StateFlow + collectAsStateWithLifecycle
+
+```kotlin
+@HiltViewModel
+class ProfileViewModel @Inject constructor(
+    private val repo: ProfileRepository,
+    savedState: SavedStateHandle,
+) : ViewModel() {
+
+    private val args = savedState.toRoute<Profile>()
+
+    private val _state = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
+    val state: StateFlow<ProfileUiState> = _state.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            _state.value = runCatching { repo.getUser(args.userId) }
+                .fold(
+                    { ProfileUiState.Success(it) },
+                    { ProfileUiState.Error(it.message ?: "Unknown") }
+                )
+        }
+    }
+}
+```
+
+Rules:
+- `MutableStateFlow` private, expose `StateFlow` read-only.
+- `viewModelScope` for coroutines tied to the VM lifecycle.
+- `collectAsStateWithLifecycle()` in composables (not `collectAsState()`) - it stops collecting when the lifecycle is stopped.
+
+## Hilt for DI + hiltViewModel() in composables
+
+```kotlin
+@HiltAndroidApp
+class App : Application()
+
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
+    override fun onCreate(b: Bundle?) {
+        super.onCreate(b)
+        setContent { AppTheme { AppNavHost() } }
+    }
+}
+
+@Composable
+fun HomeRoute(vm: HomeViewModel = hiltViewModel()) { ... }
+```
+
+Request the ViewModel at the screen root with `hiltViewModel()`. Do not drill it down through composables - drill state and lambdas instead.
+
+## Type-safe Navigation Compose
+
+```kotlin
+@Serializable data object Home
+@Serializable data class Profile(val userId: String)
+
+NavHost(navController, startDestination = Home) {
+    composable<Home> {
+        HomeRoute(onUser = { id -> navController.navigate(Profile(id)) })
+    }
+    composable<Profile> {
+        // Route reads its own args via SavedStateHandle.toRoute<Profile>() inside the VM.
+        ProfileRoute()
+    }
+}
+```
+
+`@Serializable` data classes are the route definition. No string routes, no manual `Bundle` parsing.
+
+For ViewModels:
+
+```kotlin
+class ProfileViewModel @Inject constructor(saved: SavedStateHandle) : ViewModel() {
+    private val args: Profile = saved.toRoute()
+    val userId: String = args.userId
+}
+```
+
+## KSP over kapt
+
+```kotlin
+// build.gradle.kts
+plugins {
+    alias(libs.plugins.ksp)        // not kapt
+}
+
+dependencies {
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    ksp(libs.androidx.room.compiler)
+}
+```
+
+KSP is K2-native, faster, and the future. Hilt, Room, Moshi, Glide, Dagger all support it.
+
+## Version Catalogs (libs.versions.toml)
+
+Single source of truth for versions across modules.
+
+```toml
+[versions]
+kotlin = "2.3.20"
+agp = "9.1.1"
+composeBom = "2026.04.01"
+hilt = "2.52"
+room = "2.7.0"
+ksp = "2.3.20-1.0.28"
+lifecycle = "2.9.0"
+navigation = "2.8.5"
+
+[libraries]
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
+hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
+hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+```
+
+Hardcoded versions in module `build.gradle.kts` are a smell.
+
+## Compose BOM for version alignment
+
+```kotlin
+dependencies {
+    val bom = platform(libs.androidx.compose.bom)
+    implementation(bom)
+    androidTestImplementation(bom)
+    implementation(libs.androidx.compose.material3)            // no version - BOM picks it
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+}
+```
+
+The BOM keeps `compose.material3`, `compose.ui`, `compose.foundation` versions in sync. Each catalog entry above omits `version` (the BOM resolves it), so the only version pinned in `libs.versions.toml` is `composeBom` itself.
+
+## Adaptive layouts with NavigationSuiteScaffold
+
+For phone + tablet + foldable in one layout:
+
+```kotlin
+@Serializable data object Home
+@Serializable data object Library  // parameterless destinations work as top-level nav targets
+
+val current = navController.currentBackStackEntryAsState().value?.destination
+
+NavigationSuiteScaffold(
+    navigationSuiteItems = {
+        item(
+            selected = current?.hasRoute<Home>() == true,
+            onClick = { navController.navigate(Home) },
+            icon = { Icon(Icons.Default.Home, null) },
+            label = { Text("Home") },
+        )
+        item(
+            selected = current?.hasRoute<Library>() == true,
+            onClick = { navController.navigate(Library) },
+            icon = { Icon(Icons.Default.Person, null) },
+            label = { Text("Library") },
+        )
+    }
+) {
+    AppNavHost()
+}
+```
+
+Picks `NavigationBar` / `NavigationRail` / `NavigationDrawer` based on `WindowSizeClass`. Replaces hand-rolled `Scaffold { BottomNavigation { } }`.
+
+## Modifier order matters
+
+```kotlin
+// CORRECT - clickable first, padding inside the hit area
+Modifier.clickable { onClick() }.padding(16.dp)
+
+// WRONG - padding is OUTSIDE the click area, dead zone
+Modifier.padding(16.dp).clickable { onClick() }
+```
+
+The order of modifiers determines layout, hit areas, and decoration. Same modifier list in a different order is a different layout.
+
+## Previews
+
+```kotlin
+@Preview(name = "Light", uiMode = UI_MODE_NIGHT_NO)
+@Preview(name = "Dark", uiMode = UI_MODE_NIGHT_YES)
+annotation class ThemePreviews
+
+@ThemePreviews
+@Composable
+fun ProfileScreenPreview() {
+    AppTheme {
+        ProfileScreen(ProfileUiState.Success(User("alice", "Alice", "alice@example.com")), onIntent = {})
+    }
+}
+```
+
+Stateless composables preview cleanly because they take state as a parameter.

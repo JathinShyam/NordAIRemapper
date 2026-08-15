@@ -1,16 +1,20 @@
 package com.nordairemapper.presentation.overlay
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -44,6 +48,7 @@ import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.presentation.common.RemapActionCatalog
 import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.ui.components.OverlayPreview
+import com.nordairemapper.ui.components.SectionLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,7 +79,11 @@ fun OverlaySettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -93,17 +102,18 @@ fun OverlaySettingsScreen(
                 }
             }
 
-            Text("Live preview", style = MaterialTheme.typography.titleMedium)
+            SectionLabel("Live preview")
             OverlayPreview(config = config)
 
-            Text("Slots", style = MaterialTheme.typography.titleMedium)
+            SectionLabel("Slots")
             repeat(OverlayConfig.MAX_SLOTS) { index ->
                 val action = config.slots.getOrNull(index) ?: RemapAction.None
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { editingSlot = index },
+                    onClick = { editingSlot = index },
+                    modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
@@ -119,11 +129,16 @@ fun OverlaySettingsScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        Icon(
+                            Icons.Outlined.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }
 
-            Text("Layout", style = MaterialTheme.typography.titleMedium)
+            SectionLabel("Layout")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OverlayLayoutStyle.entries.forEach { style ->
                     FilterChip(
@@ -134,7 +149,7 @@ fun OverlaySettingsScreen(
                 }
             }
 
-            Text("Position", style = MaterialTheme.typography.titleMedium)
+            SectionLabel("Position")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OverlayPosition.entries.forEach { position ->
                     FilterChip(
@@ -145,14 +160,14 @@ fun OverlaySettingsScreen(
                 }
             }
 
-            Text("Opacity ${(config.opacity * 100).toInt()}%", style = MaterialTheme.typography.titleMedium)
+            SectionLabel("Opacity ${(config.opacity * 100).toInt()}%")
             Slider(
                 value = config.opacity,
                 onValueChange = viewModel::setOpacity,
                 valueRange = 0.3f..1f,
             )
 
-            Text("Icon size", style = MaterialTheme.typography.titleMedium)
+            SectionLabel("Icon size")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OverlayIconSize.entries.forEach { size ->
                     FilterChip(
@@ -163,7 +178,7 @@ fun OverlaySettingsScreen(
                 }
             }
 
-            Text("Animation", style = MaterialTheme.typography.titleMedium)
+            SectionLabel("Animation")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OverlayAnimation.entries.forEach { animation ->
                     FilterChip(
@@ -173,6 +188,7 @@ fun OverlaySettingsScreen(
                     )
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 

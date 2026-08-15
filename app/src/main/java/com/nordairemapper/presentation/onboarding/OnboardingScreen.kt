@@ -3,6 +3,7 @@ package com.nordairemapper.presentation.onboarding
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +19,8 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Smartphone
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -38,7 +41,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-
+import com.nordairemapper.ui.components.StatusChip
+import com.nordairemapper.ui.components.StatusTone
 @Composable
 fun OnboardingScreen(
     onFinished: () -> Unit,
@@ -164,30 +168,49 @@ private fun StepContent(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.height(48.dp))
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(72.dp),
-            tint = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(Modifier.height(24.dp))
-        Text(text = title, style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.height(12.dp))
-        Text(
-            text = body,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        if (status != null) {
-            Spacer(Modifier.height(16.dp))
-            Text(
-                text = status,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
         Spacer(Modifier.height(32.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(Modifier.height(20.dp))
+                Text(text = title, style = MaterialTheme.typography.headlineMedium)
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = body,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (status != null) {
+                    Spacer(Modifier.height(16.dp))
+                    StatusChip(
+                        label = status,
+                        tone = if (status.contains("not", ignoreCase = true) ||
+                            status.contains("needed", ignoreCase = true)
+                        ) {
+                            StatusTone.Warning
+                        } else {
+                            StatusTone.Active
+                        },
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(28.dp))
         Button(onClick = onPrimary, modifier = Modifier.fillMaxWidth()) {
             Text(primaryLabel)
         }

@@ -1,0 +1,152 @@
+---
+description: "Compose performance: stability annotations (@Stable, @Immutable), strong-skipping in Kotlin 2.x, key-based recomposition, derivedStateOf, remember{} keys, deferred reads, Compose previews + Paparazzi for screenshot tests."
+globs: ["**/*.kt"]
+alwaysApply: false
+---
+
+# Compose Performance
+
+## Strong skipping (Kotlin 2.x default)
+
+Since Compose Compiler ships with Kotlin 2.0+, strong-skipping is on by default. Most composables skip recomposition for unstable parameters automatically. Stability annotations matter less than they did, but still help in two cases:
+
+- Data classes the compiler cannot prove immutable (because a parameter is from another module).
+- Collections (`List<T>`, `Map<K, V>`) which are unstable even when contents are immutable - mark wrappers with `@Immutable`.
+
+```kotlin
+@Immutable
+data class UserCard(
+    val id: String,
+    val name: String,
+    val tags: List<String>,
+)
+```
+
+`@Stable` says: "I will notify Compose when I mutate." `@Immutable` says: "I never mutate."
+
+## Recomposition keys
+
+The key list of `LaunchedEffect`, `remember`, `produceState`, `DisposableEffect` controls when the block re-runs. Always pass the actual dependencies; never `true` or `Unit` as a shortcut.
+
+```kotlin
+// BAD - never re-runs even when userId changes
+LaunchedEffect(true) { vm.load(userId) }
+
+// CORRECT
+LaunchedEffect(userId) { vm.load(userId) }
+```
+
+## remember with multiple keys
+
+```kotlin
+// Re-compute only when input or filter changes
+val filtered = remember(items, filter) {
+    items.filter { it.matches(filter) }
+}
+```
+
+## derivedStateOf for cheap reads on expensive state
+
+```kotlin
+val showFab by remember {
+    derivedStateOf { listState.firstVisibleItemIndex > 0 }
+}
+```
+
+`derivedStateOf` reduces recomposition triggers by deriving a smaller surface from a larger state. Use when many composables read a coarse state but most do not care about every change.
+
+## Deferred reads with lambda parameters
+
+```kotlin
+// BAD - reads state at the calling composable's recomposition scope
+@Composable
+fun BadList(items: List<Item>) {
+    items.forEach { Row(item = it) }
+}
+
+// CORRECT - lambda defers the read into Row's scope
+@Composable
+fun GoodList(itemsProvider: () -> List<Item>) {
+    val items = itemsProvider()
+    LazyColumn { items(items, key = { it.id }) { Row(item = it) } }
+}
+```
+
+In tight performance code, accepting a lambda instead of the value pushes the state read down the tree, scoping recomposition more tightly.
+
+## LazyColumn / LazyRow performance
+
+Always provide a `key`:
+
+```kotlin
+LazyColumn {
+    items(users, key = { it.id }) { user -> UserRow(user) }
+}
+```
+
+Use `contentType` when items vary structurally:
+
+```kotlin
+LazyColumn {
+    items(feedItems, key = { it.id }, contentType = { it::class }) { item ->
+        when (item) {
+            is FeedItem.Post -> PostRow(item)
+            is FeedItem.Ad -> AdRow(item)
+        }
+    }
+}
+```
+
+`contentType` lets Compose reuse view holders across item types more efficiently.
+
+## Stable lambdas
+
+Inline lambdas in composables capture the call site - each recomposition creates a new lambda instance, which can defeat skipping in children. For hot paths, use `remember`:
+
+```kotlin
+@Composable
+fun Parent(onAction: (String) -> Unit) {
+    val callback = remember(onAction) { { id: String -> onAction(id) } }
+    ItemList(onItemClicked = callback)
+}
+```
+
+For most code this is over-optimization; reach for it only when the profiler shows a problem.
+
+## Compose UI tests
+
+```kotlin
+@get:Rule
+val rule = createComposeRule()
+
+@Test
+fun showsName() {
+    rule.setContent {
+        AppTheme {
+            ProfileScreen(ProfileUiState.Success(User("alice", "Alice", "a@example.com")), onIntent = {})
+        }
+    }
+    rule.onNodeWithText("Alice").assertIsDisplayed()
+}
+```
+
+Semantic matchers (`onNodeWithText`, `onNodeWithTag`, `onNodeWithContentDescription`) are stable across UI restructuring. Prefer them over coordinate-based assertions.
+
+## Paparazzi for screenshot tests (no emulator)
+
+```kotlin
+@Test
+fun lightTheme() {
+    paparazzi.snapshot {
+        AppTheme(darkTheme = false) {
+            ProfileScreen(ProfileUiState.Success(user), onIntent = {})
+        }
+    }
+}
+```
+
+Paparazzi renders Compose to PNG without an emulator. Fast, deterministic, runnable in CI. Pair with `@Preview` annotations - the same composable that drives previews also drives screenshot tests.
+
+## Measure before you optimise
+
+Compose ships a layout inspector with recomposition counts. Run it before adding `@Stable`, `remember`, or `derivedStateOf` "for performance" - the strong-skipping default usually handles it. Premature optimisation in Compose has the same cost as everywhere else.

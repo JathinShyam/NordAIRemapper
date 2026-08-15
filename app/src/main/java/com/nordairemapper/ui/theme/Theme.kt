@@ -14,24 +14,34 @@ import androidx.compose.ui.platform.LocalContext
 private val DarkColorScheme = darkColorScheme(
     primary = NordBlue,
     onPrimary = Color.Black,
+    primaryContainer = NordBlueMuted,
+    onPrimaryContainer = NordBlue,
     secondary = NordBlueDim,
     onSecondary = Color.Black,
+    tertiary = StatusActive,
+    onTertiary = Color.Black,
     background = BackgroundDark,
     onBackground = TextPrimaryDark,
     surface = SurfaceDark,
     onSurface = TextPrimaryDark,
     surfaceVariant = SurfaceVariantDark,
     onSurfaceVariant = TextSecondary,
+    surfaceContainerHighest = SurfaceElevatedDark,
     error = Destructive,
     onError = Color.Black,
-    outline = TextSecondary,
+    outline = OutlineDark,
+    outlineVariant = SurfaceVariantDark,
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = NordBlueDim,
     onPrimary = Color.White,
+    primaryContainer = Color(0xFFD6F7FF),
+    onPrimaryContainer = NordBlueDim,
     secondary = NordBlue,
     onSecondary = Color.Black,
+    tertiary = StatusActive,
+    onTertiary = Color.Black,
     background = BackgroundLight,
     onBackground = TextPrimaryLight,
     surface = SurfaceLight,
@@ -40,7 +50,7 @@ private val LightColorScheme = lightColorScheme(
     onSurfaceVariant = TextSecondary,
     error = Destructive,
     onError = Color.White,
-    outline = TextSecondary,
+    outline = Color(0xFFCCCCCC),
 )
 
 @Composable

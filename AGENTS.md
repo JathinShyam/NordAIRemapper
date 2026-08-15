@@ -9,6 +9,7 @@ Read this file at the start of every session. Then load the matching skill under
 | [plus-key-detection](.cursor/skills/plus-key-detection/SKILL.md) | Detection, gestures, logcat, accessibility, key learning, remap engine |
 | [device-testing](.cursor/skills/device-testing/SKILL.md) | ADB, `READ_LOGS`, on-device debug, capturing Plus Key logs |
 | [ship-debug-apk](.cursor/skills/ship-debug-apk/SKILL.md) | Build, install, GitHub `latest-debug` APK, signing mismatch |
+| [nord-compose-ui](.cursor/skills/nord-compose-ui/SKILL.md) | Compose UI polish / rebuild (theme, screens, components); wraps RoninForge Compose skills |
 
 Product/tech truth lives in `docs/PRD.md`, `docs/TRD.md`, `docs/ARCHITECTURE.md`. Do not invent a second architecture.
 

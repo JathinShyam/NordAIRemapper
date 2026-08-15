@@ -1,7 +1,7 @@
 package com.nordairemapper.presentation.remap
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,7 +47,7 @@ import com.nordairemapper.presentation.common.conflictKey
 import com.nordairemapper.presentation.common.displayDescription
 import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.presentation.common.icon
-
+import com.nordairemapper.ui.components.SectionLabel
 private enum class RemapSheet { None, AppPicker, UrlInput }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -121,21 +121,17 @@ fun RemapScreen(
             }
 
             item {
+                SectionLabel("Current")
                 Text(
-                    text = "Current: ${state.currentAction.displayName()}",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(vertical = 4.dp),
+                    text = state.currentAction.displayName(),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(bottom = 4.dp),
                 )
             }
 
             grouped.forEach { (category, items) ->
                 item {
-                    Text(
-                        text = category.label,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
-                    )
+                    SectionLabel(category.label)
                 }
                 items(items, key = { catalogKey(it) }) { item ->
                     ActionPickRow(
@@ -184,10 +180,24 @@ private fun ActionPickRow(
 ) {
     val action = item.action
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (selected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surface
+            },
+        ),
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (selected) {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
+            } else {
+                MaterialTheme.colorScheme.outline
+            },
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Row(
             modifier = Modifier.padding(14.dp),
@@ -197,7 +207,14 @@ private fun ActionPickRow(
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
+                    .background(
+                        if (selected) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        },
+                        CircleShape,
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(action.icon(), contentDescription = null, tint = MaterialTheme.colorScheme.primary)

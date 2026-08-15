@@ -1,10 +1,13 @@
 package com.nordairemapper.presentation.developer
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -37,6 +40,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.AppSettings
 import com.nordairemapper.domain.model.DetectionStrategy
 import com.nordairemapper.service.LogcatWatcherService
+import com.nordairemapper.ui.components.SectionLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,7 +74,8 @@ fun DeveloperScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            SectionCard(title = "Detection strategy") {
+            SectionLabel("Detection strategy")
+            SectionCard {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         selected = settings.detectionStrategy == DetectionStrategy.ACCESSIBILITY,
@@ -91,7 +96,8 @@ fun DeveloperScreen(
             }
 
             if (settings.detectionStrategy == DetectionStrategy.LOGCAT) {
-                SectionCard(title = "Logcat watcher") {
+                SectionLabel("Logcat watcher")
+                SectionCard {
                     Text(
                         text = if (readLogsGranted) "READ_LOGS granted" else "READ_LOGS not granted — run this once from a computer:",
                         style = MaterialTheme.typography.bodyMedium,
@@ -126,7 +132,8 @@ fun DeveloperScreen(
                 }
             }
 
-            SectionCard(title = "Gesture timing") {
+            SectionLabel("Gesture timing")
+            SectionCard {
                 TimingSlider(
                     label = "Double-press window",
                     valueMs = settings.doublePressWindowMs,
@@ -141,7 +148,8 @@ fun DeveloperScreen(
                 )
             }
 
-            SectionCard(title = "Key identity") {
+            SectionLabel("Key identity")
+            SectionCard {
                 Text(
                     text = if (settings.keyIdentity.isConfigured) {
                         "keyCode=${settings.keyIdentity.keyCode}, scanCode=${settings.keyIdentity.scanCode}"
@@ -154,21 +162,23 @@ fun DeveloperScreen(
                     Text("Open key setup")
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
 @Composable
-private fun SectionCard(title: String, content: @Composable () -> Unit) {
+private fun SectionCard(content: @Composable () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(text = title, style = MaterialTheme.typography.titleMedium)
             content()
         }
     }

@@ -1,0 +1,313 @@
+---
+description: "Compose / Kotlin Android anti-pattern detector. Catches findViewById, setContentView(R.layout), GlobalScope, LiveData + observeAsState, MutableState exposed publicly, force-unwrap !!, lowercase composables, LazyColumn without key, LaunchedEffect(true), Material 2 imports, padding-before-clickable, kotlinCompilerExtensionVersion (obsolete), kapt over KSP, ViewModel passed via composition, runBlocking, side effects in composition body."
+alwaysApply: false
+---
+
+# Compose / Kotlin Android Anti-Patterns
+
+Reject these in generated code. Each entry has a BAD example and the CORRECT replacement.
+
+## 1. View-system leak: `findViewById` in a Compose project
+
+```kotlin
+// BAD
+val btn = findViewById<Button>(R.id.submit)
+btn.setOnClickListener { ... }
+
+// CORRECT
+Button(onClick = { ... }) { Text("Submit") }
+```
+
+Mixing XML layouts and Compose in the same screen forces both engines to run. New screens should be pure Compose.
+
+## 2. `setContentView(R.layout.x)` instead of `setContent { ... }`
+
+```kotlin
+// BAD
+class MainActivity : AppCompatActivity() {
+    override fun onCreate(b: Bundle?) {
+        super.onCreate(b)
+        setContentView(R.layout.activity_main)
+    }
+}
+
+// CORRECT
+class MainActivity : ComponentActivity() {
+    override fun onCreate(b: Bundle?) {
+        super.onCreate(b)
+        setContent { AppTheme { AppNavHost() } }
+    }
+}
+```
+
+## 3. `GlobalScope.launch { }`
+
+```kotlin
+// BAD - leaks, no lifecycle
+GlobalScope.launch { repo.sync() }
+
+// CORRECT - viewModelScope / lifecycleScope / rememberCoroutineScope
+viewModelScope.launch { repo.sync() }
+```
+
+`GlobalScope` survives configuration changes, screen destruction, and process death. Anything started in it leaks until the process dies.
+
+## 4. LiveData when StateFlow is the default
+
+```kotlin
+// BAD
+val name: LiveData<String> = MutableLiveData("")
+val displayName by vm.name.observeAsState("")
+
+// CORRECT
+private val _name = MutableStateFlow("")
+val name: StateFlow<String> = _name.asStateFlow()
+
+// in composable
+val displayName by vm.name.collectAsStateWithLifecycle()
+```
+
+`LiveData` works but is legacy. New code uses `StateFlow` for state, `SharedFlow` for events.
+
+## 5. Public `MutableStateFlow` / `MutableState`
+
+```kotlin
+// BAD
+val count = MutableStateFlow(0)   // anyone can mutate
+
+// CORRECT
+private val _count = MutableStateFlow(0)
+val count: StateFlow<Int> = _count.asStateFlow()
+```
+
+Same rule as Java: expose the read-only contract, keep the mutator private.
+
+## 6. Force-unwrap `!!`
+
+```kotlin
+// BAD
+val id = intent.extras!!.getString("id")!!
+val user = users.first { it.id == id }!!.name
+
+// CORRECT
+val id = intent.extras?.getString("id") ?: return
+val user = users.firstOrNull { it.id == id }?.name ?: ""
+```
+
+`!!` says "this is impossible, crash if I'm wrong". Most uses are wrong. `requireNotNull` or `?:` make the intent explicit.
+
+## 7. Lowercase composable function names
+
+```kotlin
+// BAD - lint flags this, @Preview tooling breaks
+@Composable
+fun userCard() { ... }
+
+// CORRECT - PascalCase, noun-like
+@Composable
+fun UserCard() { ... }
+```
+
+Compose convention: composables are PascalCase and look like the UI noun they produce.
+
+## 8. `LazyColumn` / `LazyRow` items without `key`
+
+```kotlin
+// BAD - recomposes every item on insert/delete, animations break
+LazyColumn {
+    items(users) { UserRow(it) }
+}
+
+// CORRECT
+LazyColumn {
+    items(users, key = { it.id }) { UserRow(it) }
+}
+```
+
+The key tells Compose which slot in the slot table an item maps to. Without it, inserts and deletes shuffle every visible row.
+
+## 9. `LaunchedEffect(true)` / `LaunchedEffect(Unit)` as a catch-all
+
+```kotlin
+// BAD - re-runs only on first composition, ignores changing inputs
+@Composable
+fun UserScreen(userId: String, vm: UserViewModel) {
+    LaunchedEffect(true) { vm.load(userId) }  // does not re-run when userId changes
+}
+
+// CORRECT - key on what actually changes
+LaunchedEffect(userId) { vm.load(userId) }
+```
+
+The key list is what triggers re-execution. Use the actual dependencies.
+
+## 10. ViewModel passed down through composition
+
+```kotlin
+// BAD - drilled through every layer
+@Composable fun App() { val vm: HomeViewModel = viewModel(); Home(vm) }
+@Composable fun Home(vm: HomeViewModel) { Profile(vm) }
+
+// CORRECT - request at the screen root via hiltViewModel()
+@Composable
+fun HomeRoute(vm: HomeViewModel = hiltViewModel()) {
+    val state by vm.state.collectAsStateWithLifecycle()
+    HomeScreen(state, vm::onIntent)
+}
+```
+
+Drilling the ViewModel makes nested composables hard to preview and test. Pass state and lambdas instead.
+
+## 11. Material 2 imports in a Material 3 project
+
+```kotlin
+// BAD
+import androidx.compose.material.Button
+import androidx.compose.material.Text
+
+// CORRECT
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+```
+
+## 12. `Modifier.padding(...).clickable { }` (dead zone)
+
+```kotlin
+// BAD - padding is OUTSIDE the click area
+Modifier.padding(16.dp).clickable { onClick() }
+
+// CORRECT - clickable first, padding inside the hit area
+Modifier.clickable { onClick() }.padding(16.dp)
+```
+
+Modifier order changes layout, hit areas, and visual decoration.
+
+## 13. `kotlinCompilerExtensionVersion` in `composeOptions` (obsolete since Kotlin 2.0)
+
+```kotlin
+// BAD - removed in Kotlin 2.0+
+android {
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.14"
+    }
+}
+
+// CORRECT - Compose Compiler ships as a Kotlin plugin
+plugins {
+    alias(libs.plugins.kotlin.compose)
+}
+```
+
+## 14. `kapt` instead of KSP
+
+```kotlin
+// BAD
+kapt("com.google.dagger:hilt-android-compiler:2.52")
+
+// CORRECT
+ksp(libs.hilt.compiler)   // libs.hilt.compiler -> com.google.dagger:hilt-android-compiler
+```
+
+KSP is K2-native, multiple-times faster, and the future. All major annotation processors support it.
+
+## 15. `remember { mutableStateOf() }` outside a `@Composable`
+
+```kotlin
+// BAD - compile error or undefined behavior
+class MyViewModel {
+    val state = remember { mutableStateOf("") }
+}
+
+// CORRECT - StateFlow in ViewModel, mutableStateOf only inside composables
+class MyViewModel : ViewModel() {
+    private val _state = MutableStateFlow("")
+    val state: StateFlow<String> = _state.asStateFlow()
+}
+
+@Composable
+fun Field() { var text by remember { mutableStateOf("") } }
+```
+
+## 16. `runBlocking` on the main thread
+
+```kotlin
+// BAD
+val user = runBlocking { repo.fetchUser() }
+
+// CORRECT - keep it suspending, launch from a scope
+viewModelScope.launch {
+    val user = repo.fetchUser()
+}
+```
+
+`runBlocking` defeats coroutines entirely and blocks the UI thread. Only acceptable in `main()` of CLI tools or in tests (and there `runTest` is better).
+
+## 17. Side effects in composition body without LaunchedEffect / SideEffect
+
+```kotlin
+// BAD - re-fires on every recomposition
+@Composable
+fun UserScreen(userId: String, vm: UserViewModel) {
+    vm.track("user_opened", userId)
+    UserContent(...)
+}
+
+// CORRECT
+@Composable
+fun UserScreen(userId: String, vm: UserViewModel) {
+    LaunchedEffect(userId) { vm.track("user_opened", userId) }
+    UserContent(...)
+}
+```
+
+Composition runs whenever inputs change. Side effects must be scoped via `LaunchedEffect`, `DisposableEffect`, or `SideEffect`.
+
+## 18. Java-style `getX()` / `setX()` in Kotlin
+
+```kotlin
+// BAD - reads like translated Java
+class User {
+    private var name: String = ""
+    fun getName(): String = name
+    fun setName(v: String) { name = v }
+}
+
+// CORRECT - Kotlin property
+class User {
+    var name: String = ""
+}
+```
+
+`var name` already gives you a getter and setter through property syntax.
+
+## 19. Heavy work in composition body
+
+```kotlin
+// BAD - runs on every recomposition
+@Composable
+fun BigList(items: List<Item>) {
+    val processed = items.map { expensive(it) }
+    LazyColumn { items(processed) { ... } }
+}
+
+// CORRECT - cache with remember, or move to ViewModel
+@Composable
+fun BigList(items: List<Item>) {
+    val processed = remember(items) { items.map { expensive(it) } }
+    LazyColumn { items(processed) { ... } }
+}
+```
+
+`remember(input) { ... }` re-runs the computation only when the input key changes.
+
+## 20. `Log.d` scattered through codebase
+
+```kotlin
+// BAD
+Log.d("MyApp", "user $id logged in")
+
+// CORRECT - Timber or structured logging
+Timber.tag("Login").d("user %s logged in", id)
+```
+
+`android.util.Log` calls always evaluate the string regardless of log level and ship to logcat unconditionally. Timber lets you plant production trees that strip debug output and route to crash reporters.

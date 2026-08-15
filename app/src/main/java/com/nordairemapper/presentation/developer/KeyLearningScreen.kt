@@ -1,5 +1,6 @@
 package com.nordairemapper.presentation.developer
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nordairemapper.ui.components.SectionLabel
 import com.nordairemapper.ui.theme.StatusActive
 import com.nordairemapper.ui.theme.StatusInactive
 import java.text.SimpleDateFormat
@@ -84,6 +86,8 @@ fun KeyLearningScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -124,6 +128,8 @@ fun KeyLearningScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -144,6 +150,8 @@ fun KeyLearningScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -163,6 +171,7 @@ fun KeyLearningScreen(
                 }
             }
 
+            SectionLabel("Captured presses")
             Text(
                 text = "Each row is one physical press. Volume keys come from Accessibility. The Plus Key usually appears only as a logcat row.",
                 style = MaterialTheme.typography.bodyMedium,
@@ -188,6 +197,8 @@ private fun PressRow(press: CapturedPress, onSave: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),

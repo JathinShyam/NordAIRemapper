@@ -2,7 +2,7 @@ package com.nordairemapper.presentation.backup
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nordairemapper.ui.components.SectionLabel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -88,6 +89,7 @@ fun BackupScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            SectionLabel("Transfer")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
                     onClick = {
@@ -102,6 +104,7 @@ fun BackupScreen(
                 ) { Text("Import JSON") }
             }
 
+            SectionLabel("Local snapshot")
             OutlinedTextField(
                 value = snapshotName,
                 onValueChange = { snapshotName = it },
@@ -117,14 +120,15 @@ fun BackupScreen(
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Save local snapshot") }
 
-            Text("Local snapshots", style = MaterialTheme.typography.titleMedium)
+            SectionLabel("Saved snapshots")
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(snapshots, key = { it.id }) { snapshot ->
                     Card(
+                        onClick = { pendingRestoreId = snapshot.id },
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { pendingRestoreId = snapshot.id },
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         Row(
                             modifier = Modifier.padding(16.dp),
