@@ -215,7 +215,9 @@ Release builds use minify/shrink (`./gradlew assembleRelease`); you must supply 
 | `POST_NOTIFICATIONS` | Service / alert notifications |
 | `RECEIVE_BOOT_COMPLETED` | Re-arm detection after reboot |
 | `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | Reduce OEM kills |
-| `ACCESS_NOTIFICATION_POLICY` | Toggle DND |
+| `ACCESS_NOTIFICATION_POLICY` + **Do Not Disturb access** (Special app access) | Toggle DND and ring/vibrate/silent |
+| `MODIFY_AUDIO_SETTINGS` | Volume / ringer helpers |
+| `CAMERA` (runtime grant) | Flashlight torch on stricter OEMs |
 | `WRITE_SETTINGS` | Toggle auto-rotate |
 | `READ_LOGS` | Strategy B only (ADB `pm grant`) |
 | `VIBRATE` | Haptic feedback |

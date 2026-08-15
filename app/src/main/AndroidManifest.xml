@@ -23,7 +23,13 @@
         tools:ignore="ProtectedPermissions" />
     <!-- For the auto-rotate toggle action; user grants via special-access settings -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <!-- DND + ringer silent; user must also grant Do Not Disturb access in Special app access -->
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- Flashlight via CameraManager.setTorchMode (required on many API 33+ builds) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.flash" android:required="false" />
 
     <application
         android:name=".NordRemapperApp"
