@@ -2,6 +2,7 @@ package com.nordairemapper.domain.repository
 
 import com.nordairemapper.domain.model.AppSettings
 import com.nordairemapper.domain.model.DetectionStrategy
+import com.nordairemapper.domain.model.HapticIntensity
 import com.nordairemapper.domain.model.KeyIdentity
 import com.nordairemapper.domain.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
@@ -19,6 +20,11 @@ interface SettingsRepository {
     suspend fun setDynamicColor(enabled: Boolean)
     suspend fun setShowServiceNotification(enabled: Boolean)
     suspend fun setHapticFeedback(enabled: Boolean)
+    suspend fun setHapticIntensity(intensity: HapticIntensity)
+    suspend fun setVisualOverlayEnabled(enabled: Boolean)
+    suspend fun setLockScreenSingleEnabled(enabled: Boolean)
+    suspend fun setLockScreenDoubleEnabled(enabled: Boolean)
+    suspend fun setLockScreenLongEnabled(enabled: Boolean)
     suspend fun setExcludedApps(packages: Set<String>)
     suspend fun setOnboardingCompleted(completed: Boolean)
 }

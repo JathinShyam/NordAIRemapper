@@ -6,6 +6,7 @@ import com.nordairemapper.domain.model.BackupPayload
 import com.nordairemapper.domain.model.BackupSettings
 import com.nordairemapper.domain.model.ConfigSnapshot
 import com.nordairemapper.domain.model.DetectionStrategy
+import com.nordairemapper.domain.model.HapticIntensity
 import com.nordairemapper.domain.model.PressType
 import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.domain.repository.BackupRepository
@@ -85,6 +86,11 @@ class BackupRepositoryImpl @Inject constructor(
                 detectionStrategy = settings.detectionStrategy.key,
                 keyIdentity = settings.keyIdentity,
                 hapticFeedback = settings.hapticFeedback,
+                hapticIntensity = settings.hapticIntensity.name,
+                visualOverlayEnabled = settings.visualOverlayEnabled,
+                lockScreenSingleEnabled = settings.lockScreenSingleEnabled,
+                lockScreenDoubleEnabled = settings.lockScreenDoubleEnabled,
+                lockScreenLongEnabled = settings.lockScreenLongEnabled,
                 excludedApps = settings.excludedApps,
             ),
         )
@@ -102,6 +108,13 @@ class BackupRepositoryImpl @Inject constructor(
         settingsRepository.setDetectionStrategy(DetectionStrategy.fromKey(s.detectionStrategy))
         settingsRepository.setKeyIdentity(s.keyIdentity)
         settingsRepository.setHapticFeedback(s.hapticFeedback)
+        settingsRepository.setHapticIntensity(
+            runCatching { HapticIntensity.valueOf(s.hapticIntensity) }.getOrDefault(HapticIntensity.MEDIUM),
+        )
+        settingsRepository.setVisualOverlayEnabled(s.visualOverlayEnabled)
+        settingsRepository.setLockScreenSingleEnabled(s.lockScreenSingleEnabled)
+        settingsRepository.setLockScreenDoubleEnabled(s.lockScreenDoubleEnabled)
+        settingsRepository.setLockScreenLongEnabled(s.lockScreenLongEnabled)
         settingsRepository.setExcludedApps(s.excludedApps)
     }
 }

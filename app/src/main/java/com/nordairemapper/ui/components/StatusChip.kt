@@ -15,8 +15,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.nordairemapper.ui.theme.PillShape
 import com.nordairemapper.ui.theme.StatusActive
 import com.nordairemapper.ui.theme.StatusInactive
@@ -30,11 +31,23 @@ fun StatusChip(
     tone: StatusTone,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    selected: Boolean = false,
+    showDot: Boolean = true,
 ) {
     val dot = when (tone) {
         StatusTone.Active -> StatusActive
         StatusTone.Inactive -> StatusInactive
         StatusTone.Warning -> StatusWarning
+    }
+    val borderColor = if (selected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outline
+    }
+    val textColor = if (selected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
     }
     val clickable = if (onClick != null) {
         Modifier.clickable(onClick = onClick)
@@ -45,35 +58,41 @@ fun StatusChip(
     Row(
         modifier = modifier
             .clip(PillShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(1.dp, MaterialTheme.colorScheme.outline, PillShape)
+            .border(1.dp, borderColor, PillShape)
             .then(clickable)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .background(dot, CircleShape),
-        )
+        if (showDot) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .background(dot, CircleShape),
+            )
+        }
         Text(
             text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
+            color = textColor,
         )
     }
 }
 
+/** Uppercase muted section label matching design-kit `.sec`. */
 @Composable
 fun SectionLabel(
     text: String,
     modifier: Modifier = Modifier,
 ) {
     Text(
-        text = text,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = modifier.padding(top = 8.dp, bottom = 4.dp),
+        text = text.uppercase(),
+        style = MaterialTheme.typography.labelMedium.copy(
+            fontWeight = FontWeight.Medium,
+            letterSpacing = 0.6.sp,
+            fontSize = 11.sp,
+        ),
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+        modifier = modifier.padding(top = 10.dp, bottom = 8.dp),
     )
 }

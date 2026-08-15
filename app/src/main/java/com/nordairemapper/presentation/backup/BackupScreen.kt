@@ -2,7 +2,6 @@ package com.nordairemapper.presentation.backup
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,14 +14,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -30,6 +25,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,9 +34,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nordairemapper.ui.components.NordGhostButton
+import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.components.NordPrimaryButton
+import com.nordairemapper.ui.components.NordSurfaceCard
 import com.nordairemapper.ui.components.SectionLabel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -72,36 +73,42 @@ fun BackupScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Backup & Restore") },
+                title = { NordHeading("Backup & Restore", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             SectionLabel("Transfer")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
+                NordPrimaryButton(
+                    text = "Export",
                     onClick = {
                         val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
                         exportLauncher.launch("nord-ai-remapper-$stamp.json")
                     },
                     modifier = Modifier.weight(1f),
-                ) { Text("Export JSON") }
-                OutlinedButton(
+                )
+                NordGhostButton(
+                    text = "Import",
                     onClick = { importLauncher.launch(arrayOf("application/json", "*/*")) },
                     modifier = Modifier.weight(1f),
-                ) { Text("Import JSON") }
+                )
             }
 
             SectionLabel("Local snapshot")
@@ -111,31 +118,31 @@ fun BackupScreen(
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Snapshot name") },
                 singleLine = true,
+                shape = MaterialTheme.shapes.small,
             )
-            Button(
+            NordPrimaryButton(
+                text = "Save local snapshot",
                 onClick = {
                     viewModel.saveSnapshot(snapshotName)
                     snapshotName = ""
                 },
-                modifier = Modifier.fillMaxWidth(),
-            ) { Text("Save local snapshot") }
+            )
 
-            SectionLabel("Saved snapshots")
+            SectionLabel("Saved")
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(snapshots, key = { it.id }) { snapshot ->
-                    Card(
-                        onClick = { pendingRestoreId = snapshot.id },
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
+                    NordSurfaceCard(onClick = { pendingRestoreId = snapshot.id }) {
                         Row(
-                            modifier = Modifier.padding(16.dp),
+                            modifier = Modifier.padding(14.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(snapshot.name, style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    snapshot.name,
+                                    style = MaterialTheme.typography.titleSmall.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                    ),
+                                )
                                 Text(
                                     text = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
                                         .format(Date(snapshot.createdAtEpochMs)),

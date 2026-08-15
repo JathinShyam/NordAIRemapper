@@ -34,10 +34,10 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = NordBlueDim,
+    primary = LightNavy,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFD6F7FF),
-    onPrimaryContainer = NordBlueDim,
+    primaryContainer = Color(0xFFDDE8FF),
+    onPrimaryContainer = LightNavy,
     secondary = NordBlue,
     onSecondary = Color.Black,
     tertiary = StatusActive,
@@ -47,10 +47,10 @@ private val LightColorScheme = lightColorScheme(
     surface = SurfaceLight,
     onSurface = TextPrimaryLight,
     surfaceVariant = SurfaceVariantLight,
-    onSurfaceVariant = TextSecondary,
+    onSurfaceVariant = Color(0xFF777777),
     error = Destructive,
     onError = Color.White,
-    outline = Color(0xFFCCCCCC),
+    outline = Color(0xFFE0E0E0),
 )
 
 @Composable

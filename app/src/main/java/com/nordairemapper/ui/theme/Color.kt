@@ -16,10 +16,15 @@ val TextSecondary = Color(0xFF8A8A8A)
 val OutlineDark = Color(0xFF2A2A2A)
 val Destructive = Color(0xFFFF4D4D)
 
-val BackgroundLight = Color(0xFFF7F7F7)
-val SurfaceLight = Color(0xFFFFFFFF)
-val SurfaceVariantLight = Color(0xFFEDEDED)
-val TextPrimaryLight = Color(0xFF0A0A0A)
+/** OnePlus / OxygenOS marketing red — used for the first letter of headings. */
+val HeadingRed = Color(0xFFEB0028)
+
+val BackgroundLight = Color(0xFFF5F5F5)
+val SurfaceLight = Color(0xFFEBEBEB)
+val SurfaceVariantLight = Color(0xFFE0E0E0)
+val TextPrimaryLight = Color(0xFF111111)
+/** Preference-screen navy from design kit light frames. */
+val LightNavy = Color(0xFF1B3A6B)
 
 val StatusActive = Color(0xFF2ECC71)
 val StatusInactive = Destructive

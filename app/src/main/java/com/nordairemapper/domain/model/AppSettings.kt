@@ -2,6 +2,8 @@ package com.nordairemapper.domain.model
 
 enum class ThemeMode { DARK, LIGHT, SYSTEM }
 
+enum class HapticIntensity { LIGHT, MEDIUM, HEAVY }
+
 data class AppSettings(
     val serviceEnabled: Boolean = true,
     val detectionStrategy: DetectionStrategy = DetectionStrategy.ACCESSIBILITY,
@@ -13,6 +15,11 @@ data class AppSettings(
     val dynamicColor: Boolean = false,
     val showServiceNotification: Boolean = true,
     val hapticFeedback: Boolean = true,
+    val hapticIntensity: HapticIntensity = HapticIntensity.MEDIUM,
+    val visualOverlayEnabled: Boolean = true,
+    val lockScreenSingleEnabled: Boolean = false,
+    val lockScreenDoubleEnabled: Boolean = false,
+    val lockScreenLongEnabled: Boolean = false,
     val excludedApps: Set<String> = emptySet(),
     val onboardingCompleted: Boolean = false,
 ) {
@@ -21,5 +28,6 @@ data class AppSettings(
         const val LEGACY_LOGCAT_PATTERN = "KEYLOG_OplusKeyEventUtil"
         val DOUBLE_PRESS_WINDOW_RANGE = 200L..500L
         val LONG_PRESS_THRESHOLD_RANGE = 300L..1000L
+        val HOLD_DURATION_RANGE_MS = 300L..2000L
     }
 }

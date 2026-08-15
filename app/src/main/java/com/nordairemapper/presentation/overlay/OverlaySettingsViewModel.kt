@@ -7,7 +7,9 @@ import com.nordairemapper.domain.model.OverlayConfig
 import com.nordairemapper.domain.model.OverlayIconSize
 import com.nordairemapper.domain.model.OverlayLayoutStyle
 import com.nordairemapper.domain.model.OverlayPosition
+import com.nordairemapper.domain.model.OverlayVisualStyle
 import com.nordairemapper.domain.model.RemapAction
+import com.nordairemapper.domain.model.AppSettings
 import com.nordairemapper.domain.repository.RemapConfigRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -41,6 +43,16 @@ class OverlaySettingsViewModel @Inject constructor(
     fun setAnimation(animation: OverlayAnimation) = update { it.copy(animation = animation) }
 
     fun setLayoutStyle(style: OverlayLayoutStyle) = update { it.copy(layoutStyle = style) }
+
+    fun setVisualStyle(style: OverlayVisualStyle) = update { it.copy(visualStyle = style) }
+
+    fun setAccentColor(argb: Int) = update { it.copy(accentColorArgb = argb) }
+
+    fun setGlowEffects(enabled: Boolean) = update { it.copy(glowEffects = enabled) }
+
+    fun setHoldDurationMs(ms: Long) = update {
+        it.copy(holdDurationMs = ms.coerceIn(AppSettings.HOLD_DURATION_RANGE_MS))
+    }
 
     fun setSlot(index: Int, action: RemapAction) = update { current ->
         val slots = current.slots.toMutableList()

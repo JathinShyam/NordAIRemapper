@@ -18,6 +18,11 @@ data class BackupSettings(
     val detectionStrategy: String = DetectionStrategy.ACCESSIBILITY.key,
     val keyIdentity: KeyIdentity = KeyIdentity.UNCONFIGURED,
     val hapticFeedback: Boolean = true,
+    val hapticIntensity: String = HapticIntensity.MEDIUM.name,
+    val visualOverlayEnabled: Boolean = true,
+    val lockScreenSingleEnabled: Boolean = false,
+    val lockScreenDoubleEnabled: Boolean = false,
+    val lockScreenLongEnabled: Boolean = false,
     val excludedApps: Set<String> = emptySet(),
 )
 

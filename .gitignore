@@ -12,3 +12,10 @@ captures/
 *.keystore
 !debug.keystore
 .kotlin/
+
+# Proprietary OnePlus Sans only — OFL fonts in res/font (Inter / Space Grotesk) are OK
+**/oneplus*.ttf
+**/oneplus*.otf
+**/OnePlusSans*
+design/fonts/**
+!design/fonts/README.md

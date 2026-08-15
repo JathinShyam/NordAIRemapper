@@ -16,7 +16,6 @@ import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.UploadFile
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,19 +33,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.PressType
+import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.presentation.common.displayName
-import com.nordairemapper.presentation.common.icon
 import com.nordairemapper.ui.components.ActionCard
+import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.PhoneDiagram
 import com.nordairemapper.ui.components.SectionLabel
 import com.nordairemapper.ui.components.StatusChip
 import com.nordairemapper.ui.components.StatusTone
+import com.nordairemapper.ui.theme.StatusWarning
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,9 +78,9 @@ fun HomeScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Nord AI Remapper")
+                        NordHeading("Plus Key", style = MaterialTheme.typography.titleLarge)
                         Text(
-                            text = "Plus Key remapper",
+                            text = "Nord AI Remapper",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -109,46 +112,53 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+                .padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                StatusChip(
-                    label = when {
-                        !state.accessibilityEnabled -> "Accessibility off"
-                        state.serviceEnabled -> "Service active"
-                        else -> "Remapping paused"
-                    },
-                    tone = when {
-                        !state.accessibilityEnabled -> StatusTone.Inactive
-                        state.serviceEnabled -> StatusTone.Active
-                        else -> StatusTone.Warning
-                    },
-                    onClick = if (!state.accessibilityEnabled) {
-                        { viewModel.openAccessibilitySettings() }
-                    } else {
-                        null
-                    },
-                )
-            }
+            PhoneDiagram(
+                highlightKey = state.serviceEnabled && state.accessibilityEnabled,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+                    .padding(vertical = 6.dp),
+            )
+
+            StatusChip(
+                label = when {
+                    !state.accessibilityEnabled -> "Accessibility off"
+                    state.serviceEnabled -> "Service active"
+                    else -> "Remapping paused"
+                },
+                tone = when {
+                    !state.accessibilityEnabled -> StatusTone.Inactive
+                    state.serviceEnabled -> StatusTone.Active
+                    else -> StatusTone.Warning
+                },
+                onClick = if (!state.accessibilityEnabled) {
+                    { viewModel.openAccessibilitySettings() }
+                } else {
+                    null
+                },
+            )
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                shape = MaterialTheme.shapes.medium,
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                        .padding(horizontal = 14.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Remapping enabled", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Remapping",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                        )
                         Text(
                             text = "Master switch for Plus Key actions",
                             style = MaterialTheme.typography.bodySmall,
@@ -161,13 +171,6 @@ fun HomeScreen(
                     )
                 }
             }
-
-            PhoneDiagram(
-                highlightKey = state.serviceEnabled && state.accessibilityEnabled,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(240.dp),
-            )
 
             state.banner?.let { banner ->
                 TroubleshootingBanner(
@@ -182,19 +185,27 @@ fun HomeScreen(
                 )
             }
 
-            SectionLabel("Press actions")
+            SectionLabel("Actions")
             PressType.entries.forEach { pressType ->
-                val action = state.actions[pressType] ?: com.nordairemapper.domain.model.RemapAction.None
+                val action = state.actions[pressType] ?: RemapAction.None
                 ActionCard(
-                    title = pressType.label,
+                    title = when (pressType) {
+                        PressType.SINGLE -> "Single"
+                        PressType.DOUBLE -> "Double"
+                        PressType.LONG -> "Long"
+                    },
                     subtitle = action.displayName(),
-                    icon = action.icon(),
+                    badge = when (pressType) {
+                        PressType.SINGLE -> "1"
+                        PressType.DOUBLE -> "2"
+                        PressType.LONG -> "—"
+                    },
                     showConflict = pressType in state.conflictPressTypes,
                     onClick = { onOpenRemap(pressType) },
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -207,24 +218,27 @@ private fun TroubleshootingBanner(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            containerColor = MaterialTheme.colorScheme.surface,
         ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)),
+        border = BorderStroke(1.dp, StatusWarning.copy(alpha = 0.35f)),
+        shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(banner.title, style = MaterialTheme.typography.titleMedium)
+            Text(
+                banner.title,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = StatusWarning,
+            )
             Text(
                 text = banner.body,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Button(onClick = onPrimary, modifier = Modifier.fillMaxWidth()) {
-                Text(banner.primaryLabel)
-            }
+            NordPrimaryButton(text = banner.primaryLabel, onClick = onPrimary)
         }
     }
 }

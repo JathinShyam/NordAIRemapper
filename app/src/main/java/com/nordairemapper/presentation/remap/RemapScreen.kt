@@ -1,34 +1,29 @@
 package com.nordairemapper.presentation.remap
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -46,8 +42,12 @@ import com.nordairemapper.presentation.common.RemapActionItem
 import com.nordairemapper.presentation.common.conflictKey
 import com.nordairemapper.presentation.common.displayDescription
 import com.nordairemapper.presentation.common.displayName
-import com.nordairemapper.presentation.common.icon
+import com.nordairemapper.ui.components.NordGhostButton
+import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.components.NordPrimaryButton
+import com.nordairemapper.ui.components.NordSurfaceCard
 import com.nordairemapper.ui.components.SectionLabel
+
 private enum class RemapSheet { None, AppPicker, UrlInput }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,7 +60,23 @@ fun RemapScreen(
     val apps by viewModel.installedApps.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     var sheet by remember { mutableStateOf(RemapSheet.None) }
-    val grouped = remember { RemapActionCatalog.grouped() }
+    var query by remember { mutableStateOf("") }
+    val grouped = remember { RemapActionCatalog.grouped().toList() }
+    val filtered = remember(query, grouped) {
+        if (query.isBlank()) {
+            grouped
+        } else {
+            val q = query.trim().lowercase()
+            grouped.mapNotNull { (category, actionItems) ->
+                val match = actionItems.filter {
+                    it.action.displayName().lowercase().contains(q) ||
+                        it.action.displayDescription().lowercase().contains(q) ||
+                        category.label.lowercase().contains(q)
+                }
+                if (match.isEmpty()) null else category to match
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { message ->
@@ -68,7 +84,7 @@ fun RemapScreen(
                 when {
                     message.startsWith("Saved:") -> "Action saved"
                     else -> message
-                }
+                },
             )
         }
     }
@@ -76,23 +92,41 @@ fun RemapScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(state.pressType.label) },
+                title = {
+                    NordHeading(
+                        text = state.pressType.label,
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            Button(
-                onClick = viewModel::tryNow,
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("Try this action now")
+                NordGhostButton(
+                    text = "Try now",
+                    onClick = viewModel::tryNow,
+                    modifier = Modifier.weight(1f),
+                )
+                NordPrimaryButton(
+                    text = "Done",
+                    onClick = onBack,
+                    modifier = Modifier.weight(1f),
+                )
             }
         },
     ) { padding ->
@@ -100,20 +134,29 @@ fun RemapScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
+            item {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    placeholder = { Text("Search actions or apps") },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.small,
+                )
+            }
+
             if (state.hasConflict) {
                 item {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        ),
-                    ) {
+                    NordSurfaceCard {
                         Text(
                             text = "Same action is also assigned to: " +
                                 state.conflictWith.joinToString { it.label },
-                            modifier = Modifier.padding(16.dp),
+                            modifier = Modifier.padding(14.dp),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     }
@@ -124,24 +167,25 @@ fun RemapScreen(
                 SectionLabel("Current")
                 Text(
                     text = state.currentAction.displayName(),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(bottom = 4.dp),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp),
                 )
             }
 
-            grouped.forEach { (category, items) ->
-                item {
-                    SectionLabel(category.label)
-                }
-                items(items, key = { catalogKey(it) }) { item ->
+            filtered.forEach { (category, actionItems) ->
+                item { SectionLabel(category.label) }
+                items(actionItems, key = { catalogKey(it) }) { catalogItem ->
                     ActionPickRow(
-                        item = item,
-                        selected = isSelected(state.currentAction, item.action),
+                        item = catalogItem,
+                        selected = isSelected(state.currentAction, catalogItem.action),
                         onClick = {
                             when {
-                                item.action is RemapAction.LaunchApp -> sheet = RemapSheet.AppPicker
-                                item.action is RemapAction.OpenUrl -> sheet = RemapSheet.UrlInput
-                                else -> viewModel.setAction(item.action)
+                                catalogItem.action is RemapAction.LaunchApp ->
+                                    sheet = RemapSheet.AppPicker
+                                catalogItem.action is RemapAction.OpenUrl ->
+                                    sheet = RemapSheet.UrlInput
+                                else -> viewModel.setAction(catalogItem.action)
                             }
                         },
                     )
@@ -179,72 +223,46 @@ private fun ActionPickRow(
     onClick: () -> Unit,
 ) {
     val action = item.action
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surface
-            },
-        ),
-        border = BorderStroke(
-            width = 1.dp,
-            color = if (selected) {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
-            } else {
-                MaterialTheme.colorScheme.outline
-            },
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp, horizontal = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        if (selected) {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant
-                        },
-                        CircleShape,
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(action.icon(), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = when {
-                        action is RemapAction.LaunchApp -> "Launch app…"
-                        action is RemapAction.OpenUrl -> "Open URL / deep link…"
-                        else -> action.displayName()
-                    },
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    text = when {
-                        action is RemapAction.LaunchApp -> "Pick any installed app"
-                        action is RemapAction.OpenUrl -> "Open a URL or deep link"
-                        else -> action.displayDescription()
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            if (selected) {
-                Icon(
-                    Icons.Outlined.Check,
-                    contentDescription = "Selected",
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
+        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(
+                text = when {
+                    action is RemapAction.LaunchApp -> "Launch app…"
+                    action is RemapAction.OpenUrl -> "Open URL / deep link…"
+                    else -> action.displayName()
+                },
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                ),
+                color = if (selected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+            )
+            Text(
+                text = when {
+                    action is RemapAction.LaunchApp -> "Pick any installed app"
+                    action is RemapAction.OpenUrl -> "Open a URL or deep link"
+                    else -> action.displayDescription()
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (selected) {
+            Icon(
+                Icons.Outlined.Check,
+                contentDescription = "Selected",
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }

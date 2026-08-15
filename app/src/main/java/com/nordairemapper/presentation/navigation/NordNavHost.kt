@@ -22,7 +22,11 @@ import com.nordairemapper.presentation.onboarding.OnboardingScreen
 import com.nordairemapper.presentation.backup.BackupScreen
 import com.nordairemapper.presentation.overlay.OverlaySettingsScreen
 import com.nordairemapper.presentation.remap.RemapScreen
+import com.nordairemapper.presentation.settings.FeedbackScreen
+import com.nordairemapper.presentation.settings.LockScreenSettingsScreen
+import com.nordairemapper.presentation.settings.PreferencesScreen
 import com.nordairemapper.presentation.settings.SettingsScreen
+import com.nordairemapper.presentation.settings.VisualOverlayScreen
 
 object Routes {
     const val ONBOARDING = "onboarding"
@@ -32,6 +36,10 @@ object Routes {
     const val SETTINGS = "settings"
     const val OVERLAY_SETTINGS = "overlay_settings"
     const val BACKUP = "backup"
+    const val FEEDBACK = "feedback"
+    const val PREFERENCES = "preferences"
+    const val VISUAL_OVERLAY = "visual_overlay"
+    const val LOCK_SCREEN = "lock_screen"
     const val REMAP = "remap/{pressType}"
 
     fun remap(pressType: PressType) = "remap/${pressType.key}"
@@ -103,12 +111,32 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
                 onOpenKeyLearning = { navController.navigate(Routes.KEY_LEARNING) },
                 onOpenBackup = { navController.navigate(Routes.BACKUP) },
                 onOpenOverlay = { navController.navigate(Routes.OVERLAY_SETTINGS) },
+                onOpenFeedback = { navController.navigate(Routes.FEEDBACK) },
+                onOpenPreferences = { navController.navigate(Routes.PREFERENCES) },
+                onOpenVisualOverlay = { navController.navigate(Routes.VISUAL_OVERLAY) },
+                onOpenLockScreen = { navController.navigate(Routes.LOCK_SCREEN) },
                 onRestartOnboarding = {
                     navController.navigate(Routes.ONBOARDING) {
                         popUpTo(Routes.HOME) { inclusive = true }
                     }
                 },
             )
+        }
+        composable(Routes.FEEDBACK) {
+            FeedbackScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.PREFERENCES) {
+            PreferencesScreen(
+                onBack = { navController.popBackStack() },
+                onFinish = { navController.popBackStack() },
+                onOpenVisualOverlay = { navController.navigate(Routes.VISUAL_OVERLAY) },
+            )
+        }
+        composable(Routes.VISUAL_OVERLAY) {
+            VisualOverlayScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.LOCK_SCREEN) {
+            LockScreenSettingsScreen(onBack = { navController.popBackStack() })
         }
         composable(Routes.OVERLAY_SETTINGS) {
             OverlaySettingsScreen(onBack = { navController.popBackStack() })

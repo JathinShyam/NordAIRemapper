@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nord AI Remapper — End-to-end design</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --heading: "Space Grotesk", system-ui, sans-serif;
+      --body: Inter, Roboto, system-ui, sans-serif;
+      --red: #EB0028;
+      --accent: #0AC6FF;
+      --bg: #0A0A0A;
+      --surface: #141414;
+      --outline: #2A2A2A;
+      --muted: #8A8A8A;
+      --text: #F5F5F5;
+      --light-bg: #F5F5F5;
+      --light-card: #EBEBEB;
+      --navy: #1B3A6B;
+      --phone-w: 360px;
+      --phone-h: 800px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--body);
+      background: #070707;
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+    .board { padding: 48px 40px 96px; min-width: max-content; }
+    .board-header { max-width: 720px; margin-bottom: 48px; }
+    .eyebrow {
+      font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 12px; font-weight: 500;
+    }
+    .board-header h1 {
+      font-family: var(--heading); font-size: 34px; font-weight: 700;
+      letter-spacing: -0.03em; margin-bottom: 12px;
+    }
+    .board-header h1::first-letter { color: var(--red); }
+    .lede { color: var(--muted); font-size: 15px; line-height: 1.55; max-width: 560px; }
+
+    .row { display: flex; gap: 28px; align-items: flex-start; margin-bottom: 64px; }
+    .side { width: 150px; flex-shrink: 0; padding-top: 4px; }
+    .side h2 { font-size: 13px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.01em; }
+    .side h2::first-letter { color: var(--red); }
+    .side p { font-size: 12px; color: var(--muted); }
+    .frames { display: flex; gap: 28px; flex-wrap: wrap; }
+
+    .wrap { position: relative; }
+    .label {
+      position: absolute; top: -24px; left: 4px;
+      font-size: 11px; color: #666; font-weight: 500;
+    }
+    .phone {
+      width: var(--phone-w); height: var(--phone-h);
+      border-radius: 32px; border: 1px solid #1c1c1c;
+      background: var(--bg); overflow: hidden; position: relative;
+      flex-shrink: 0;
+    }
+    .phone.light { background: var(--light-bg); color: #111; border-color: #ddd; }
+    .sb {
+      height: 26px; display: flex; justify-content: space-between; align-items: center;
+      padding: 0 18px; font-size: 11px; color: #666;
+    }
+    .screen {
+      height: calc(100% - 26px); padding: 0 20px 22px;
+      display: flex; flex-direction: column;
+    }
+
+    .h {
+      font-family: var(--heading); font-weight: 700; letter-spacing: -0.03em;
+      font-size: 28px; line-height: 1.15; color: #fff;
+    }
+    .phone.light .h { color: #111; }
+    .h::first-letter { color: var(--red); }
+    .h.sm { font-size: 22px; }
+    .h.md { font-size: 24px; }
+    .sub { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.45; }
+    .phone.light .sub { color: #777; }
+
+    .top {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      padding: 8px 0 14px; gap: 8px;
+    }
+    .back { font-size: 18px; color: #888; margin-right: 6px; }
+    .icons { display: flex; gap: 2px; color: #777; font-size: 14px; }
+    .ico { width: 36px; height: 36px; display: grid; place-items: center; }
+
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 10px; border-radius: 999px; border: 1px solid var(--outline);
+      font-size: 11px; font-weight: 500; color: #ccc; margin-bottom: 12px;
+    }
+    .phone.light .chip { border-color: #ddd; color: #444; background: #fff; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: #2ECC71; }
+    .dot.warn { background: #FFB020; }
+
+    .card {
+      background: var(--surface); border: 1px solid var(--outline);
+      border-radius: 14px; padding: 14px; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .phone.light .card { background: var(--light-card); border-color: #e0e0e0; }
+    .card.col { flex-direction: column; align-items: stretch; gap: 0; padding: 4px 0; }
+    .ci {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: rgba(10,198,255,0.12); color: var(--accent);
+      display: grid; place-items: center; font-size: 13px; font-weight: 700; flex-shrink: 0;
+    }
+    .ct { font-size: 14px; font-weight: 600; }
+    .cd { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .phone.light .ct { color: #111; }
+    .phone.light .cd { color: #777; }
+    .chev { color: #3a3a3a; margin-left: auto; }
+    .sec {
+      font-size: 11px; font-weight: 500; letter-spacing: 0.04em;
+      text-transform: uppercase; color: #666; margin: 10px 0 8px;
+    }
+
+    .sw {
+      width: 44px; height: 26px; border-radius: 13px; background: var(--accent);
+      position: relative; flex-shrink: 0;
+    }
+    .sw::after {
+      content: ""; position: absolute; top: 3px; right: 3px;
+      width: 20px; height: 20px; border-radius: 10px; background: #041018;
+    }
+    .sw.off { background: #2a2a2a; }
+    .sw.off::after { left: 3px; right: auto; background: #888; }
+    .phone.light .sw { background: var(--navy); }
+    .phone.light .sw::after { background: #fff; }
+    .phone.light .sw.off { background: #c8c8c8; }
+    .phone.light .sw.off::after { background: #f5f5f5; }
+
+    .btn {
+      width: 100%; height: 48px; border: 0; border-radius: 14px;
+      background: var(--accent); color: #041018; font-family: var(--body);
+      font-weight: 700; font-size: 14px; margin-top: auto;
+    }
+    .btn.ghost {
+      background: transparent; border: 1px solid var(--outline); color: #ddd; margin-top: 8px;
+    }
+    .phone.light .btn { background: var(--navy); color: #fff; border-radius: 999px; }
+    .phone.light .btn.ghost { border-color: #ccc; color: #333; background: transparent; }
+
+    /* Nord 5 body 163.4×77 mm (~2.12:1); Plus Key left; vol+power right */
+    .hero { display: flex; justify-content: center; padding: 6px 0 16px; }
+    .sil {
+      width: 100px; height: 212px; border-radius: 14px;
+      border: 1.5px solid #2a2a2a; background: #0e0e0e; position: relative;
+    }
+    .sil .in {
+      position: absolute; inset: 5px 4px 7px; border-radius: 11px; background: #141414;
+    }
+    .sil .punch {
+      position: absolute; left: 50%; top: 12px; transform: translateX(-50%);
+      width: 7px; height: 7px; border-radius: 50%; background: #050505;
+      box-shadow: inset 0 0 0 1.5px #1a1a1a;
+    }
+    .plus {
+      position: absolute; left: -4px; top: 42px; width: 4px; height: 14px;
+      border-radius: 2px; background: var(--accent);
+      box-shadow: 0 0 10px rgba(10,198,255,0.45);
+    }
+    .vol {
+      position: absolute; right: -3.5px; top: 46px; width: 3.5px; height: 28px;
+      border-radius: 2px; background: #333;
+    }
+    .pwr {
+      position: absolute; right: -3.5px; top: 80px; width: 3.5px; height: 16px;
+      border-radius: 2px; background: #333;
+    }
+
+    .center {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      text-align: center; padding-top: 48px;
+    }
+    .big {
+      width: 64px; height: 64px; border-radius: 18px; margin-bottom: 24px;
+      background: rgba(10,198,255,0.12); color: var(--accent);
+      display: grid; place-items: center; font-size: 28px; font-weight: 500;
+      border: 1px solid rgba(10,198,255,0.18);
+    }
+    .dots { display: flex; gap: 6px; justify-content: center; padding-top: 12px; }
+    .dots i { width: 6px; height: 6px; border-radius: 3px; background: #2a2a2a; display: block; }
+    .dots i.on { width: 16px; background: var(--accent); }
+
+    .rowline {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 13px 14px; border-bottom: 1px solid #1a1a1a;
+    }
+    .phone.light .rowline { border-bottom-color: #e0e0e0; }
+    .rowline:last-child { border-bottom: 0; }
+    .check {
+      width: 22px; height: 22px; border-radius: 11px; background: var(--navy);
+      color: #fff; display: grid; place-items: center; font-size: 11px;
+    }
+    .styles { display: flex; gap: 10px; }
+    .style {
+      flex: 1; height: 100px; border-radius: 14px; display: grid; place-items: center;
+    }
+    .style.on { border: 2px solid var(--accent); }
+    .style.dark { background: #121212; }
+    .style.gray { background: #D0D0D0; }
+    .mark {
+      width: 24px; height: 24px; border-radius: 12px; background: var(--accent);
+      color: #041018; display: grid; place-items: center; font-size: 12px; font-weight: 700;
+    }
+    .slist { display: flex; gap: 10px; margin-top: 6px; font-size: 12px; font-weight: 700; }
+    .slist span { flex: 1; text-align: center; }
+    .search {
+      background: var(--surface); border: 1px solid var(--outline); border-radius: 12px;
+      padding: 12px 14px; color: #555; font-size: 13px; margin-bottom: 10px;
+    }
+    .phone.light .search { background: #fff; border-color: #e0e0e0; }
+    .list { font-size: 14px; }
+    .li {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 2px; border-bottom: 1px solid #161616;
+    }
+    .li.sel { color: var(--accent); font-weight: 600; }
+    .note {
+      max-width: 720px; color: #666; font-size: 12.5px; line-height: 1.55;
+      border-top: 1px solid #1a1a1a; padding-top: 28px;
+    }
+    .note code { background: #141414; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="board">
+    <header class="board-header">
+      <div class="eyebrow">Nord AI Remapper · Design system v2</div>
+      <h1>End-to-end product design</h1>
+      <p class="lede">
+        Every screen from onboarding to settings.
+        Headings: <strong style="color:#fff;font-family:var(--heading)">Space Grotesk</strong>
+        (first letter <span style="color:#EB0028">#EB0028</span>).
+        Body / UI: <strong style="color:#fff">Inter</strong>.
+      </p>
+    </header>
+
+    <!-- 01 Onboarding -->
+    <div class="row">
+      <div class="side"><h2>01 · Onboarding</h2><p>5 steps</p></div>
+      <div class="frames">
+        <div class="wrap"><div class="label">Welcome</div>
+          <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+            <div class="screen">
+              <div class="center">
+                <div class="big">+</div>
+                <div class="h">Nord AI Remapper</div>
+                <p class="sub">Remap the Nord 5 Plus Key to single, double, and long-press actions.</p>
+              </div>
+              <button class="btn">Get started</button>
+              <div class="dots"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+            </div>
+          </div>
+        </div>
+        <div class="wrap"><div class="label">Accessibility</div>
+          <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+            <div class="screen">
+              <div class="center">
+                <div class="big">◎</div>
+                <div class="h">Accessibility</div>
+                <p class="sub">Required to detect the Plus Key. We only observe hardware keys — never your screen.</p>
+                <div class="chip" style="margin-top:20px"><span class="dot warn"></span> Not enabled</div>
+              </div>
+              <button class="btn">Open settings</button>
+              <button class="btn ghost">I've enabled it</button>
+              <div class="dots"><i></i><i class="on"></i><i></i><i></i><i></i></div>
+            </div>
+          </div>
+        </div>
+        <div class="wrap"><div class="label">Overlay</div>
+          <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+            <div class="screen">
+              <div class="center">
+                <div class="big">▦</div>
+                <div class="h">Display over apps</div>
+                <p class="sub">Needed for the floating overlay menu. Skip if you only want single actions.</p>
+              </div>
+              <button class="btn">Open overlay settings</button>
+              <button class="btn ghost">Skip for now</button>
+              <div class="dots"><i></i><i></i><i class="on"></i><i></i><i></i></div>
+            </div>
+          </div>
+        </div>
+        <div class="wrap"><div class="label">Notifications</div>
+          <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+            <div class="screen">
+              <div class="center">
+                <div class="big">◉</div>
+                <div class="h">Keep it alive</div>
+                <p class="sub">Notifications and battery exemption help OxygenOS keep detection running.</p>
+              </div>
+              <button class="btn">Allow notifications</button>
+              <button class="btn ghost">Continue anyway</button>
+              <div class="dots"><i></i><i></i><i></i><i class="on"></i><i></i></div>
+            </div>
+          </div>
+        </div>
+        <div class="wrap"><div class="label">All set</div>
+          <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+            <div class="screen">
+              <div class="center">
+                <div class="big">✓</div>
+                <div class="h">You're all set</div>
+                <p class="sub">Confirm Plus Key detection, then assign actions from Home.</p>
+              </div>
+              <button class="btn">Go to Home</button>
+              <div class="dots"><i></i><i></i><i></i><i></i><i class="on"></i></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 02 Home -->
+    <div class="row">
+      <div class="side"><h2>02 · Home</h2><p>Nord 5 silhouette</p></div>
+      <div class="frames">
+        <div class="wrap"><div class="label">Home · healthy</div>
+          <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+            <div class="screen">
+              <div class="top">
+                <div><div class="h sm">Plus Key</div><div class="sub" style="margin:0">Nord AI Remapper</div></div>
+                <div class="icons"><div class="ico">⚙</div></div>
+              </div>
+              <div class="hero">
+                <div class="sil"><div class="in"></div><div class="punch"></div><div class="plus"></div><div class="vol"></div><div class="pwr"></div></div>
+              </div>
+              <div class="chip"><span class="dot"></span> Service active</div>
+              <div class="card">
+                <div style="flex:1"><div class="ct">Remapping</div><div class="cd">Master switch for Plus Key actions</div></div>
+                <div class="sw"></div>
+              </div>
+              <div class="sec">Actions</div>
+              <div class="card"><div class="ci">1</div><div style="flex:1"><div class="ct">Single</div><div class="cd">Flashlight</div></div><div class="chev">›</div></div>
+              <div class="card"><div class="ci">2</div><div style="flex:1"><div class="ct">Double</div><div class="cd">Show overlay</div></div><div class="chev">›</div></div>
+              <div class="card"><div class="ci">—</div><div style="flex:1"><div class="ct">Long</div><div class="cd">Camera</div></div><div class="chev">›</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="wrap"><div class="label">Home · setup needed</div>
+          <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+            <div class="screen">
+              <div class="top">
+                <div><div class="h sm">Plus Key</div><div class="sub" style="margin:0">Nord AI Remapper</div></div>
+                <div class="icons"><div class="ico">⚙</div></div>
+              </div>
+              <div class="hero">
+                <div class="sil" style="opacity:.5"><div class="in"></div><div class="punch"></div><div class="plus" style="background:#444;box-shadow:none"></div><div class="vol"></div><div class="pwr"></div></div>
+              </div>
+              <div class="chip"><span class="dot warn"></span> Key not learned</div>
+              <div class="card" style="border-color:rgba(255,176,32,.3);flex-direction:column;align-items:flex-start">
+                <div class="ct" style="color:#FFB020">Finish key setup</div>
+                <div class="cd">On Nord 5 the Plus Key often needs Logcat watcher.</div>
+              </div>
+              <button class="btn" style="margin-top:8px">Open key setup</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 03 Remap + Overlay -->
+    <div class="row">
+      <div class="side"><h2>03 · Remap</h2><p>Actions &amp; floating menu</p></div>
+      <div class="frames">
+        <div class="wrap"><div class="label">Remap · Single</div>
+          <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+            <div class="screen">
+              <div class="top"><div><span class="back">←</span><span class="h sm">Single press</span></div></div>
+              <div class="search">Search actions or apps</div>
+              <div class="sec">System</div>
+              <div class="list">
+                <div class="li sel"><span>Flashlight</span><span>✓</span></div>
+                <div class="li"><span>Screenshot</span></div>
+                <div class="li"><span>Lock screen</span></div>
+                <div class="li"><span>Cycle ringer</span></div>
+              </div>
+              <div class="sec">Apps</div>
+              <div class="list"><div class="li"><span>Launch app…</span></div></div>
+              <div style="display:flex;gap:8px;margin-top:auto">
+                <button class="btn ghost" style="margin:0;flex:1">Try now</button>
+                <button class="btn" style="margin:0;flex:1">Save</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="wrap"><div class="label">Overlay slots</div>
+          <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+            <div class="screen">
+              <div class="top"><div><span class="back">←</span><span class="h sm">Overlay</span></div></div>
+              <div class="card"><div style="flex:1"><div class="ct">Enable overlay</div><div class="cd">Assign Show overlay to a press</div></div><div class="sw"></div></div>
+              <div class="sec">Slots</div>
+              <div class="card"><div style="flex:1"><div class="ct">Slot 1</div><div class="cd">Flashlight</div></div><div class="chev">›</div></div>
+              <div class="card"><div style="flex:1"><div class="ct">Slot 2</div><div class="cd">Camera</div></div><div class="chev">›</div></div>
+              <div class="card"><div style="flex:1"><div class="ct">Slot 3</div><div class="cd">None</div></div><div class="chev">›</div></div>
+              <div class="sec">Layout</div>
+              <div style="display:flex;gap:8px"><div class="chip" style="border-color:var(--accent);color:var(--accent)">Pill</div><div class="chip">Radial</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 04 Preferences (light refs) -->
+    <div class="row">
+      <div class="side"><h2>04 · Preferences</h2><p>Haptics · Visual · Lock</p></div>
+      <div class="frames">
+        <div class="wrap"><div class="label">Feedback</div>
+          <div class="phone light"><div class="sb"><span>12:36</span><span>60</span></div>
+            <div class="screen">
+              <div class="top"><div><span class="back">←</span><span class="h sm">Feedback</span></div></div>
+              <div class="card">
+                <div class="ci" style="background:#DDE8FF;color:var(--navy)">≈</div>
+                <div style="flex:1"><div class="ct">Haptic feedback</div><div class="cd">Vibrate when button action triggers</div></div>
+                <div class="sw"></div>
+              </div>
+              <div class="sec">Vibration intensity</div>
+              <div class="card col">
+                <div class="rowline"><div><div class="ct">Light</div><div class="cd">Subtle tap</div></div></div>
+                <div class="rowline"><div><div class="ct">Medium</div><div class="cd">Balanced feedback</div></div><div class="check">✓</div></div>
+                <div class="rowline"><div><div class="ct">Heavy</div><div class="cd">Firm vibration</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="wrap"><div class="label">Preferences</div>
+          <div class="phone light"><div class="sb"><span>12:30</span><span>61</span></div>
+            <div class="screen">
+              <div style="text-align:center;padding:16px 4px 18px">
+                <div class="h">Preferences</div>
+                <p class="sub">Choose how you're notified when an action triggers.</p>
+              </div>
+              <div class="card col">
+                <div class="rowline"><div><div class="ct">Haptic feedback</div><div class="cd">Vibrate on button press</div></div><div class="sw"></div></div>
+                <div class="rowline"><div><div class="ct">Visual overlay</div><div class="cd">Show action popup on screen</div></div><div class="sw"></div></div>
+              </div>
+              <div class="sec" style="text-align:center">Overlay style</div>
+              <div class="styles">
+                <div class="style dark on"><div class="mark">✓</div></div>
+                <div class="style gray"></div>
+              </div>
+              <div class="slist"><span>OnePlus</span><span style="color:#888">Stock</span></div>
+              <button class="btn">Finish Setup</button>
+            </div>
+          </div>
+        </div>
+        <div class="wrap"><div class="label">Visual Overlay</div>
+          <div class="phone light"><div class="sb"><span>12:32</span><span>61</span></div>
+            <div class="screen">
+              <div class="top"><div><span class="back">←</span><span class="h sm">Visual Overlay</span></div></div>
+              <p class="sub" style="margin:-6px 0 12px">Customize how the action popup looks and behaves.</p>
+              <div class="sec">Style</div>
+              <div class="styles" style="margin-bottom:12px">
+                <div class="style dark" style="border:2px solid #FFD60A;height:88px"></div>
+                <div class="style gray" style="height:88px"></div>
+              </div>
+              <div class="card col">
+                <div class="rowline"><div><div class="ct">Color</div><div class="cd">Choose the accent color</div></div><div style="width:18px;height:18px;border-radius:9px;background:#FFD60A"></div></div>
+                <div class="rowline"><div><div class="ct">Glow effects</div><div class="cd">Edge glow, shadow, and line</div></div><div class="sw"></div></div>
+              </div>
+              <div class="sec">Hold duration · 0.7s</div>
+              <div style="height:3px;background:#ddd;border-radius:2px;position:relative;margin-top:8px">
+                <div style="position:absolute;left:0;top:0;bottom:0;width:40%;background:var(--navy);border-radius:2px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="wrap"><div class="label">Lock Screen</div>
+          <div class="phone light"><div class="sb"><span>12:35</span><span>61</span></div>
+            <div class="screen">
+              <div class="top"><div><span class="back">←</span><span class="h sm">Lock Screen</span></div></div>
+              <p class="sub" style="margin:-6px 0 14px">Choose which gestures work when locked.</p>
+              <div class="card col">
+                <div class="rowline"><div><div class="ct">Single Press</div><div class="cd">Disabled when locked</div></div><div class="sw off"></div></div>
+                <div class="rowline"><div><div class="ct">Double Press</div><div class="cd">Disabled when locked</div></div><div class="sw off"></div></div>
+                <div class="rowline"><div><div class="ct">Long Press</div><div class="cd">Disabled when locked</div></div><div class="sw off"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 05 Settings hub -->
+    <div class="row">
+      <div class="side"><h2>05 · Settings</h2><p>Hub &amp; tools</p></div>
+      <div class="frames">
+        <div class="wrap"><div class="label">Settings</div>
+          <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+            <div class="screen">
+              <div class="top"><div><span class="back">←</span><span class="h sm">Settings</span></div></div>
+              <div class="sec">Feedback &amp; overlay</div>
+              <div class="card"><div style="flex:1" class="ct">Preferences</div><div class="chev">›</div></div>
+              <div class="card"><div style="flex:1" class="ct">Feedback</div><div class="chev">›</div></div>
+              <div class="card"><div style="flex:1" class="ct">Visual overlay</div><div class="chev">›</div></div>
+              <div class="card"><div style="flex:1" class="ct">Lock screen</div><div class="chev">›</div></div>
+              <div class="sec">Advanced</div>
+              <div class="card"><div style="flex:1" class="ct">Key setup</div><div class="chev">›</div></div>
+              <div class="card"><div style="flex:1" class="ct">Developer</div><div class="chev">›</div></div>
+              <div class="card"><div style="flex:1" class="ct">Backup &amp; Restore</div><div class="chev">›</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="wrap"><div class="label">Key setup</div>
+          <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+            <div class="screen">
+              <div class="top"><div><span class="back">←</span><span class="h sm">Key setup</span></div></div>
+              <div class="card"><span class="dot"></span><div style="flex:1"><div class="ct">Accessibility active</div><div class="cd">Plus Key via logcat</div></div></div>
+              <div class="sec">Captured presses</div>
+              <div class="card"><div style="flex:1"><div class="ct">Plus Key · logcat</div><div class="cd">21:04:12 · 48ms</div></div></div>
+              <div class="card"><div style="flex:1"><div class="ct">Volume up</div><div class="cd">keyCode=24</div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="wrap"><div class="label">Developer</div>
+          <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+            <div class="screen">
+              <div class="top"><div><span class="back">←</span><span class="h sm">Developer</span></div></div>
+              <div class="sec">Detection strategy</div>
+              <div style="display:flex;gap:8px;margin-bottom:12px">
+                <div class="chip">Accessibility</div>
+                <div class="chip" style="border-color:var(--accent);color:var(--accent)">Logcat</div>
+              </div>
+              <div class="sec">Gesture timing</div>
+              <div class="card"><div style="flex:1"><div class="ct">Double-press window</div><div class="cd">300ms</div></div></div>
+              <div class="card"><div style="flex:1"><div class="ct">Long-press threshold</div><div class="cd">500ms</div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="wrap"><div class="label">Backup</div>
+          <div class="phone"><div class="sb"><span>9:41</span><span>●●●</span></div>
+            <div class="screen">
+              <div class="top"><div><span class="back">←</span><span class="h sm">Backup &amp; Restore</span></div></div>
+              <div class="sec">Transfer</div>
+              <div style="display:flex;gap:8px;margin-bottom:12px">
+                <button class="btn" style="margin:0;flex:1;height:44px">Export</button>
+                <button class="btn ghost" style="margin:0;flex:1;height:44px">Import</button>
+              </div>
+              <div class="sec">Saved</div>
+              <div class="card"><div style="flex:1"><div class="ct">Daily drive</div><div class="cd">2026-08-15</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      <strong style="color:#fff">Typography:</strong>
+      Headings = Space Grotesk (first letter
+      <span style="color:#EB0028">#EB0028</span>).
+      Body = Inter. Both OFL, shipped in <code>app/src/main/res/font/</code>.
+      App uses <code>NordHeading</code> + <code>NordTypography</code>.
+      Frames: <code>360×800</code>. Accent for controls: Nord cyan <code>#0AC6FF</code>.
+    </p>
+  </div>
+</body>
+</html>

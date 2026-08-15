@@ -1,6 +1,5 @@
 package com.nordairemapper.presentation.developer
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,11 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +22,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,7 +36,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.AppSettings
 import com.nordairemapper.domain.model.DetectionStrategy
 import com.nordairemapper.service.LogcatWatcherService
+import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.components.NordPrimaryButton
+import com.nordairemapper.ui.components.NordSurfaceCard
 import com.nordairemapper.ui.components.SectionLabel
+import com.nordairemapper.ui.components.StatusChip
+import com.nordairemapper.ui.components.StatusTone
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,129 +58,142 @@ fun DeveloperScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Developer") },
+                title = { NordHeading("Developer", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
             )
         },
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             SectionLabel("Detection strategy")
-            SectionCard {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = settings.detectionStrategy == DetectionStrategy.ACCESSIBILITY,
-                        onClick = { viewModel.setStrategy(DetectionStrategy.ACCESSIBILITY) },
-                        label = { Text("Accessibility") },
-                    )
-                    FilterChip(
-                        selected = settings.detectionStrategy == DetectionStrategy.LOGCAT,
-                        onClick = { viewModel.setStrategy(DetectionStrategy.LOGCAT) },
-                        label = { Text("Logcat watcher") },
-                    )
-                }
-                Text(
-                    text = "Accessibility observes raw key events; on OnePlus the Plus Key is often only visible in system logs, which the logcat watcher picks up.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StatusChip(
+                    label = "Accessibility",
+                    tone = StatusTone.Active,
+                    selected = settings.detectionStrategy == DetectionStrategy.ACCESSIBILITY,
+                    showDot = false,
+                    onClick = { viewModel.setStrategy(DetectionStrategy.ACCESSIBILITY) },
+                )
+                StatusChip(
+                    label = "Logcat",
+                    tone = StatusTone.Active,
+                    selected = settings.detectionStrategy == DetectionStrategy.LOGCAT,
+                    showDot = false,
+                    onClick = { viewModel.setStrategy(DetectionStrategy.LOGCAT) },
                 )
             }
+            Text(
+                text = "Accessibility observes raw key events; on OnePlus the Plus Key is often only visible in system logs, which the logcat watcher picks up.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
 
             if (settings.detectionStrategy == DetectionStrategy.LOGCAT) {
                 SectionLabel("Logcat watcher")
-                SectionCard {
-                    Text(
-                        text = if (readLogsGranted) "READ_LOGS granted" else "READ_LOGS not granted — run this once from a computer:",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (readLogsGranted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                    )
-                    if (!readLogsGranted) {
+                NordSurfaceCard {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         Text(
-                            text = LogcatWatcherService.ADB_GRANT_COMMAND,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = if (readLogsGranted) {
+                                "READ_LOGS granted"
+                            } else {
+                                "READ_LOGS not granted — run this once from a computer:"
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (readLogsGranted) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.error
+                            },
                         )
-                        TextButton(onClick = viewModel::copyAdbCommand) { Text("Copy ADB command") }
-                    }
+                        if (!readLogsGranted) {
+                            Text(
+                                text = LogcatWatcherService.ADB_GRANT_COMMAND,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            TextButton(onClick = viewModel::copyAdbCommand) {
+                                Text("Copy ADB command")
+                            }
+                        }
 
-                    var pattern by rememberSaveable(settings.logcatPattern) {
-                        mutableStateOf(settings.logcatPattern)
-                    }
-                    OutlinedTextField(
-                        value = pattern,
-                        onValueChange = { pattern = it },
-                        label = { Text("Log match pattern") },
-                        supportingText = {
-                            Text("Nord 5 default is KEYCODE_ACTION_BUTTON_CLICK (one down/up per press).")
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = { viewModel.setLogcatPattern(pattern) }) { Text("Save pattern") }
-                        TextButton(onClick = viewModel::restartLogcatWatcher) { Text("Restart watcher") }
+                        var pattern by rememberSaveable(settings.logcatPattern) {
+                            mutableStateOf(settings.logcatPattern)
+                        }
+                        OutlinedTextField(
+                            value = pattern,
+                            onValueChange = { pattern = it },
+                            label = { Text("Log match pattern") },
+                            supportingText = {
+                                Text("Nord 5 default is KEYCODE_ACTION_BUTTON_CLICK (one down/up per press).")
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(onClick = { viewModel.setLogcatPattern(pattern) }) {
+                                Text("Save pattern")
+                            }
+                            TextButton(onClick = viewModel::restartLogcatWatcher) {
+                                Text("Restart watcher")
+                            }
+                        }
                     }
                 }
             }
 
             SectionLabel("Gesture timing")
-            SectionCard {
-                TimingSlider(
-                    label = "Double-press window",
-                    valueMs = settings.doublePressWindowMs,
-                    range = AppSettings.DOUBLE_PRESS_WINDOW_RANGE,
-                    onChange = viewModel::setDoublePressWindow,
-                )
-                TimingSlider(
-                    label = "Long-press threshold",
-                    valueMs = settings.longPressThresholdMs,
-                    range = AppSettings.LONG_PRESS_THRESHOLD_RANGE,
-                    onChange = viewModel::setLongPressThreshold,
-                )
+            NordSurfaceCard {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    TimingSlider(
+                        label = "Double-press window",
+                        valueMs = settings.doublePressWindowMs,
+                        range = AppSettings.DOUBLE_PRESS_WINDOW_RANGE,
+                        onChange = viewModel::setDoublePressWindow,
+                    )
+                    TimingSlider(
+                        label = "Long-press threshold",
+                        valueMs = settings.longPressThresholdMs,
+                        range = AppSettings.LONG_PRESS_THRESHOLD_RANGE,
+                        onChange = viewModel::setLongPressThreshold,
+                    )
+                }
             }
 
             SectionLabel("Key identity")
-            SectionCard {
-                Text(
-                    text = if (settings.keyIdentity.isConfigured) {
-                        "keyCode=${settings.keyIdentity.keyCode}, scanCode=${settings.keyIdentity.scanCode}"
-                    } else {
-                        "Not learned yet"
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Button(onClick = onOpenKeyLearning, modifier = Modifier.fillMaxWidth()) {
-                    Text("Open key setup")
+            NordSurfaceCard {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = if (settings.keyIdentity.isConfigured) {
+                            "keyCode=${settings.keyIdentity.keyCode}, scanCode=${settings.keyIdentity.scanCode}"
+                        } else {
+                            "Not learned yet"
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    NordPrimaryButton(text = "Open key setup", onClick = onOpenKeyLearning)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-        }
-    }
-}
-
-@Composable
-private fun SectionCard(content: @Composable () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            content()
         }
     }
 }
@@ -193,8 +207,8 @@ private fun TimingSlider(
 ) {
     Column {
         Text(
-            text = "$label: ${valueMs}ms",
-            style = MaterialTheme.typography.labelLarge,
+            text = "$label · ${valueMs}ms",
+            style = MaterialTheme.typography.titleSmall,
         )
         Slider(
             value = valueMs.toFloat(),

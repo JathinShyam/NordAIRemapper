@@ -1,5 +1,7 @@
 package com.nordairemapper.service
 
+import android.app.KeyguardManager
+import android.content.Context
 import android.util.Log
 import com.nordairemapper.domain.model.AppSettings
 import com.nordairemapper.domain.model.DetectionStrategy
@@ -7,6 +9,7 @@ import com.nordairemapper.domain.model.Gesture
 import com.nordairemapper.domain.model.PressType
 import com.nordairemapper.domain.repository.RemapConfigRepository
 import com.nordairemapper.domain.repository.SettingsRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -21,6 +24,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class RemapEngine @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val keyEventBus: KeyEventBus,
     private val settingsRepository: SettingsRepository,
     private val remapConfigRepository: RemapConfigRepository,
@@ -107,10 +111,25 @@ class RemapEngine @Inject constructor(
                 Log.d(TAG, "Skipping gesture in excluded app: $foreground")
                 return@launch
             }
+            if (isDeviceLocked() && !isPressAllowedOnLockScreen(pressType)) {
+                Log.d(TAG, "Skipping $pressType while locked")
+                return@launch
+            }
             val action = remapConfigRepository.getAction(pressType)
             Log.d(TAG, "Gesture $gesture -> $action")
             actionDispatcher.execute(action)
         }
+    }
+
+    private fun isDeviceLocked(): Boolean {
+        val km = context.getSystemService(KeyguardManager::class.java) ?: return false
+        return km.isKeyguardLocked
+    }
+
+    private fun isPressAllowedOnLockScreen(pressType: PressType): Boolean = when (pressType) {
+        PressType.SINGLE -> settings.lockScreenSingleEnabled
+        PressType.DOUBLE -> settings.lockScreenDoubleEnabled
+        PressType.LONG -> settings.lockScreenLongEnabled
     }
 
     companion object {

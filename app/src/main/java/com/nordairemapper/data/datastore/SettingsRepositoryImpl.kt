@@ -12,6 +12,7 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.nordairemapper.domain.model.AppSettings
 import com.nordairemapper.domain.model.DetectionStrategy
+import com.nordairemapper.domain.model.HapticIntensity
 import com.nordairemapper.domain.model.KeyIdentity
 import com.nordairemapper.domain.model.ThemeMode
 import com.nordairemapper.domain.repository.SettingsRepository
@@ -41,6 +42,11 @@ class SettingsRepositoryImpl @Inject constructor(
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         val SHOW_NOTIFICATION = booleanPreferencesKey("show_service_notification")
         val HAPTIC_FEEDBACK = booleanPreferencesKey("haptic_feedback")
+        val HAPTIC_INTENSITY = stringPreferencesKey("haptic_intensity")
+        val VISUAL_OVERLAY_ENABLED = booleanPreferencesKey("visual_overlay_enabled")
+        val LOCK_SINGLE = booleanPreferencesKey("lock_screen_single_enabled")
+        val LOCK_DOUBLE = booleanPreferencesKey("lock_screen_double_enabled")
+        val LOCK_LONG = booleanPreferencesKey("lock_screen_long_enabled")
         val EXCLUDED_APPS = stringSetPreferencesKey("excluded_apps")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
     }
@@ -65,6 +71,13 @@ class SettingsRepositoryImpl @Inject constructor(
             dynamicColor = prefs[Keys.DYNAMIC_COLOR] ?: defaults.dynamicColor,
             showServiceNotification = prefs[Keys.SHOW_NOTIFICATION] ?: defaults.showServiceNotification,
             hapticFeedback = prefs[Keys.HAPTIC_FEEDBACK] ?: defaults.hapticFeedback,
+            hapticIntensity = prefs[Keys.HAPTIC_INTENSITY]
+                ?.let { runCatching { HapticIntensity.valueOf(it) }.getOrNull() }
+                ?: defaults.hapticIntensity,
+            visualOverlayEnabled = prefs[Keys.VISUAL_OVERLAY_ENABLED] ?: defaults.visualOverlayEnabled,
+            lockScreenSingleEnabled = prefs[Keys.LOCK_SINGLE] ?: defaults.lockScreenSingleEnabled,
+            lockScreenDoubleEnabled = prefs[Keys.LOCK_DOUBLE] ?: defaults.lockScreenDoubleEnabled,
+            lockScreenLongEnabled = prefs[Keys.LOCK_LONG] ?: defaults.lockScreenLongEnabled,
             excludedApps = prefs[Keys.EXCLUDED_APPS] ?: defaults.excludedApps,
             onboardingCompleted = prefs[Keys.ONBOARDING_COMPLETED] ?: defaults.onboardingCompleted,
         )
@@ -115,6 +128,26 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setHapticFeedback(enabled: Boolean) {
         context.settingsDataStore.edit { it[Keys.HAPTIC_FEEDBACK] = enabled }
+    }
+
+    override suspend fun setHapticIntensity(intensity: HapticIntensity) {
+        context.settingsDataStore.edit { it[Keys.HAPTIC_INTENSITY] = intensity.name }
+    }
+
+    override suspend fun setVisualOverlayEnabled(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.VISUAL_OVERLAY_ENABLED] = enabled }
+    }
+
+    override suspend fun setLockScreenSingleEnabled(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.LOCK_SINGLE] = enabled }
+    }
+
+    override suspend fun setLockScreenDoubleEnabled(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.LOCK_DOUBLE] = enabled }
+    }
+
+    override suspend fun setLockScreenLongEnabled(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.LOCK_LONG] = enabled }
     }
 
     override suspend fun setExcludedApps(packages: Set<String>) {

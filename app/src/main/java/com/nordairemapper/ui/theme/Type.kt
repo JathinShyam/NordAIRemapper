@@ -2,70 +2,96 @@ package com.nordairemapper.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.nordairemapper.R
 
 /**
- * OnePlus Sans is not freely redistributable, so the app ships with the system
- * font (Roboto on stock Android). To use OnePlus Sans, drop the .ttf files into
- * res/font/ (oneplus_sans_regular.ttf, oneplus_sans_medium.ttf,
- * oneplus_sans_bold.ttf) and replace FontFamily.Default below with a
- * FontFamily(Font(R.font.oneplus_sans_regular, FontWeight.Normal), ...) instance.
+ * Type pairing (research pick for hardware / product UI):
+ * - Headings: **Space Grotesk** — geometric, slightly technical, strong hierarchy
+ * - Body / UI: **Inter** — high x-height, best-in-class screen readability
+ *
+ * Both are OFL (free to ship). OnePlus Sans stays optional/local-only and is not used.
  */
-val NordFontFamily: FontFamily = FontFamily.Default
+val NordHeadingFontFamily = FontFamily(
+    Font(R.font.space_grotesk, FontWeight.Normal),
+    Font(R.font.space_grotesk, FontWeight.Medium),
+    Font(R.font.space_grotesk, FontWeight.SemiBold),
+    Font(R.font.space_grotesk, FontWeight.Bold),
+)
+
+val NordBodyFontFamily = FontFamily(
+    Font(R.font.inter_regular, FontWeight.Normal),
+    Font(R.font.inter_medium, FontWeight.Medium),
+    Font(R.font.inter_semibold, FontWeight.SemiBold),
+    Font(R.font.inter_bold, FontWeight.Bold),
+)
+
+/** @deprecated Prefer [NordBodyFontFamily] / [NordHeadingFontFamily]. */
+val NordFontFamily: FontFamily = NordBodyFontFamily
 
 val NordTypography = Typography(
     headlineLarge = TextStyle(
-        fontFamily = NordFontFamily,
+        fontFamily = NordHeadingFontFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 32.sp,
         lineHeight = 40.sp,
+        letterSpacing = (-0.5).sp,
     ),
     headlineMedium = TextStyle(
-        fontFamily = NordFontFamily,
+        fontFamily = NordHeadingFontFamily,
         fontWeight = FontWeight.Bold,
-        fontSize = 26.sp,
+        fontSize = 28.sp,
         lineHeight = 34.sp,
+        letterSpacing = (-0.4).sp,
     ),
     titleLarge = TextStyle(
-        fontFamily = NordFontFamily,
+        fontFamily = NordHeadingFontFamily,
         fontWeight = FontWeight.Bold,
-        fontSize = 20.sp,
+        fontSize = 22.sp,
         lineHeight = 28.sp,
+        letterSpacing = (-0.3).sp,
     ),
     titleMedium = TextStyle(
-        fontFamily = NordFontFamily,
-        fontWeight = FontWeight.Medium,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
+        fontFamily = NordBodyFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+    ),
+    titleSmall = TextStyle(
+        fontFamily = NordBodyFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
     ),
     labelLarge = TextStyle(
-        fontFamily = NordFontFamily,
-        fontWeight = FontWeight.Medium,
+        fontFamily = NordBodyFontFamily,
+        fontWeight = FontWeight.Bold,
         fontSize = 14.sp,
         lineHeight = 20.sp,
     ),
     labelMedium = TextStyle(
-        fontFamily = NordFontFamily,
+        fontFamily = NordBodyFontFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 12.sp,
         lineHeight = 16.sp,
     ),
     bodyLarge = TextStyle(
-        fontFamily = NordFontFamily,
+        fontFamily = NordBodyFontFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
         lineHeight = 24.sp,
     ),
     bodyMedium = TextStyle(
-        fontFamily = NordFontFamily,
+        fontFamily = NordBodyFontFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 14.sp,
         lineHeight = 20.sp,
     ),
     bodySmall = TextStyle(
-        fontFamily = NordFontFamily,
+        fontFamily = NordBodyFontFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 12.sp,
         lineHeight = 16.sp,

@@ -1,13 +1,11 @@
 package com.nordairemapper.presentation.developer
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,9 +13,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -26,14 +21,19 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.components.NordPrimaryButton
+import com.nordairemapper.ui.components.NordSurfaceCard
 import com.nordairemapper.ui.components.SectionLabel
 import com.nordairemapper.ui.theme.StatusActive
 import com.nordairemapper.ui.theme.StatusInactive
@@ -64,7 +64,7 @@ fun KeyLearningScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Key setup") },
+                title = { NordHeading("Key setup", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -73,43 +73,46 @@ fun KeyLearningScreen(
                 actions = {
                     TextButton(onClick = viewModel::clearEvents) { Text("Clear") }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
             )
         },
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            ) {
+            NordSurfaceCard {
                 Row(
-                    modifier = Modifier.padding(16.dp),
+                    modifier = Modifier.padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(10.dp)
+                            .size(6.dp)
                             .background(
                                 color = if (serviceActive) StatusActive else StatusInactive,
                                 shape = CircleShape,
-                            )
+                            ),
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = if (serviceActive) "Accessibility service active" else "Accessibility service inactive",
-                            style = MaterialTheme.typography.titleMedium,
+                            text = if (serviceActive) {
+                                "Accessibility active"
+                            } else {
+                                "Accessibility inactive"
+                            },
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                         )
                         Text(
                             text = when {
-                                logcatPlusKeySeen -> "Plus Key seen via logcat — no keyCode to save"
+                                logcatPlusKeySeen -> "Plus Key via logcat — no keyCode to save"
                                 learnedIdentity.isConfigured ->
                                     "Learned key: keyCode=${learnedIdentity.keyCode}, scanCode=${learnedIdentity.scanCode}"
                                 else -> "No key learned yet — press the Plus Key below"
@@ -125,19 +128,14 @@ fun KeyLearningScreen(
             }
 
             if (logcatPlusKeySeen) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                ) {
+                NordSurfaceCard {
                     Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(14.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text(
                             text = "Plus Key detected via logcat",
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                         )
                         Text(
                             text = "OnePlus never sends this button to Accessibility, so that warning does not apply. You do not need to tap Set as Plus Key. Go back to Home and test single / double / hold.",
@@ -147,26 +145,21 @@ fun KeyLearningScreen(
                     }
                 }
             } else if (plusKeyMissingHint) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                ) {
+                NordSurfaceCard {
                     Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(14.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text(
                             text = "Plus Key not reaching Accessibility",
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                         )
                         Text(
                             text = "Volume and other buttons are visible, but the Plus Key is handled by OnePlus system code and usually never arrives here. Switch to Logcat watcher in Developer, grant READ_LOGS via ADB, then press the Plus Key again.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        Button(onClick = onOpenDeveloper) { Text("Open Developer") }
+                        NordPrimaryButton(text = "Open Developer", onClick = onOpenDeveloper)
                     }
                 }
             }
@@ -174,7 +167,7 @@ fun KeyLearningScreen(
             SectionLabel("Captured presses")
             Text(
                 text = "Each row is one physical press. Volume keys come from Accessibility. The Plus Key usually appears only as a logcat row.",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
@@ -194,14 +187,9 @@ fun KeyLearningScreen(
 private fun PressRow(press: CapturedPress, onSave: () -> Unit) {
     val timeFormat = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
     val duration = press.durationMs?.let { " · ${it}ms" }.orEmpty()
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    ) {
+    NordSurfaceCard {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {

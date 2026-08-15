@@ -19,6 +19,7 @@ import android.provider.Settings
 import android.util.Log
 import android.view.KeyEvent
 import android.widget.Toast
+import com.nordairemapper.domain.model.HapticIntensity
 import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.domain.repository.SettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -70,8 +71,11 @@ class RemapActionExecutor @Inject constructor(
     }
 
     override suspend fun execute(action: RemapAction) {
-        if (action != RemapAction.None && settingsRepository.settings.first().hapticFeedback) {
-            performHaptic()
+        if (action != RemapAction.None) {
+            val settings = settingsRepository.settings.first()
+            if (settings.hapticFeedback) {
+                performHaptic(settings.hapticIntensity)
+            }
         }
         runCatching { dispatch(action) }
             .onFailure {
@@ -375,10 +379,18 @@ class RemapActionExecutor @Inject constructor(
         return false
     }
 
-    private fun performHaptic() {
+    private fun performHaptic(intensity: HapticIntensity) {
         val vibrator = context.getSystemService(VibratorManager::class.java)?.defaultVibrator
             ?: context.getSystemService(Vibrator::class.java)
-        vibrator?.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK))
+        val effect = when (intensity) {
+            HapticIntensity.LIGHT ->
+                VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
+            HapticIntensity.MEDIUM ->
+                VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
+            HapticIntensity.HEAVY ->
+                VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK)
+        }
+        vibrator?.vibrate(effect)
     }
 
     private fun toast(message: String) {

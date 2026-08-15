@@ -24,7 +24,14 @@ import androidx.compose.ui.unit.dp
 import com.nordairemapper.ui.theme.NordBlue
 import com.nordairemapper.ui.theme.SurfaceVariantDark
 
-/** Simplified OnePlus Nord 5 silhouette with the side Plus Key highlighted. */
+/**
+ * Front silhouette of the OnePlus Nord 5 (163.4 × 77 × 8.1 mm).
+ *
+ * Hardware layout (reviews / unboxing):
+ * - Left: Plus Key only (replaces the Alert Slider)
+ * - Right: volume rocker above, power / Gemini key below
+ * - Centered punch-hole selfie camera, ~1.65 mm bezels, slightly rounded frame
+ */
 @Composable
 fun PhoneDiagram(
     highlightKey: Boolean,
@@ -33,8 +40,8 @@ fun PhoneDiagram(
     keyColor: Color = NordBlue,
 ) {
     val glowAlpha by rememberInfiniteTransition(label = "plusKeyGlow").animateFloat(
-        initialValue = 0.30f,
-        targetValue = 0.90f,
+        initialValue = 0.28f,
+        targetValue = 0.78f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1400),
             repeatMode = RepeatMode.Reverse,
@@ -45,24 +52,30 @@ fun PhoneDiagram(
     Canvas(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 56.dp)
-            .aspectRatio(0.52f)
+            .padding(horizontal = 64.dp)
+            // Body aspect ≈ 77 / 163.4; canvas is slightly wider for side keys.
+            .aspectRatio(0.48f)
             .semantics {
-                contentDescription = "OnePlus Nord 5 outline with Plus Key highlighted"
+                contentDescription = "OnePlus Nord 5 outline with Plus Key on the left"
             },
     ) {
-        val stroke = Stroke(width = size.minDimension * 0.016f)
-        val phoneWidth = size.width * 0.58f
-        val phoneHeight = size.height * 0.94f
+        val stroke = Stroke(width = size.minDimension * 0.012f)
+        // Fit 77×163.4 mm body inside the canvas, leaving room for side keys.
+        val bodyAspect = 77f / 163.4f
+        val maxW = size.width * 0.70f
+        val maxH = size.height * 0.92f
+        val phoneWidth = minOf(maxW, maxH * bodyAspect)
+        val phoneHeight = phoneWidth / bodyAspect
         val left = (size.width - phoneWidth) / 2f
         val top = (size.height - phoneHeight) / 2f
-        val radius = phoneWidth * 0.14f
+        // Slightly-rounded frame (marketing); not iPhone-aggressive.
+        val radius = phoneWidth * 0.13f
 
         drawRoundRect(
             brush = Brush.verticalGradient(
                 colors = listOf(
-                    bodyColor.copy(alpha = 0.95f),
-                    bodyColor.copy(alpha = 0.75f),
+                    bodyColor.copy(alpha = 0.98f),
+                    bodyColor.copy(alpha = 0.78f),
                 ),
             ),
             topLeft = Offset(left, top),
@@ -70,40 +83,83 @@ fun PhoneDiagram(
             cornerRadius = CornerRadius(radius, radius),
         )
         drawRoundRect(
-            color = keyColor.copy(alpha = if (highlightKey) 0.35f else 0.12f),
+            color = Color.White.copy(alpha = 0.08f),
             topLeft = Offset(left, top),
             size = Size(phoneWidth, phoneHeight),
             cornerRadius = CornerRadius(radius, radius),
             style = stroke,
         )
 
-        val inset = phoneWidth * 0.08f
+        // ~1.65 mm bezels on 77 mm width ≈ 2.1% — keep the display nearly edge-to-edge.
+        val bezel = phoneWidth * 0.035f
+        val screenTop = top + bezel * 1.15f
+        val screenLeft = left + bezel
+        val screenWidth = phoneWidth - bezel * 2f
+        val screenHeight = phoneHeight - bezel * 2.35f
         drawRoundRect(
-            color = Color.Black.copy(alpha = 0.62f),
-            topLeft = Offset(left + inset, top + inset * 1.5f),
-            size = Size(phoneWidth - inset * 2, phoneHeight - inset * 3.0f),
-            cornerRadius = CornerRadius(radius * 0.55f, radius * 0.55f),
+            color = Color.Black.copy(alpha = 0.72f),
+            topLeft = Offset(screenLeft, screenTop),
+            size = Size(screenWidth, screenHeight),
+            cornerRadius = CornerRadius(radius * 0.72f, radius * 0.72f),
         )
 
-        val keyHeight = phoneHeight * 0.11f
-        val keyWidth = phoneWidth * 0.065f
-        val keyTop = top + phoneHeight * 0.36f
-        val keyLeft = left + phoneWidth - keyWidth * 0.30f
+        // Centered punch-hole (top-center of display)
+        val holeRadius = phoneWidth * 0.026f
+        val holeCenter = Offset(
+            x = left + phoneWidth / 2f,
+            y = screenTop + holeRadius * 2.4f,
+        )
+        drawCircle(
+            color = Color.Black.copy(alpha = 0.92f),
+            radius = holeRadius,
+            center = holeCenter,
+        )
+        drawCircle(
+            color = Color(0xFF1A1A1A),
+            radius = holeRadius * 0.52f,
+            center = holeCenter,
+        )
 
+        val btnWidth = phoneWidth * 0.045f
+        val rightEdge = left + phoneWidth
+
+        // Left: Plus Key only (short Action-style key, upper third)
+        val plusHeight = phoneHeight * 0.055f
+        val plusTop = top + phoneHeight * 0.20f
+        val plusLeft = left - btnWidth * 0.55f
         if (highlightKey) {
             drawRoundRect(
-                color = keyColor.copy(alpha = glowAlpha * 0.40f),
-                topLeft = Offset(keyLeft - keyWidth * 0.7f, keyTop - keyHeight * 0.3f),
-                size = Size(keyWidth * 2.4f, keyHeight * 1.6f),
-                cornerRadius = CornerRadius(keyWidth, keyWidth),
+                color = keyColor.copy(alpha = glowAlpha * 0.30f),
+                topLeft = Offset(plusLeft - btnWidth * 0.65f, plusTop - plusHeight * 0.25f),
+                size = Size(btnWidth * 2.3f, plusHeight * 1.5f),
+                cornerRadius = CornerRadius(btnWidth, btnWidth),
             )
         }
-
         drawRoundRect(
             color = if (highlightKey) keyColor else bodyColor.copy(alpha = 0.95f),
-            topLeft = Offset(keyLeft, keyTop),
-            size = Size(keyWidth, keyHeight),
-            cornerRadius = CornerRadius(keyWidth / 2f, keyWidth / 2f),
+            topLeft = Offset(plusLeft, plusTop),
+            size = Size(btnWidth, plusHeight),
+            cornerRadius = CornerRadius(btnWidth / 2f, btnWidth / 2f),
+        )
+
+        // Right: volume rocker (taller), then power below — Coolsmartphone / OnePlus Lab
+        val volHeight = phoneHeight * 0.115f
+        val volTop = top + phoneHeight * 0.22f
+        val rightBtnLeft = rightEdge - btnWidth * 0.45f
+        drawRoundRect(
+            color = bodyColor.copy(alpha = 0.9f),
+            topLeft = Offset(rightBtnLeft, volTop),
+            size = Size(btnWidth * 0.9f, volHeight),
+            cornerRadius = CornerRadius(btnWidth / 2f, btnWidth / 2f),
+        )
+
+        val powerHeight = phoneHeight * 0.065f
+        val powerTop = volTop + volHeight + phoneHeight * 0.018f
+        drawRoundRect(
+            color = bodyColor.copy(alpha = 0.9f),
+            topLeft = Offset(rightBtnLeft, powerTop),
+            size = Size(btnWidth * 0.9f, powerHeight),
+            cornerRadius = CornerRadius(btnWidth / 2f, btnWidth / 2f),
         )
     }
 }

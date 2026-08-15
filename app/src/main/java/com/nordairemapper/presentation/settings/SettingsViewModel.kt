@@ -8,6 +8,7 @@ import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nordairemapper.domain.model.AppSettings
+import com.nordairemapper.domain.model.HapticIntensity
 import com.nordairemapper.domain.model.ThemeMode
 import com.nordairemapper.domain.repository.SettingsRepository
 import com.nordairemapper.presentation.remap.InstalledAppInfo
@@ -51,6 +52,26 @@ class SettingsViewModel @Inject constructor(
 
     fun setHapticFeedback(enabled: Boolean) = viewModelScope.launch {
         settingsRepository.setHapticFeedback(enabled)
+    }
+
+    fun setHapticIntensity(intensity: HapticIntensity) = viewModelScope.launch {
+        settingsRepository.setHapticIntensity(intensity)
+    }
+
+    fun setVisualOverlayEnabled(enabled: Boolean) = viewModelScope.launch {
+        settingsRepository.setVisualOverlayEnabled(enabled)
+    }
+
+    fun setLockScreenSingleEnabled(enabled: Boolean) = viewModelScope.launch {
+        settingsRepository.setLockScreenSingleEnabled(enabled)
+    }
+
+    fun setLockScreenDoubleEnabled(enabled: Boolean) = viewModelScope.launch {
+        settingsRepository.setLockScreenDoubleEnabled(enabled)
+    }
+
+    fun setLockScreenLongEnabled(enabled: Boolean) = viewModelScope.launch {
+        settingsRepository.setLockScreenLongEnabled(enabled)
     }
 
     fun addExclusion(app: InstalledAppInfo) = viewModelScope.launch {

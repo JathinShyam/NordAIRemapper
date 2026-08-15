@@ -14,11 +14,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +26,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -47,8 +47,12 @@ import com.nordairemapper.domain.model.OverlayPosition
 import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.presentation.common.RemapActionCatalog
 import com.nordairemapper.presentation.common.displayName
+import com.nordairemapper.ui.components.ActionCard
+import com.nordairemapper.ui.components.NordHeading
 import com.nordairemapper.ui.components.OverlayPreview
 import com.nordairemapper.ui.components.SectionLabel
+import com.nordairemapper.ui.components.StatusChip
+import com.nordairemapper.ui.components.StatusTone
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,36 +66,44 @@ fun OverlaySettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Overlay") },
+                title = { NordHeading("Overlay", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
             )
         },
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                shape = MaterialTheme.shapes.medium,
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(horizontal = 14.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Enable overlay", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Enable overlay",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                        )
                         Text(
                             text = "Assign “Show overlay” to a press type to open this menu",
                             style = MaterialTheme.typography.bodySmall,
@@ -108,43 +120,23 @@ fun OverlaySettingsScreen(
             SectionLabel("Slots")
             repeat(OverlayConfig.MAX_SLOTS) { index ->
                 val action = config.slots.getOrNull(index) ?: RemapAction.None
-                Card(
+                ActionCard(
+                    title = "Slot ${index + 1}",
+                    subtitle = action.displayName(),
                     onClick = { editingSlot = index },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = "Slot ${index + 1}",
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        Text(
-                            text = action.displayName(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Icon(
-                            Icons.Outlined.ChevronRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+                )
             }
 
             SectionLabel("Layout")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OverlayLayoutStyle.entries.forEach { style ->
-                    FilterChip(
+                    StatusChip(
+                        label = style.name.replace('_', ' ').lowercase()
+                            .replaceFirstChar { it.titlecase() },
+                        tone = StatusTone.Active,
                         selected = config.layoutStyle == style,
+                        showDot = false,
                         onClick = { viewModel.setLayoutStyle(style) },
-                        label = { Text(style.name.replace('_', ' ')) },
                     )
                 }
             }
@@ -152,10 +144,13 @@ fun OverlaySettingsScreen(
             SectionLabel("Position")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OverlayPosition.entries.forEach { position ->
-                    FilterChip(
+                    StatusChip(
+                        label = position.name.replace('_', ' ').lowercase()
+                            .replaceFirstChar { it.titlecase() },
+                        tone = StatusTone.Active,
                         selected = config.position == position,
+                        showDot = false,
                         onClick = { viewModel.setPosition(position) },
-                        label = { Text(position.name.replace('_', ' ')) },
                     )
                 }
             }
@@ -170,10 +165,12 @@ fun OverlaySettingsScreen(
             SectionLabel("Icon size")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OverlayIconSize.entries.forEach { size ->
-                    FilterChip(
+                    StatusChip(
+                        label = size.name.lowercase().replaceFirstChar { it.titlecase() },
+                        tone = StatusTone.Active,
                         selected = config.iconSize == size,
+                        showDot = false,
                         onClick = { viewModel.setIconSize(size) },
-                        label = { Text(size.name) },
                     )
                 }
             }
@@ -181,10 +178,12 @@ fun OverlaySettingsScreen(
             SectionLabel("Animation")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OverlayAnimation.entries.forEach { animation ->
-                    FilterChip(
+                    StatusChip(
+                        label = animation.name.lowercase().replaceFirstChar { it.titlecase() },
+                        tone = StatusTone.Active,
                         selected = config.animation == animation,
+                        showDot = false,
                         onClick = { viewModel.setAnimation(animation) },
-                        label = { Text(animation.name) },
                     )
                 }
             }
