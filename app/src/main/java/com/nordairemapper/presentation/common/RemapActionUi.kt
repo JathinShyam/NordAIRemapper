@@ -58,7 +58,7 @@ fun RemapAction.displayDescription(): String = when (this) {
     RemapAction.ToggleFlashlight -> "Toggle the LED torch"
     RemapAction.TakeScreenshot -> "Capture the screen"
     RemapAction.ToggleDoNotDisturb -> "Toggle DND (needs Do Not Disturb access)"
-    RemapAction.CycleRingerMode -> "Cycle ring → vibrate → silent (no Do Not Disturb)"
+    RemapAction.CycleRingerMode -> "Cycle ring → vibrate → silent (Silent uses Zen; Ring/Vibrate turn Zen off)"
     RemapAction.OpenNotificationShade -> "Expand the notification shade"
     RemapAction.OpenQuickSettings -> "Expand quick settings"
     RemapAction.PlayPauseMedia -> "Toggle media playback"
