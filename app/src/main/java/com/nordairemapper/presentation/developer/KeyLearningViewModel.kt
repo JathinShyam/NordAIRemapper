@@ -146,16 +146,20 @@ class KeyLearningViewModel @Inject constructor(
                             it.source == event.source
                     }
                     if (index < 0) {
-                        val press = CapturedPress(
-                            id = nextId++,
-                            keyCode = event.keyCode,
-                            scanCode = event.scanCode,
-                            source = event.source,
-                            timestampMs = event.timestampMs,
-                            durationMs = null,
-                            complete = true,
-                        )
-                        (listOf(press) + current).take(MAX_PRESSES)
+                        if (event.source == DetectionStrategy.LOGCAT) {
+                            current
+                        } else {
+                            val press = CapturedPress(
+                                id = nextId++,
+                                keyCode = event.keyCode,
+                                scanCode = event.scanCode,
+                                source = event.source,
+                                timestampMs = event.timestampMs,
+                                durationMs = null,
+                                complete = true,
+                            )
+                            (listOf(press) + current).take(MAX_PRESSES)
+                        }
                     } else {
                         val down = current[index]
                         current.toMutableList().apply {
@@ -167,16 +171,33 @@ class KeyLearningViewModel @Inject constructor(
                     }
                 }
                 KeyAction.PULSE -> {
-                    val press = CapturedPress(
-                        id = nextId++,
-                        keyCode = event.keyCode,
-                        scanCode = event.scanCode,
-                        source = event.source,
-                        timestampMs = event.timestampMs,
-                        durationMs = null,
-                        complete = true,
-                    )
-                    (listOf(press) + current).take(MAX_PRESSES)
+                    if (event.source == DetectionStrategy.LOGCAT) {
+                        val open = current.indexOfFirst {
+                            !it.complete && it.source == DetectionStrategy.LOGCAT
+                        }
+                        if (open >= 0) {
+                            val down = current[open]
+                            current.toMutableList().apply {
+                                this[open] = down.copy(
+                                    complete = true,
+                                    durationMs = (event.timestampMs - down.timestampMs).coerceAtLeast(0),
+                                )
+                            }
+                        } else {
+                            current
+                        }
+                    } else {
+                        val press = CapturedPress(
+                            id = nextId++,
+                            keyCode = event.keyCode,
+                            scanCode = event.scanCode,
+                            source = event.source,
+                            timestampMs = event.timestampMs,
+                            durationMs = null,
+                            complete = true,
+                        )
+                        (listOf(press) + current).take(MAX_PRESSES)
+                    }
                 }
             }
         }

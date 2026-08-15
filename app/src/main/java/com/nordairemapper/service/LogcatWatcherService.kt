@@ -29,9 +29,10 @@ import javax.inject.Inject
 
 /**
  * Detection strategy B: tails logcat and matches lines emitted by OnePlus's
- * system key handler (KEYLOG_OplusKeyEventUtil by default). This is the
- * strategy that works on OnePlus devices where the Plus Key never reaches
- * the accessibility key-filtering API.
+ * system key handler (`KEYCODE_ACTION_BUTTON_CLICK` by default). Older builds
+ * used `KEYLOG_OplusKeyEventUtil`, which logs several pulses per press.
+ * This is the strategy that works on OnePlus devices where the Plus Key never
+ * reaches the accessibility key-filtering API.
  *
  * Requires READ_LOGS, grantable only via ADB:
  *   adb shell pm grant com.nordairemapper android.permission.READ_LOGS
@@ -67,46 +68,27 @@ class LogcatWatcherService : Service() {
     }
 
     private suspend fun watchLogcat() {
-        val pattern = settingsRepository.settings.first().logcatPattern
-        val process = ProcessBuilder("logcat", "-T", "1", "-v", "brief")
+        val pattern = LogcatKeyParser.migratePattern(
+            settingsRepository.settings.first().logcatPattern,
+        )
+        // Persist migration so Developer shows the new default, not the legacy pattern.
+        settingsRepository.setLogcatPattern(pattern)
+        val process = ProcessBuilder("logcat", "-b", "main", "-T", "1", "-v", "brief")
             .redirectErrorStream(true)
             .start()
         logcatProcess = process
 
-        var pressed = false
-        var lastEmittedAtMs = 0L
-        var lastEmitted: KeyAction? = null
-        var downAtMs = 0L
+        val coalescer = LogcatKeyEdgeCoalescer()
         BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
             while (scope.isActive) {
                 val line = reader.readLine() ?: break
-                // Our own debug logs include the match pattern and would
-                // otherwise re-enter this loop (one press → many fake edges).
-                if (line.contains("LogcatWatcher") || line.contains("RemapEngine")) continue
+                if (LogcatKeyParser.isSelfLog(line)) continue
                 if (!line.contains(pattern, ignoreCase = true)) continue
 
-                val now = System.currentTimeMillis()
-                val parsed = parseKeyAction(line)
-                val action = when (parsed) {
-                    KeyAction.DOWN -> if (pressed) null else KeyAction.DOWN
-                    KeyAction.UP -> if (pressed) KeyAction.UP else null
-                    KeyAction.PULSE -> when {
-                        !pressed -> KeyAction.DOWN
-                        now - downAtMs < ECHO_DEBOUNCE_MS -> null
-                        else -> KeyAction.UP
-                    }
-                } ?: continue
-
-                if (action == lastEmitted && now - lastEmittedAtMs < EDGE_DEBOUNCE_MS) continue
-
-                if (action == KeyAction.DOWN) {
-                    pressed = true
-                    downAtMs = now
-                } else {
-                    pressed = false
-                }
-                lastEmitted = action
-                lastEmittedAtMs = now
+                val action = coalescer.accept(
+                    LogcatKeyParser.parseKeyAction(line),
+                    System.currentTimeMillis(),
+                ) ?: continue
 
                 Log.d(TAG, "edge=$action")
                 keyEventBus.emit(
@@ -114,7 +96,7 @@ class LogcatWatcherService : Service() {
                         keyCode = -1,
                         scanCode = -1,
                         action = action,
-                        timestampMs = now,
+                        timestampMs = System.currentTimeMillis(),
                         source = DetectionStrategy.LOGCAT,
                     )
                 )
@@ -126,10 +108,6 @@ class LogcatWatcherService : Service() {
         private const val TAG = "LogcatWatcher"
         private const val CHANNEL_ID = "key_detection"
         private const val NOTIFICATION_ID = 1
-        /** Collapse duplicate log lines for the same physical edge. */
-        private const val EDGE_DEBOUNCE_MS = 40L
-        /** Ignore KEYLOG echo that follows ACTION_DOWN on the same press. */
-        private const val ECHO_DEBOUNCE_MS = 40L
 
         const val ADB_GRANT_COMMAND =
             "adb shell pm grant com.nordairemapper android.permission.READ_LOGS"
@@ -144,17 +122,6 @@ class LogcatWatcherService : Service() {
 
         fun stop(context: Context) {
             context.stopService(Intent(context, LogcatWatcherService::class.java))
-        }
-
-        internal fun parseKeyAction(line: String): KeyAction {
-            val lower = line.lowercase()
-            return when {
-                "action_down" in lower || "action=0" in lower -> KeyAction.DOWN
-                "action_up" in lower || "action=1" in lower -> KeyAction.UP
-                Regex("""(?<![a-z])down(?![a-z])""").containsMatchIn(lower) -> KeyAction.DOWN
-                Regex("""(?<![a-z])up(?![a-z])""").containsMatchIn(lower) -> KeyAction.UP
-                else -> KeyAction.PULSE
-            }
         }
     }
 

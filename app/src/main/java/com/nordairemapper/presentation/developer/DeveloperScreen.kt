@@ -113,6 +113,9 @@ fun DeveloperScreen(
                         value = pattern,
                         onValueChange = { pattern = it },
                         label = { Text("Log match pattern") },
+                        supportingText = {
+                            Text("Nord 5 default is KEYCODE_ACTION_BUTTON_CLICK (one down/up per press).")
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                     )

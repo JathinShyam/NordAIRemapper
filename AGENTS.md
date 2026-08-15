@@ -27,7 +27,7 @@ service depends on domain + Android APIs
 
 1. **Never hard-code Plus Key identity** as the only path (`TR-DET-01`). Strategy A learns `keyCode`/`scanCode` at runtime. Prefer `scanCode` when `> 0`.
 2. **Strategy B (logcat) is first-class.** On Nord 5 the Plus Key usually never reaches Accessibility as a `KeyEvent`. Volume keys appearing in Key setup is expected; Plus Key missing is expected.
-3. **Logcat events are pre-matched** by the user pattern (default `KEYLOG_OplusKeyEventUtil`). They use `keyCode/scanCode = -1`. Do **not** run `matchesPlusKey` on `DetectionStrategy.LOGCAT`.
+3. **Logcat events are pre-matched** by the user pattern (default `KEYCODE_ACTION_BUTTON_CLICK`). They use `keyCode/scanCode = -1`. Do **not** run `matchesPlusKey` on `DetectionStrategy.LOGCAT`. One press must emit one DOWN and one UP (`LogcatKeyEdgeCoalescer`).
 4. **Do not treat logcat lines as completed taps.** Pair down/up (including KEYLOG lines with no ACTION_*). `"undefined"` contains the letters `down` — do not substring-match `"down"`.
 5. **Accessibility `onKeyEvent` stays thin:** emit + consume decision only. Consume **only** the learned Plus Key. Volume/power must pass through (`return false`).
 6. **Wait-then-decide gestures.** Single press must not fire before `doublePressWindowMs` (default 300). Long press fires at `longPressThresholdMs` (default 500) from DOWN, then ignore that UP.

@@ -37,21 +37,18 @@ Plus Key is handled by `OplusKeyEventUtil` and **often never appears in Key setu
 
 ## Logcat parsing (regression-prone)
 
-Typical lines:
+Typical Nord 5 lines for one tap:
 
-- `KEYLOG_OplusKeyEventUtil` / `OplusKeyEventUtil` with `ACTION_DOWN` / `ACTION_UP`
-- `should not notify undefined keys in restrict listen mode`
+- `KEYLOG_PhoneWindowManagerExtImpl` `KEYCODE_ACTION_BUTTON_CLICK` `ACTION_DOWN` then `ACTION_UP` (scanCode 735) — **preferred match**
+- `KEYLOG_OplusKeyEventUtil` `should not notify undefined keys` **twice on down and twice on up** (legacy pattern)
 
 **Do:**
 
-- Filter with the persisted `logcatPattern` (default `KEYLOG_OplusKeyEventUtil`)
-- Start logcat with `-T 1` (no replay)
-- Parse `action_down` / `action_up` / `action=0` / `action=1` first
-- Word-boundary `down`/`up` only — **never** `"down" in line` (`undefined` contains `down`)
-- Skip the watcher's own log lines (`LogcatWatcher` / `RemapEngine`) — logging a matched line used to re-trigger the pattern (one press → many rows)
-- Pair ACTION-less KEYLOG lines: first edge = DOWN, next = UP
-- Debounce burst duplicates (~40ms) of the **same** edge; do not debounce DOWN then UP of a real tap
-- Ignore KEYLOG echo a few ms after ACTION_DOWN so it does not become a fake UP
+- Default `logcatPattern` is `KEYCODE_ACTION_BUTTON_CLICK`. Migrate stored `KEYLOG_OplusKeyEventUtil` to that.
+- `logcat -b main -T 1` (one buffer; `-T 1` skips replay)
+- Skip self logs (`LogcatWatcher` / `RemapEngine`) — logging a matched line used to re-trigger the watcher
+- Use `LogcatKeyEdgeCoalescer`: one physical press → one DOWN + one UP
+- Parse `action_down` / `action_up` first. Never substring-match `"down"` (`undefined` contains it)
 
 **Do not:**
 

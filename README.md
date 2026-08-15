@@ -53,7 +53,7 @@ Uses `AccessibilityService` with `FLAG_REQUEST_FILTER_KEY_EVENTS`. Matching pref
    adb shell pm grant com.nordairemapper android.permission.READ_LOGS
    ```
 
-2. In **Developer**, select **Logcat watcher** and (if needed) edit the match pattern (default: `KEYLOG_OplusKeyEventUtil`).
+2. In **Developer**, select **Logcat watcher** and (if needed) edit the match pattern (default: `KEYCODE_ACTION_BUTTON_CLICK`).
 
 A foreground service tails `logcat` and emits presses into the same gesture pipeline as Strategy A.
 

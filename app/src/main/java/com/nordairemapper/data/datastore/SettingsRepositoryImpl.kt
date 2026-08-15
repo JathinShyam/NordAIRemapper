@@ -15,6 +15,7 @@ import com.nordairemapper.domain.model.DetectionStrategy
 import com.nordairemapper.domain.model.KeyIdentity
 import com.nordairemapper.domain.model.ThemeMode
 import com.nordairemapper.domain.repository.SettingsRepository
+import com.nordairemapper.service.LogcatKeyParser
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -58,7 +59,7 @@ class SettingsRepositoryImpl @Inject constructor(
             ),
             doublePressWindowMs = prefs[Keys.DOUBLE_PRESS_WINDOW] ?: defaults.doublePressWindowMs,
             longPressThresholdMs = prefs[Keys.LONG_PRESS_THRESHOLD] ?: defaults.longPressThresholdMs,
-            logcatPattern = prefs[Keys.LOGCAT_PATTERN] ?: defaults.logcatPattern,
+            logcatPattern = LogcatKeyParser.migratePattern(prefs[Keys.LOGCAT_PATTERN]),
             themeMode = prefs[Keys.THEME_MODE]?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() }
                 ?: defaults.themeMode,
             dynamicColor = prefs[Keys.DYNAMIC_COLOR] ?: defaults.dynamicColor,
