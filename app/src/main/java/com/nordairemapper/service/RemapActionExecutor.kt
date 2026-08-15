@@ -32,9 +32,10 @@ import javax.inject.Singleton
  * pipeline.
  *
  * Permission traps (OxygenOS / Android N+):
- * - Ringer cycle: needs **Do Not Disturb access** because `RINGER_MODE_SILENT`
- *   touches Zen; we restore the user's interruption filter afterward so DND is
- *   not left changed. Plain DND toggle is [RemapAction.ToggleDoNotDisturb].
+ * - **Ring / vibrate / silent** never requests DND access and never calls
+ *   interruption-filter APIs. Silent prefers hidden `setRingerModeInternal`
+ *   (aborts if DND filter would change), else stream mute. Plain DND is only
+ *   [RemapAction.ToggleDoNotDisturb].
  * - Auto-rotate: needs **Modify system settings**.
  * - Global actions: Accessibility must be connected.
  */
@@ -53,11 +54,24 @@ class RemapActionExecutor @Inject constructor(
     private var torchOn = false
 
     /**
-     * Last profile we **verified** after apply. Used so the cycle does not trust
-     * OEM readbacks that map volume-0 to vibrate as if it were Silent.
+     * Last verified ring/vibrate/silent step for a clean 3-way cycle.
      */
     @Volatile
     private var confirmedRingerProfile: RingerProfile? = null
+
+    /** Silent via hidden [AudioManager.setRingerModeInternal] (Oplus/Lineage pattern). */
+    @Volatile
+    private var silentInternalActive = false
+
+    /** Silent via stream mute when internal silent is unavailable. */
+    @Volatile
+    private var silentStreamMuteActive = false
+
+    private var savedRingVolumeForSilent = -1
+    private var savedNotificationVolumeForSilent = -1
+    private var savedSystemVolumeForSilent = -1
+    private var savedVibrateWhenRinging: Int? = null
+    private var savedVibrateSettingRinger: Int? = null
 
     init {
         runCatching {
@@ -182,70 +196,63 @@ class RemapActionExecutor @Inject constructor(
     }
 
     /**
-     * Ring → vibrate → silent, keeping the user's DND filter unchanged.
+     * Ring → vibrate → silent with **zero DND involvement**.
      *
-     * RCA (why mute-only "Silent" lied):
-     * On Android / OxygenOS, `setStreamVolume(RING, 0)` / ADJUST_MUTE often becomes
-     * **vibrate**, not silent. We still set an in-memory flag and toasted "Silent",
-     * so the UI lied and the next cycle looked random (flag said Silent → jump to Ring).
+     * Hard rules:
+     * - Never request Do Not Disturb access.
+     * - Never call [NotificationManager.setInterruptionFilter].
+     * - Never use public [AudioManager.RINGER_MODE_SILENT] (that API is Zen on N+).
      *
-     * Fix:
-     * - Silent uses real [AudioManager.RINGER_MODE_SILENT], then restores the user's
-     *   interruption filter (DND stays as it was).
-     * - If the OEM bounces silent back to vibrate, re-apply SILENT and add stream mute
-     *   only as a supplement — never treat volume-0 alone as success.
-     * - Cycle and toast only from a **verified** profile, not a sticky flag.
+     * Silent research (what works without lasting DND):
+     * - Oplus/Lineage alert-slider code uses hidden
+     *   `AudioManager.setRingerModeInternal(SILENT)` with Zen left OFF — real silent,
+     *   no DND tile. We try that first and **abort if the interruption filter changes**.
+     * - Fallback: mute RING + NOTIFICATION + SYSTEM with
+     *   [AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE], disable vibrate-when-ringing /
+     *   vibrate setting — never `setStreamVolume(..., 0)` (maps to vibrate / DND).
      */
     private fun cycleRingerMode() {
         if (audioManager.isVolumeFixed) {
             toast("Ringer is fixed on this device")
             return
         }
-        if (!ensureNotificationPolicyAccess("Ring / vibrate / silent")) return
 
-        val current = confirmedRingerProfile ?: readRingerProfile()
+        val current = confirmedRingerProfile ?: readRingerProfileNoDnd()
         val next = when (current) {
             RingerProfile.RING -> RingerProfile.VIBRATE
             RingerProfile.VIBRATE -> RingerProfile.SILENT
             RingerProfile.SILENT -> RingerProfile.RING
         }
 
-        val savedFilter = notificationManager.currentInterruptionFilter
-        applyRingerProfile(next, savedFilter)
-
-        // Zen settles off the calling thread — re-apply and verify after a beat.
+        applyRingerProfileNoDnd(next)
         mainHandler.postDelayed({
-            applyRingerProfile(next, savedFilter)
-            val applied = readRingerProfile()
-            val ok = applied == next
-            if (ok) {
+            // Soft re-assert only if OEM dropped the target.
+            if (readRingerProfileNoDnd() != next) {
+                applyRingerProfileNoDnd(next)
+            }
+            val now = readRingerProfileNoDnd()
+            if (now == next) {
                 confirmedRingerProfile = next
-                toast(
-                    when (next) {
-                        RingerProfile.RING -> "Ring"
-                        RingerProfile.VIBRATE -> "Vibrate"
-                        RingerProfile.SILENT -> "Silent"
-                    },
-                )
+                toast(next.label())
             } else {
-                confirmedRingerProfile = applied
+                confirmedRingerProfile = now
                 Log.w(
                     TAG,
-                    "Ringer cycle failed: wanted=$next got=$applied " +
-                        "ringer=${audioManager.ringerMode} " +
-                        "ringVol=${audioManager.getStreamVolume(AudioManager.STREAM_RING)} " +
-                        "ringMute=${runCatching { audioManager.isStreamMute(AudioManager.STREAM_RING) }.getOrNull()} " +
+                    "Ringer cycle: wanted=$next got=$now " +
+                        "ext=${audioManager.ringerMode} int=${ringerModeInternalOrExt()} " +
+                        "mute=${isRingMuted()} internalSilent=$silentInternalActive " +
+                        "muteSilent=$silentStreamMuteActive " +
                         "filter=${notificationManager.currentInterruptionFilter}",
                 )
                 toast(
-                    when (next) {
-                        RingerProfile.SILENT -> "Silent not available (still ${applied.label()})"
-                        else -> "Ringer stuck on ${applied.label()}"
+                    if (next == RingerProfile.SILENT) {
+                        "Silent failed (still ${now.label()})"
+                    } else {
+                        "Ringer stuck on ${now.label()}"
                     },
                 )
             }
-            restoreInterruptionFilter(savedFilter)
-        }, 150L)
+        }, 100L)
     }
 
     private enum class RingerProfile { RING, VIBRATE, SILENT }
@@ -256,91 +263,323 @@ class RemapActionExecutor @Inject constructor(
         RingerProfile.SILENT -> "Silent"
     }
 
-    /** Device truth — never invent Silent from a mute flag alone. */
-    private fun readRingerProfile(): RingerProfile {
+    private fun readRingerProfileNoDnd(): RingerProfile {
+        if (silentInternalActive && isInternalSilentHeld()) return RingerProfile.SILENT
+        if (silentStreamMuteActive && isMuteSilentHeld()) return RingerProfile.SILENT
+
+        // Stale flags
+        if (silentInternalActive && !isInternalSilentHeld()) silentInternalActive = false
+        if (silentStreamMuteActive && !isMuteSilentHeld()) silentStreamMuteActive = false
+
         return when (audioManager.ringerMode) {
-            AudioManager.RINGER_MODE_SILENT -> RingerProfile.SILENT
             AudioManager.RINGER_MODE_VIBRATE -> RingerProfile.VIBRATE
-            else -> {
-                // NORMAL + muted/zero ring is usually OEM vibrate, not silent.
-                RingerProfile.RING
-            }
+            // External SILENT without our internal flag = system/DND silent; leave alone.
+            AudioManager.RINGER_MODE_SILENT -> RingerProfile.VIBRATE
+            else -> RingerProfile.RING
         }
     }
 
-    private fun applyRingerProfile(profile: RingerProfile, savedFilter: Int) {
-        when (profile) {
-            RingerProfile.RING -> {
-                audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
-                restoreInterruptionFilter(savedFilter)
-                audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
-            }
-            RingerProfile.VIBRATE -> {
-                audioManager.ringerMode = AudioManager.RINGER_MODE_VIBRATE
-                restoreInterruptionFilter(savedFilter)
-                audioManager.ringerMode = AudioManager.RINGER_MODE_VIBRATE
-            }
-            RingerProfile.SILENT -> applySilentPreservingDnd(savedFilter)
+    private fun isInternalSilentHeld(): Boolean {
+        val mode = ringerModeInternalOrExt()
+        return mode == AudioManager.RINGER_MODE_SILENT ||
+            audioManager.ringerMode == AudioManager.RINGER_MODE_SILENT
+    }
+
+    private fun isMuteSilentHeld(): Boolean {
+        if (audioManager.ringerMode == AudioManager.RINGER_MODE_VIBRATE) return false
+        if (isRingMuted()) return true
+        return silentStreamMuteActive &&
+            audioManager.ringerMode == AudioManager.RINGER_MODE_NORMAL
+    }
+
+    private fun isRingMuted(): Boolean =
+        runCatching { audioManager.isStreamMute(AudioManager.STREAM_RING) }.getOrDefault(false)
+
+    private fun applyRingerProfileNoDnd(profile: RingerProfile): Boolean {
+        return when (profile) {
+            RingerProfile.RING -> applyRingNoDnd()
+            RingerProfile.VIBRATE -> applyVibrateNoDnd()
+            RingerProfile.SILENT -> applySilentNoDnd()
         }
-        restoreInterruptionFilter(savedFilter)
+    }
+
+    private fun applyRingNoDnd(): Boolean {
+        exitSilentLayers()
+        restoreVibrationPrefs()
+        setRingerModePreferInternal(AudioManager.RINGER_MODE_NORMAL)
+        ensureRingAudible()
+        return audioManager.ringerMode == AudioManager.RINGER_MODE_NORMAL ||
+            ringerModeInternalOrExt() == AudioManager.RINGER_MODE_NORMAL
+    }
+
+    private fun applyVibrateNoDnd(): Boolean {
+        exitSilentLayers()
+        restoreVibrationPrefs()
+        setRingerModePreferInternal(AudioManager.RINGER_MODE_VIBRATE)
+        return audioManager.ringerMode == AudioManager.RINGER_MODE_VIBRATE ||
+            ringerModeInternalOrExt() == AudioManager.RINGER_MODE_VIBRATE
     }
 
     /**
-     * Real silent mode, then put the user's DND filter back.
+     * Silent without turning DND on.
      *
-     * Order matters on ZenModeHelper: SILENT often raises Zen; restoring the
-     * user's filter can bounce the ringer to vibrate. Re-assert SILENT after
-     * restore. Only [AudioManager.RINGER_MODE_SILENT] counts as success —
-     * stream volume 0 is vibrate on OxygenOS, not silent.
+     * 1) `setRingerModeInternal(SILENT)` if the interruption filter stays unchanged.
+     * 2) Else comprehensive stream mute + vibration off (no volume-0, no public SILENT).
      */
-    private fun applySilentPreservingDnd(savedFilter: Int) {
-        // NORMAL → SILENT (community sequence), then restore user's DND filter.
-        audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
-        audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
-        restoreInterruptionFilter(savedFilter)
+    private fun applySilentNoDnd(): Boolean {
+        val filterBefore = notificationManager.currentInterruptionFilter
 
-        if (audioManager.ringerMode == AudioManager.RINGER_MODE_SILENT) return
+        // Leave vibrate mode first so mute/internal silent is not "vibrate".
+        setRingerModePreferInternal(AudioManager.RINGER_MODE_NORMAL)
+        disableVibrationForSilent()
 
-        // Restore often rewrites ringer — push SILENT again, then restore again.
-        audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
-        restoreInterruptionFilter(savedFilter)
-        if (audioManager.ringerMode == AudioManager.RINGER_MODE_SILENT) return
+        if (tryInternalSilentWithoutDnd(filterBefore)) {
+            silentInternalActive = true
+            silentStreamMuteActive = false
+            return true
+        }
 
-        audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
-        audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
-        restoreInterruptionFilter(savedFilter)
-        if (audioManager.ringerMode == AudioManager.RINGER_MODE_SILENT) return
+        silentInternalActive = false
+        return applyMuteSilentWithoutDnd()
+    }
 
-        // When DND was already off, force FILTER_ALL then SILENT once more
-        // (silent-without-DND path used by volume apps).
-        if (savedFilter == NotificationManager.INTERRUPTION_FILTER_ALL) {
-            notificationManager.setInterruptionFilter(
-                NotificationManager.INTERRUPTION_FILTER_ALL,
+    /**
+     * Oplus/Lineage pattern: internal silent keeps Zen off. If filter moves, undo.
+     */
+    private fun tryInternalSilentWithoutDnd(filterBefore: Int): Boolean {
+        if (!setRingerModeInternal(AudioManager.RINGER_MODE_SILENT)) return false
+
+        val filterAfter = notificationManager.currentInterruptionFilter
+        if (filterAfter != filterBefore) {
+            Log.i(TAG, "Internal silent changed interruption filter ($filterBefore→$filterAfter); undoing")
+            setRingerModeInternal(AudioManager.RINGER_MODE_NORMAL)
+            runCatching { audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL }
+            return false
+        }
+
+        val held = isInternalSilentHeld()
+        if (!held) {
+            Log.i(TAG, "Internal silent did not stick (ext=${audioManager.ringerMode})")
+        }
+        return held
+    }
+
+    private fun applyMuteSilentWithoutDnd(): Boolean {
+        if (!savedVolumesYet()) {
+            saveStreamVolumesForSilent()
+        }
+
+        muteStream(AudioManager.STREAM_RING)
+        muteStream(AudioManager.STREAM_NOTIFICATION)
+        muteStream(AudioManager.STREAM_SYSTEM)
+        // Deprecated but still effective on many OEMs for call buzz.
+        runCatching {
+            @Suppress("DEPRECATION")
+            audioManager.setStreamMute(AudioManager.STREAM_RING, true)
+            @Suppress("DEPRECATION")
+            audioManager.setStreamMute(AudioManager.STREAM_NOTIFICATION, true)
+        }
+
+        if (audioManager.ringerMode == AudioManager.RINGER_MODE_VIBRATE) {
+            Log.w(TAG, "Mute silent collapsed to vibrate")
+            clearMuteSilentLayers()
+            restoreVibrationPrefs()
+            return false
+        }
+
+        // Guard: never leave DND changed by mute either.
+        silentStreamMuteActive = true
+        return isMuteSilentHeld()
+    }
+
+    private fun muteStream(stream: Int) {
+        runCatching {
+            audioManager.adjustStreamVolume(
+                stream,
+                AudioManager.ADJUST_MUTE,
+                AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE,
             )
-            audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
-            audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
-            if (notificationManager.currentInterruptionFilter !=
-                NotificationManager.INTERRUPTION_FILTER_ALL
-            ) {
-                notificationManager.setInterruptionFilter(
-                    NotificationManager.INTERRUPTION_FILTER_ALL,
+        }.onFailure { Log.w(TAG, "ADJUST_MUTE failed for stream=$stream", it) }
+    }
+
+    private fun unmuteStream(stream: Int) {
+        runCatching {
+            audioManager.adjustStreamVolume(stream, AudioManager.ADJUST_UNMUTE, 0)
+        }
+        runCatching {
+            @Suppress("DEPRECATION")
+            audioManager.setStreamMute(stream, false)
+        }
+    }
+
+    private fun exitSilentLayers() {
+        if (silentInternalActive) {
+            silentInternalActive = false
+            setRingerModePreferInternal(AudioManager.RINGER_MODE_NORMAL)
+        }
+        clearMuteSilentLayers()
+    }
+
+    private fun clearMuteSilentLayers() {
+        if (!silentStreamMuteActive &&
+            savedRingVolumeForSilent < 0 &&
+            savedNotificationVolumeForSilent < 0 &&
+            savedSystemVolumeForSilent < 0
+        ) {
+            return
+        }
+        silentStreamMuteActive = false
+        unmuteStream(AudioManager.STREAM_RING)
+        unmuteStream(AudioManager.STREAM_NOTIFICATION)
+        unmuteStream(AudioManager.STREAM_SYSTEM)
+        restoreStreamVolumesAfterSilent()
+    }
+
+    private fun savedVolumesYet(): Boolean =
+        savedRingVolumeForSilent > 0 ||
+            savedNotificationVolumeForSilent > 0 ||
+            savedSystemVolumeForSilent > 0
+
+    private fun saveStreamVolumesForSilent() {
+        val ring = audioManager.getStreamVolume(AudioManager.STREAM_RING)
+        val notif = audioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION)
+        val system = audioManager.getStreamVolume(AudioManager.STREAM_SYSTEM)
+        if (ring > 0) savedRingVolumeForSilent = ring
+        if (notif > 0) savedNotificationVolumeForSilent = notif
+        if (system > 0) savedSystemVolumeForSilent = system
+    }
+
+    private fun restoreStreamVolumesAfterSilent() {
+        val ringMax = audioManager.getStreamMaxVolume(AudioManager.STREAM_RING)
+        val notifMax = audioManager.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION)
+        val systemMax = audioManager.getStreamMaxVolume(AudioManager.STREAM_SYSTEM)
+        if (savedRingVolumeForSilent > 0) {
+            runCatching {
+                audioManager.setStreamVolume(
+                    AudioManager.STREAM_RING,
+                    savedRingVolumeForSilent.coerceAtMost(ringMax),
+                    0,
                 )
             }
         }
-
-        Log.i(
-            TAG,
-            "After silent apply: ringer=${audioManager.ringerMode} " +
-                "filter=${notificationManager.currentInterruptionFilter}",
-        )
+        if (savedNotificationVolumeForSilent > 0) {
+            runCatching {
+                audioManager.setStreamVolume(
+                    AudioManager.STREAM_NOTIFICATION,
+                    savedNotificationVolumeForSilent.coerceAtMost(notifMax),
+                    0,
+                )
+            }
+        }
+        if (savedSystemVolumeForSilent > 0) {
+            runCatching {
+                audioManager.setStreamVolume(
+                    AudioManager.STREAM_SYSTEM,
+                    savedSystemVolumeForSilent.coerceAtMost(systemMax),
+                    0,
+                )
+            }
+        }
+        savedRingVolumeForSilent = -1
+        savedNotificationVolumeForSilent = -1
+        savedSystemVolumeForSilent = -1
     }
 
-    private fun restoreInterruptionFilter(filter: Int) {
-        if (filter == NotificationManager.INTERRUPTION_FILTER_UNKNOWN) return
-        if (notificationManager.currentInterruptionFilter != filter) {
-            notificationManager.setInterruptionFilter(filter)
+    private fun ensureRingAudible() {
+        if (isRingMuted()) {
+            unmuteStream(AudioManager.STREAM_RING)
+        }
+        val vol = audioManager.getStreamVolume(AudioManager.STREAM_RING)
+        if (vol > 0) return
+        runCatching {
+            audioManager.adjustStreamVolume(
+                AudioManager.STREAM_RING,
+                AudioManager.ADJUST_RAISE,
+                0,
+            )
+        }
+        if (audioManager.getStreamVolume(AudioManager.STREAM_RING) > 0) return
+        val max = audioManager.getStreamMaxVolume(AudioManager.STREAM_RING)
+        runCatching {
+            audioManager.setStreamVolume(
+                AudioManager.STREAM_RING,
+                (max / 2).coerceAtLeast(1),
+                0,
+            )
         }
     }
+
+    private fun disableVibrationForSilent() {
+        runCatching {
+            @Suppress("DEPRECATION")
+            if (savedVibrateSettingRinger == null) {
+                savedVibrateSettingRinger =
+                    audioManager.getVibrateSetting(AudioManager.VIBRATE_TYPE_RINGER)
+            }
+            @Suppress("DEPRECATION")
+            audioManager.setVibrateSetting(
+                AudioManager.VIBRATE_TYPE_RINGER,
+                AudioManager.VIBRATE_SETTING_OFF,
+            )
+        }
+        if (!Settings.System.canWrite(context)) return
+        runCatching {
+            if (savedVibrateWhenRinging == null) {
+                savedVibrateWhenRinging = Settings.System.getInt(
+                    context.contentResolver,
+                    Settings.System.VIBRATE_WHEN_RINGING,
+                    0,
+                )
+            }
+            Settings.System.putInt(
+                context.contentResolver,
+                Settings.System.VIBRATE_WHEN_RINGING,
+                0,
+            )
+        }
+    }
+
+    private fun restoreVibrationPrefs() {
+        savedVibrateSettingRinger?.let { saved ->
+            savedVibrateSettingRinger = null
+            runCatching {
+                @Suppress("DEPRECATION")
+                audioManager.setVibrateSetting(AudioManager.VIBRATE_TYPE_RINGER, saved)
+            }
+        }
+        val saved = savedVibrateWhenRinging ?: return
+        savedVibrateWhenRinging = null
+        if (!Settings.System.canWrite(context)) return
+        runCatching {
+            Settings.System.putInt(
+                context.contentResolver,
+                Settings.System.VIBRATE_WHEN_RINGING,
+                saved,
+            )
+        }
+    }
+
+    /** Prefer hidden internal setter (does not go through Zen external path). */
+    private fun setRingerModePreferInternal(mode: Int) {
+        if (setRingerModeInternal(mode)) return
+        runCatching { audioManager.ringerMode = mode }
+            .onFailure { Log.w(TAG, "setRingerMode($mode) failed", it) }
+    }
+
+    private fun setRingerModeInternal(mode: Int): Boolean =
+        runCatching {
+            AudioManager::class.java
+                .getMethod("setRingerModeInternal", Int::class.javaPrimitiveType)
+                .invoke(audioManager, mode)
+            true
+        }.getOrDefault(false)
+
+    private fun ringerModeInternalOrExt(): Int =
+        runCatching {
+            AudioManager::class.java
+                .getMethod("getRingerModeInternal")
+                .invoke(audioManager) as Int
+        }.getOrDefault(audioManager.ringerMode)
 
     private fun dispatchMediaKey(keyCode: Int) {
         val down = KeyEvent(KeyEvent.ACTION_DOWN, keyCode)
