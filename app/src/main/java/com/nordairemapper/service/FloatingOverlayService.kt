@@ -10,9 +10,12 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
 import android.os.IBinder
+import android.provider.Settings
+import android.util.Log
 import android.view.Gravity
 import android.view.WindowManager
 import android.widget.FrameLayout
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -35,8 +38,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
@@ -62,70 +69,116 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * Floating Plus Key menu. Hosts Compose in a WindowManager overlay, so this
+ * service must manually provide Lifecycle / SavedState / ViewModelStore owners
+ * and drive lifecycle to RESUMED (LifecycleService alone is not enough for a
+ * stable Compose overlay on OxygenOS).
+ */
 @AndroidEntryPoint
-class FloatingOverlayService : LifecycleService(), SavedStateRegistryOwner {
+class FloatingOverlayService :
+    android.app.Service(),
+    androidx.lifecycle.LifecycleOwner,
+    SavedStateRegistryOwner,
+    ViewModelStoreOwner {
 
     @Inject lateinit var remapConfigRepository: RemapConfigRepository
     @Inject lateinit var actionDispatcher: ActionDispatcher
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val lifecycleRegistry = LifecycleRegistry(this)
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
+    private val store = ViewModelStore()
+
+    override val lifecycle: Lifecycle get() = lifecycleRegistry
     override val savedStateRegistry: SavedStateRegistry
         get() = savedStateRegistryController.savedStateRegistry
+    override val viewModelStore: ViewModelStore get() = store
 
     private var windowManager: WindowManager? = null
     private var overlayRoot: FrameLayout? = null
 
-    override fun onCreate() {
-        super.onCreate()
-        savedStateRegistryController.performRestore(null)
-    }
+    override fun onBind(intent: Intent?): IBinder? = null
 
-    override fun onBind(intent: Intent): IBinder? {
-        super.onBind(intent)
-        return null
+    override fun onCreate() {
+        // Attach/restore BEFORE moving lifecycle out of INITIALIZED.
+        savedStateRegistryController.performAttach()
+        savedStateRegistryController.performRestore(null)
+        super.onCreate()
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        super.onStartCommand(intent, flags, startId)
-        startForeground(
-            NOTIFICATION_ID,
-            buildNotification(),
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
-        )
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+
+        try {
+            startForeground(
+                NOTIFICATION_ID,
+                buildNotification(),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
+            )
+        } catch (t: Throwable) {
+            Log.e(TAG, "startForeground failed", t)
+            toast("Overlay failed to start")
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
+        if (!Settings.canDrawOverlays(this)) {
+            Log.w(TAG, "SYSTEM_ALERT_WINDOW not granted")
+            toast("Allow Display over other apps")
+            stopSelf()
+            return START_NOT_STICKY
+        }
 
         val keyguard = getSystemService(KeyguardManager::class.java)
         if (keyguard?.isKeyguardLocked == true) {
+            Log.w(TAG, "Keyguard locked; overlay suppressed")
+            toast("Unlock phone to show overlay")
             stopSelf()
             return START_NOT_STICKY
         }
 
         serviceScope.launch {
-            val config = remapConfigRepository.observeOverlayConfig().first()
-            if (!config.enabled && config.slots.isEmpty()) {
-                // Still allow ShowOverlay to display configured slots even if master toggle off,
-                // as long as slots exist; if empty, bail.
+            runCatching {
+                val config = remapConfigRepository.observeOverlayConfig().first()
+                val slots = config.slots
+                    .filter { it !is RemapAction.None }
+                    .take(OverlayConfig.MAX_SLOTS)
+                if (slots.isEmpty()) {
+                    Log.w(TAG, "No overlay slots configured")
+                    toast("Fill Overlay slots first")
+                    stopSelf()
+                    return@launch
+                }
+                Log.d(TAG, "Showing overlay with ${slots.size} slots")
+                showOverlay(config.copy(slots = slots))
+            }.onFailure { t ->
+                Log.e(TAG, "Failed to show overlay", t)
+                toast("Overlay crashed — check logcat")
+                dismissAndStop()
             }
-            val slots = config.slots.filter { it !is RemapAction.None }.take(OverlayConfig.MAX_SLOTS)
-            if (slots.isEmpty()) {
-                stopSelf()
-                return@launch
-            }
-            showOverlay(config.copy(slots = slots))
         }
         return START_NOT_STICKY
     }
 
     private fun showOverlay(config: OverlayConfig) {
         dismissOverlay()
-        val wm = getSystemService(WindowManager::class.java)
+        val wm = getSystemService(WindowManager::class.java) ?: error("No WindowManager")
         windowManager = wm
 
-        val root = FrameLayout(this)
+        val root = FrameLayout(this).apply {
+            // Owners must live on the window root so Compose can walk the tree.
+            setViewTreeLifecycleOwner(this@FloatingOverlayService)
+            setViewTreeViewModelStoreOwner(this@FloatingOverlayService)
+            setViewTreeSavedStateRegistryOwner(this@FloatingOverlayService)
+        }
         overlayRoot = root
 
         val composeView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@FloatingOverlayService)
+            setViewTreeViewModelStoreOwner(this@FloatingOverlayService)
             setViewTreeSavedStateRegistryOwner(this@FloatingOverlayService)
             setContent {
                 NordAIRemapperTheme {
@@ -155,17 +208,18 @@ class FloatingOverlayService : LifecycleService(), SavedStateRegistryOwner {
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
             PixelFormat.TRANSLUCENT,
         ).apply {
-            gravity = when (config.position) {
-                OverlayPosition.LEFT_EDGE -> Gravity.START or Gravity.CENTER_VERTICAL
-                OverlayPosition.RIGHT_EDGE -> Gravity.END or Gravity.CENTER_VERTICAL
-                OverlayPosition.BOTTOM_CENTER -> Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-            }
+            gravity = Gravity.TOP or Gravity.START
+            x = 0
+            y = 0
         }
 
         wm.addView(root, params)
+        Log.d(TAG, "Overlay window attached")
     }
 
     private fun dismissAndStop() {
@@ -175,9 +229,14 @@ class FloatingOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
     private fun dismissOverlay() {
         overlayRoot?.let { view ->
-            runCatching { windowManager?.removeView(view) }
+            runCatching { windowManager?.removeViewImmediate(view) }
+                .onFailure { Log.w(TAG, "removeView failed", it) }
         }
         overlayRoot = null
+    }
+
+    private fun toast(message: String) {
+        Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
     }
 
     private fun buildNotification(): Notification {
@@ -203,16 +262,42 @@ class FloatingOverlayService : LifecycleService(), SavedStateRegistryOwner {
     override fun onDestroy() {
         dismissOverlay()
         serviceScope.cancel()
+        if (lifecycleRegistry.currentState.isAtLeast(Lifecycle.State.CREATED)) {
+            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        }
+        store.clear()
         super.onDestroy()
     }
 
     companion object {
+        private const val TAG = "FloatingOverlay"
         private const val CHANNEL_ID = "overlay"
         private const val NOTIFICATION_ID = 2
 
         fun show(context: Context) {
-            if (!android.provider.Settings.canDrawOverlays(context)) return
-            context.startForegroundService(Intent(context, FloatingOverlayService::class.java))
+            if (!Settings.canDrawOverlays(context)) {
+                Log.w(TAG, "canDrawOverlays=false; skipping start")
+                Toast.makeText(
+                    context.applicationContext,
+                    "Allow Display over other apps for overlay",
+                    Toast.LENGTH_SHORT,
+                ).show()
+                return
+            }
+            runCatching {
+                context.applicationContext.startForegroundService(
+                    Intent(context.applicationContext, FloatingOverlayService::class.java),
+                )
+            }.onFailure { t ->
+                Log.e(TAG, "startForegroundService failed", t)
+                Toast.makeText(
+                    context.applicationContext,
+                    "Could not start overlay service",
+                    Toast.LENGTH_SHORT,
+                ).show()
+            }
         }
     }
 }
