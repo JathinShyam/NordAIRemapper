@@ -119,9 +119,9 @@ class HomeViewModel @Inject constructor(
                     if (!readLogsGranted && !keyConfigured) {
                         return HomeBanner(
                             title = "Plus Key needs logcat on Nord 5",
-                            body = "Accessibility sees volume keys, but OxygenOS handles the Plus Key in system code so it never reaches Key setup. Grant READ_LOGS once (Wireless Debugging — no laptop) so the logcat companion can detect it. Accessibility stays on for system actions.",
-                            primaryLabel = "Grant READ_LOGS",
-                            primaryAction = HomeBannerAction.OPEN_DEVELOPER,
+                            body = "Accessibility sees volume keys, but OxygenOS handles the Plus Key in system code so it never reaches Key setup. Pair once with Wireless debugging in-app (no laptop, no Shizuku) so logcat can detect it. Accessibility stays on for system actions.",
+                            primaryLabel = "Enable detection",
+                            primaryAction = HomeBannerAction.OPEN_ENABLE_DETECTION,
                         )
                     }
                     if (!keyConfigured && readLogsGranted) {
@@ -137,18 +137,18 @@ class HomeViewModel @Inject constructor(
                     if (!readLogsGranted) {
                         return HomeBanner(
                             title = "READ_LOGS required on Nord 5",
-                            body = "Auto mode uses Accessibility when the OS delivers the key, and logcat when it does not (Nord 5). Grant READ_LOGS once via Wireless Debugging — no laptop needed.",
-                            primaryLabel = "Grant READ_LOGS",
-                            primaryAction = HomeBannerAction.OPEN_DEVELOPER,
+                            body = "Auto mode uses Accessibility when the OS delivers the key, and logcat when it does not (Nord 5). Pair once with Wireless debugging in-app — no laptop or Shizuku.",
+                            primaryLabel = "Enable detection",
+                            primaryAction = HomeBannerAction.OPEN_ENABLE_DETECTION,
                         )
                     }
                 }
                 DetectionStrategy.LOGCAT -> if (!readLogsGranted) {
                     return HomeBanner(
                         title = "READ_LOGS required",
-                        body = "Logcat detection needs a one-time grant. Use Wireless Debugging on the phone (no laptop) or USB ADB from a computer — see Developer settings.",
-                        primaryLabel = "Developer",
-                        primaryAction = HomeBannerAction.OPEN_DEVELOPER,
+                        body = "Logcat detection needs a one-time in-app Wireless debugging pair. USB ADB remains an advanced fallback.",
+                        primaryLabel = "Enable detection",
+                        primaryAction = HomeBannerAction.OPEN_ENABLE_DETECTION,
                     )
                 }
             }

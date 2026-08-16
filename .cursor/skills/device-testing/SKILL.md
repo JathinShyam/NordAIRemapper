@@ -29,7 +29,19 @@ JDK for Gradle: `export JAVA_HOME="$HOME/.jdks/jdk17"`.
 
 ## READ_LOGS (Strategy B)
 
-Cannot be granted from a normal dialog:
+**Preferred (phone only, no laptop / no Shizuku):** in the app open **Enable detection**
+→ Wireless debugging → Pair device with pairing code → enter the 6-digit code →
+Pair and grant. Then turn Wireless debugging off; `READ_LOGS` persists.
+
+### Phone-only test plan
+
+1. Fresh install, no USB cable, no Shizuku.
+2. Enable Accessibility → **Enable detection** → pair → grant succeeds.
+3. Key setup shows Plus Key via logcat; single / double / long fire.
+4. Reboot with Wireless debugging off — remapping still works.
+5. Advanced: USB ADB grant still works as fallback (below).
+
+Cannot be granted from a normal system dialog. USB fallback:
 
 ```bash
 "$ADB" shell pm grant com.nordairemapper android.permission.READ_LOGS
@@ -45,7 +57,7 @@ Verify (user 0 is the one that matters):
 
 `userId=10 granted=false` is another profile — ignore.
 
-After grant: start **Logcat watcher** in Developer settings (or toggle the service). Accessibility is still required for system actions (screenshot, lock, recents, shade, QS).
+After grant the app auto-starts the logcat watcher when remapping is enabled. Accessibility is still required for system actions (screenshot, lock, recents, shade, QS).
 
 ## Capture Plus Key lines
 

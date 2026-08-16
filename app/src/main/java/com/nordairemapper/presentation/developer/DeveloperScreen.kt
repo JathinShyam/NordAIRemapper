@@ -36,7 +36,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.AppSettings
 import com.nordairemapper.domain.model.DetectionStrategy
 import com.nordairemapper.service.LogcatWatcherService
-import com.nordairemapper.service.ReadLogsGrantHelper
 import com.nordairemapper.ui.components.NordHeading
 import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.NordSurfaceCard
@@ -49,6 +48,7 @@ import com.nordairemapper.ui.components.StatusTone
 fun DeveloperScreen(
     onBack: () -> Unit,
     onOpenKeyLearning: () -> Unit,
+    onOpenEnableDetection: () -> Unit,
     viewModel: DeveloperViewModel = hiltViewModel(),
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
@@ -141,28 +141,16 @@ fun DeveloperScreen(
                     )
                     if (!readLogsGranted) {
                         Text(
-                            text = "No laptop needed (Android 11+): enable Wireless debugging, start Shizuku (or aShell), then run:",
+                            text = "On Nord 5, grant READ_LOGS once with in-app Wireless debugging (no laptop, no Shizuku).",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        Text(
-                            text = ReadLogsGrantHelper.ON_DEVICE_SHELL_COMMAND,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface,
+                        NordPrimaryButton(
+                            text = "Enable Plus Key detection",
+                            onClick = onOpenEnableDetection,
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            TextButton(onClick = viewModel::copyOnDeviceCommand) {
-                                Text("Copy pm grant")
-                            }
-                            TextButton(onClick = viewModel::openWirelessDebugging) {
-                                Text("Wireless debugging")
-                            }
-                        }
-                        TextButton(onClick = viewModel::openShizuku) {
-                            Text("Open Shizuku / install")
-                        }
                         Text(
-                            text = "From a computer (USB):",
+                            text = "Advanced — USB from a computer:",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -172,7 +160,7 @@ fun DeveloperScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         TextButton(onClick = viewModel::copyAdbCommand) {
-                            Text("Copy ADB command")
+                            Text("Copy USB ADB command")
                         }
                         TextButton(onClick = viewModel::refreshPermissions) {
                             Text("I've granted it — Recheck")

@@ -2,7 +2,6 @@ package com.nordairemapper.service
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import com.nordairemapper.domain.model.DetectionStrategy
@@ -55,7 +54,7 @@ object DetectionCoordinator {
     }
 }
 
-/** Phone-only paths to grant READ_LOGS (no laptop required on Android 11+). */
+/** Helpers for the READ_LOGS grant UX (primary path is in-app Wireless ADB). */
 object ReadLogsGrantHelper {
 
     const val ON_DEVICE_SHELL_COMMAND =
@@ -83,23 +82,5 @@ object ReadLogsGrantHelper {
             }
         }
         openDeveloperOptions(context)
-    }
-
-    fun openShizukuOrPlayStore(context: Context) {
-        val launch = context.packageManager.getLaunchIntentForPackage("moe.shizuku.privileged.api")
-        if (launch != null) {
-            context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            return
-        }
-        val market = Intent(
-            Intent.ACTION_VIEW,
-            Uri.parse("market://details?id=moe.shizuku.privileged.api"),
-        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        val https = Intent(
-            Intent.ACTION_VIEW,
-            Uri.parse("https://shizuku.rikka.app/"),
-        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        runCatching { context.startActivity(market) }
-            .recoverCatching { context.startActivity(https) }
     }
 }

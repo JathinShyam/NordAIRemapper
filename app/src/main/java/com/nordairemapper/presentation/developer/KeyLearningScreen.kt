@@ -50,7 +50,7 @@ import java.util.Locale
 @Composable
 fun KeyLearningScreen(
     onBack: () -> Unit,
-    onOpenDeveloper: () -> Unit,
+    onOpenEnableDetection: () -> Unit,
     viewModel: KeyLearningViewModel = hiltViewModel(),
 ) {
     val presses by viewModel.capturedPresses.collectAsStateWithLifecycle()
@@ -155,11 +155,11 @@ fun KeyLearningScreen(
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                         )
                         Text(
-                            text = "Volume and other buttons are visible, but the Plus Key is handled by OnePlus system code and never arrives as a KeyEvent. That is expected on Nord 5 — not an Accessibility bug. Grant READ_LOGS (Wireless Debugging + Shizuku/aShell, no laptop) so the logcat companion can detect the AI key. Accessibility stays required for screenshot, lock, and other system actions.",
+                            text = "Volume and other buttons are visible, but the Plus Key is handled by OnePlus system code and never arrives as a KeyEvent. That is expected on Nord 5 — not an Accessibility bug. Pair once with Wireless debugging in Enable detection (no laptop) so the logcat companion can detect the AI key. Accessibility stays required for screenshot, lock, and other system actions.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        NordPrimaryButton(text = "Open Developer", onClick = onOpenDeveloper)
+                        NordPrimaryButton(text = "Enable detection", onClick = onOpenEnableDetection)
                     }
                 }
             }

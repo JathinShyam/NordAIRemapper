@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Sensors
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Smartphone
 import androidx.compose.material3.Icon
@@ -51,11 +52,12 @@ import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.StatusChip
 import com.nordairemapper.ui.components.StatusTone
 
-private const val PageCount = 5
+private const val PageCount = 6
 
 @Composable
 fun OnboardingScreen(
     onFinished: () -> Unit,
+    onOpenEnableDetection: () -> Unit,
     viewModel: OnboardingViewModel = hiltViewModel(),
 ) {
     var page by remember { mutableIntStateOf(0) }
@@ -103,21 +105,36 @@ fun OnboardingScreen(
                     onSecondary = viewModel::refresh,
                 )
                 2 -> StepContent(
+                    icon = Icons.Outlined.Sensors,
+                    title = "Enable Plus Key detection",
+                    body = "OnePlus doesn’t send the Plus Key to apps. Pair once with Wireless debugging in this app to grant READ_LOGS — no computer or Shizuku.",
+                    status = if (permissions.readLogsGranted) "READ_LOGS granted" else "READ_LOGS needed",
+                    primaryLabel = if (permissions.readLogsGranted) "Continue" else "Enable detection",
+                    onPrimary = {
+                        if (permissions.readLogsGranted) page = 3
+                        else onOpenEnableDetection()
+                    },
+                    secondaryLabel = if (!permissions.readLogsGranted) "I've done this — Recheck" else null,
+                    onSecondary = viewModel::refresh,
+                    tertiaryLabel = "Skip for now",
+                    onTertiary = { page = 3 },
+                )
+                3 -> StepContent(
                     icon = Icons.Outlined.Layers,
                     title = "Display over apps",
                     body = "Needed for the floating overlay menu. Skip if you only want single actions. You can still use single-action remaps without it.",
                     status = if (permissions.overlayGranted) "Granted" else "Not granted yet",
                     primaryLabel = if (permissions.overlayGranted) "Continue" else "Open overlay settings",
                     onPrimary = {
-                        if (permissions.overlayGranted) page = 3
+                        if (permissions.overlayGranted) page = 4
                         else viewModel.openOverlaySettings()
                     },
                     secondaryLabel = if (!permissions.overlayGranted) "I've enabled it" else null,
                     onSecondary = viewModel::refresh,
                     tertiaryLabel = "Skip for now",
-                    onTertiary = { page = 3 },
+                    onTertiary = { page = 4 },
                 )
-                3 -> StepContent(
+                4 -> StepContent(
                     icon = Icons.Outlined.Notifications,
                     title = "Keep it alive",
                     body = "Notifications and battery exemption help OxygenOS keep detection running in the background.",
@@ -136,13 +153,13 @@ fun OnboardingScreen(
                             !permissions.notificationsGranted ->
                                 notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             !permissions.batteryExempt -> viewModel.openBatterySettings()
-                            else -> page = 4
+                            else -> page = 5
                         }
                     },
                     secondaryLabel = "I've done this — Recheck",
                     onSecondary = viewModel::refresh,
                     tertiaryLabel = "Continue anyway",
-                    onTertiary = { page = 4 },
+                    onTertiary = { page = 5 },
                 )
                 else -> StepContent(
                     icon = Icons.Outlined.CheckCircle,

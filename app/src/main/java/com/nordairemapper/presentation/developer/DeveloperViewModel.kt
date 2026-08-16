@@ -10,7 +10,6 @@ import com.nordairemapper.domain.model.DetectionStrategy
 import com.nordairemapper.domain.repository.SettingsRepository
 import com.nordairemapper.service.DetectionCoordinator
 import com.nordairemapper.service.LogcatWatcherService
-import com.nordairemapper.service.ReadLogsGrantHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -71,17 +70,6 @@ class DeveloperViewModel @Inject constructor(
             ClipData.newPlainText("adb command", LogcatWatcherService.ADB_GRANT_COMMAND),
         )
     }
-
-    fun copyOnDeviceCommand() {
-        val clipboard = context.getSystemService(ClipboardManager::class.java)
-        clipboard.setPrimaryClip(
-            ClipData.newPlainText("pm grant", ReadLogsGrantHelper.ON_DEVICE_SHELL_COMMAND),
-        )
-    }
-
-    fun openWirelessDebugging() = ReadLogsGrantHelper.openWirelessDebugging(context)
-
-    fun openShizuku() = ReadLogsGrantHelper.openShizukuOrPlayStore(context)
 
     fun restartLogcatWatcher() {
         DetectionCoordinator.syncLogcatWatcher(

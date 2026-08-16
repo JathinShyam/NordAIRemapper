@@ -73,5 +73,10 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
 
+    // In-app Wireless ADB pairing to grant READ_LOGS (no Shizuku / no laptop)
+    implementation(libs.libadb.android)
+    implementation(libs.sun.security.android)
+    implementation(libs.conscrypt.android)
+
     testImplementation("junit:junit:4.13.2")
 }

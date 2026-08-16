@@ -17,6 +17,7 @@ import androidx.navigation.navArgument
 import com.nordairemapper.domain.model.PressType
 import com.nordairemapper.presentation.developer.DeveloperScreen
 import com.nordairemapper.presentation.developer.KeyLearningScreen
+import com.nordairemapper.presentation.detection.EnableDetectionScreen
 import com.nordairemapper.presentation.home.HomeScreen
 import com.nordairemapper.presentation.onboarding.OnboardingScreen
 import com.nordairemapper.presentation.backup.BackupScreen
@@ -33,6 +34,7 @@ object Routes {
     const val HOME = "home"
     const val KEY_LEARNING = "key_learning"
     const val DEVELOPER = "developer"
+    const val ENABLE_DETECTION = "enable_detection"
     const val SETTINGS = "settings"
     const val OVERLAY_SETTINGS = "overlay_settings"
     const val BACKUP = "backup"
@@ -80,6 +82,7 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
                         popUpTo(Routes.ONBOARDING) { inclusive = true }
                     }
                 },
+                onOpenEnableDetection = { navController.navigate(Routes.ENABLE_DETECTION) },
             )
         }
         composable(Routes.HOME) {
@@ -87,6 +90,7 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
                 onOpenRemap = { pressType -> navController.navigate(Routes.remap(pressType)) },
                 onOpenKeyLearning = { navController.navigate(Routes.KEY_LEARNING) },
                 onOpenDeveloper = { navController.navigate(Routes.DEVELOPER) },
+                onOpenEnableDetection = { navController.navigate(Routes.ENABLE_DETECTION) },
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 onOpenOverlaySettings = { navController.navigate(Routes.OVERLAY_SETTINGS) },
                 onOpenBackup = { navController.navigate(Routes.BACKUP) },
@@ -95,13 +99,19 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
         composable(Routes.KEY_LEARNING) {
             KeyLearningScreen(
                 onBack = { navController.popBackStack() },
-                onOpenDeveloper = { navController.navigate(Routes.DEVELOPER) },
+                onOpenEnableDetection = { navController.navigate(Routes.ENABLE_DETECTION) },
+            )
+        }
+        composable(Routes.ENABLE_DETECTION) {
+            EnableDetectionScreen(
+                onBack = { navController.popBackStack() },
             )
         }
         composable(Routes.DEVELOPER) {
             DeveloperScreen(
                 onBack = { navController.popBackStack() },
                 onOpenKeyLearning = { navController.navigate(Routes.KEY_LEARNING) },
+                onOpenEnableDetection = { navController.navigate(Routes.ENABLE_DETECTION) },
             )
         }
         composable(Routes.SETTINGS) {

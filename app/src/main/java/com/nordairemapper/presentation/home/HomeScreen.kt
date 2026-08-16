@@ -57,6 +57,7 @@ fun HomeScreen(
     onOpenRemap: (PressType) -> Unit,
     onOpenKeyLearning: () -> Unit,
     onOpenDeveloper: () -> Unit,
+    onOpenEnableDetection: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenOverlaySettings: () -> Unit,
     onOpenBackup: () -> Unit,
@@ -180,6 +181,7 @@ fun HomeScreen(
                             HomeBannerAction.OPEN_ACCESSIBILITY -> viewModel.openAccessibilitySettings()
                             HomeBannerAction.OPEN_KEY_LEARNING -> onOpenKeyLearning()
                             HomeBannerAction.OPEN_DEVELOPER -> onOpenDeveloper()
+                            HomeBannerAction.OPEN_ENABLE_DETECTION -> onOpenEnableDetection()
                         }
                     },
                 )

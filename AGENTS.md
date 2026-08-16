@@ -13,6 +13,8 @@ Read this file at the start of every session. Then load the matching skill under
 
 Product/tech truth lives in `docs/PRD.md`, `docs/TRD.md`, `docs/ARCHITECTURE.md`. Do not invent a second architecture.
 
+**Change logs:** For every non-trivial implementation, write separate notes under `docs/changes/YYYY-MM-DD-<slug>/` (one markdown file per logical change) and index them in `docs/changes/README.md`. Include why, what/files, verify steps, and debug tips. Do this in the same turn as the code.
+
 ## Stack
 
 Kotlin 2.0 · Compose Material 3 · Hilt · Room + DataStore · coroutines/Flow · minSdk 33 / target 35.

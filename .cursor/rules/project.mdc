@@ -13,3 +13,5 @@ Follow `AGENTS.md` in the repo root. Load `.cursor/skills/` when the task matche
 - Compose UI / theme / screens → `nord-compose-ui` (RoninForge Compose patterns; Nord palette wins)
 
 Never hard-code Plus Key identity. Logcat is first-class on Nord 5. Do not run `matchesPlusKey` on logcat events. Keep accessibility `onKeyEvent` thin. Do not commit OnePlus Sans fonts or add analytics.
+
+When shipping non-trivial code changes, document them under `docs/changes/` (see `docs/changes/README.md`) — one file per logical change, same turn as the code.

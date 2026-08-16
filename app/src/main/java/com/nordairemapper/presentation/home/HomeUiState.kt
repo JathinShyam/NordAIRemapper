@@ -15,6 +15,7 @@ enum class HomeBannerAction {
     OPEN_ACCESSIBILITY,
     OPEN_KEY_LEARNING,
     OPEN_DEVELOPER,
+    OPEN_ENABLE_DETECTION,
 }
 
 data class HomeUiState(

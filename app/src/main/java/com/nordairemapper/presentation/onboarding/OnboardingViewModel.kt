@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nordairemapper.domain.repository.SettingsRepository
 import com.nordairemapper.service.AccessibilityUtils
+import com.nordairemapper.service.LogcatWatcherService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +21,7 @@ import javax.inject.Inject
 
 data class OnboardingPermissionState(
     val accessibilityEnabled: Boolean = false,
+    val readLogsGranted: Boolean = false,
     val overlayGranted: Boolean = false,
     val notificationsGranted: Boolean = true,
     val batteryExempt: Boolean = false,
@@ -69,6 +71,7 @@ class OnboardingViewModel @Inject constructor(
         val pm = context.getSystemService(PowerManager::class.java)
         return OnboardingPermissionState(
             accessibilityEnabled = AccessibilityUtils.isServiceEnabled(context),
+            readLogsGranted = LogcatWatcherService.hasReadLogsPermission(context),
             overlayGranted = Settings.canDrawOverlays(context),
             notificationsGranted = context.checkSelfPermission(
                 android.Manifest.permission.POST_NOTIFICATIONS

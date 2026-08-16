@@ -1,8 +1,8 @@
 # Architecture Document
 
 **Product:** Nord AI Remapper  
-**Companion docs:** [PRD.md](./PRD.md), [TRD.md](./TRD.md)  
-**Document version:** 1.0  
+**Companion docs:** [PRD.md](./PRD.md), [TRD.md](./TRD.md), [changes/](./changes/) (per-change debug notes)  
+**Document version:** 1.1  
 **Codebase package:** `com.nordairemapper`
 
 ---
@@ -67,13 +67,16 @@ com.nordairemapper/
 │   ├── MainActivity.kt
 │   ├── navigation/NordNavHost.kt
 │   ├── home/
-│   ├── remap/                         # (planned)
-│   ├── overlay/                       # (planned)
-│   ├── backup/                        # (planned)
-│   ├── settings/                      # (planned)
-│   ├── onboarding/                    # (planned)
+│   ├── detection/                     # Enable Plus Key detection (in-app READ_LOGS grant)
+│   ├── remap/
+│   ├── overlay/
+│   ├── backup/
+│   ├── settings/
+│   ├── onboarding/
 │   └── developer/                     # Key learning + Developer settings
 ├── service/
+│   ├── DetectionCoordinator.kt        # Strategy accept + logcat watcher sync
+│   ├── adb/                           # Wireless ADB pair → READ_LOGS grant only
 │   ├── KeyEventBus.kt
 │   ├── GestureClassifier.kt
 │   ├── RemapEngine.kt
@@ -82,15 +85,17 @@ com.nordairemapper/
 │   ├── RemapActionExecutor.kt
 │   ├── ActionDispatcher.kt
 │   ├── AccessibilityUtils.kt
-│   ├── FloatingOverlayService.kt      # (planned)
-│   └── BootReceiver.kt                # (planned)
+│   ├── FloatingOverlayService.kt
+│   └── BootReceiver.kt
 ├── ui/
 │   ├── theme/                         # Color, Type, Shape, Theme
-│   └── components/                    # PhoneDiagram, ActionCard… (planned)
+│   └── components/                    # PhoneDiagram, ActionCard…
 └── di/                                # AppModule, ServiceModule, RepositoryModule
 ```
 
 **Note:** Early code uses a shared event bus + engine rather than a formal `KeyDetector` interface type. Architecturally, `PlusKeyAccessibilityService` and `LogcatWatcherService` are the two detector adapters; extracting an explicit `KeyDetector` interface is optional cleanup if both remain thin emitters.
+
+**READ_LOGS grant (2026-08-16):** consumer path is `presentation/detection` + `service/adb` (Wireless Debugging pair). Details: [changes/2026-08-16-in-app-read-logs-grant/](./changes/2026-08-16-in-app-read-logs-grant/).
 
 ---
 

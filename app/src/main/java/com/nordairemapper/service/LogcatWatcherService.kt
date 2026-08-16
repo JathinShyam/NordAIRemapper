@@ -34,10 +34,9 @@ import javax.inject.Inject
  * This is the strategy that works on OnePlus devices where the Plus Key never
  * reaches the accessibility key-filtering API.
  *
- * Requires READ_LOGS. Grant once via USB ADB or on-device Wireless Debugging
- * (Shizuku / aShell — no laptop):
+ * Requires READ_LOGS. Prefer in-app Wireless debugging pair (Enable detection
+ * screen). USB fallback:
  *   adb shell pm grant com.nordairemapper android.permission.READ_LOGS
- *   pm grant com.nordairemapper android.permission.READ_LOGS
  */
 @AndroidEntryPoint
 class LogcatWatcherService : Service() {
