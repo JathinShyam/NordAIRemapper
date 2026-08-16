@@ -3,7 +3,6 @@ package com.nordairemapper.service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.nordairemapper.domain.model.DetectionStrategy
 import com.nordairemapper.domain.repository.SettingsRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -28,11 +27,11 @@ class BootReceiver : BroadcastReceiver() {
             try {
                 val settings = settingsRepository.settings.first()
                 if (!settings.serviceEnabled) return@launch
-                if (settings.detectionStrategy == DetectionStrategy.LOGCAT &&
-                    LogcatWatcherService.hasReadLogsPermission(context)
-                ) {
-                    LogcatWatcherService.start(context)
-                }
+                DetectionCoordinator.syncLogcatWatcher(
+                    context = context,
+                    strategy = settings.detectionStrategy,
+                    serviceEnabled = true,
+                )
                 if (!AccessibilityUtils.isServiceEnabled(context)) {
                     ServiceNotifications.notifyDetectionStopped(context)
                 }

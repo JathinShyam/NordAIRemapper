@@ -20,7 +20,7 @@ enum class HomeBannerAction {
 data class HomeUiState(
     val serviceEnabled: Boolean = true,
     val accessibilityEnabled: Boolean = false,
-    val detectionStrategy: DetectionStrategy = DetectionStrategy.ACCESSIBILITY,
+    val detectionStrategy: DetectionStrategy = DetectionStrategy.AUTO,
     val keyConfigured: Boolean = false,
     val readLogsGranted: Boolean = false,
     val actions: Map<PressType, RemapAction> = PressType.entries.associateWith { RemapAction.None },

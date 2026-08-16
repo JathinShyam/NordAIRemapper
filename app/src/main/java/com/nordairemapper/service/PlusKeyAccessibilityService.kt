@@ -28,6 +28,12 @@ class PlusKeyAccessibilityService : AccessibilityService() {
         }
         AccessibilityServiceHolder.service = this
         remapEngine.start()
+        // Nord 5: Plus Key rarely reaches onKeyEvent — start logcat companion when permitted.
+        DetectionCoordinator.syncLogcatWatcher(
+            context = this,
+            strategy = remapEngine.currentStrategy(),
+            serviceEnabled = remapEngine.isServiceEnabled(),
+        )
     }
 
     override fun onKeyEvent(event: KeyEvent): Boolean {

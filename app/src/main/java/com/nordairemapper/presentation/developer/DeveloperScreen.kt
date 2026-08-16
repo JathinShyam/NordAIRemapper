@@ -36,6 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.AppSettings
 import com.nordairemapper.domain.model.DetectionStrategy
 import com.nordairemapper.service.LogcatWatcherService
+import com.nordairemapper.service.ReadLogsGrantHelper
 import com.nordairemapper.ui.components.NordHeading
 import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.NordSurfaceCard
@@ -80,7 +81,17 @@ fun DeveloperScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             SectionLabel("Detection strategy")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                StatusChip(
+                    label = "Auto",
+                    tone = StatusTone.Active,
+                    selected = settings.detectionStrategy == DetectionStrategy.AUTO,
+                    showDot = false,
+                    onClick = { viewModel.setStrategy(DetectionStrategy.AUTO) },
+                )
                 StatusChip(
                     label = "Accessibility",
                     tone = StatusTone.Active,
@@ -97,62 +108,96 @@ fun DeveloperScreen(
                 )
             }
             Text(
-                text = "Accessibility observes raw key events; on OnePlus the Plus Key is often only visible in system logs, which the logcat watcher picks up.",
+                text = when (settings.detectionStrategy) {
+                    DetectionStrategy.AUTO ->
+                        "Uses Accessibility when the OS delivers the Plus Key, and logcat when it does not (Nord 5). Recommended."
+                    DetectionStrategy.ACCESSIBILITY ->
+                        "Listens for KeyEvents. On Nord 5 the Plus Key almost never arrives here (volume keys do). A logcat companion runs when READ_LOGS is granted."
+                    DetectionStrategy.LOGCAT ->
+                        "Watches system logs for KEYCODE_ACTION_BUTTON_CLICK. Requires READ_LOGS."
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            if (settings.detectionStrategy == DetectionStrategy.LOGCAT) {
-                SectionLabel("Logcat watcher")
-                NordSurfaceCard {
-                    Column(
-                        modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
+            SectionLabel("READ_LOGS (Plus Key on Nord 5)")
+            NordSurfaceCard {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = if (readLogsGranted) {
+                            "READ_LOGS granted — logcat detection can run"
+                        } else {
+                            "Not granted — required to detect the Plus Key on Nord 5"
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (readLogsGranted) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                    )
+                    if (!readLogsGranted) {
                         Text(
-                            text = if (readLogsGranted) {
-                                "READ_LOGS granted"
-                            } else {
-                                "READ_LOGS not granted — run this once from a computer:"
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = if (readLogsGranted) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.error
-                            },
+                            text = "No laptop needed (Android 11+): enable Wireless debugging, start Shizuku (or aShell), then run:",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        if (!readLogsGranted) {
-                            Text(
-                                text = LogcatWatcherService.ADB_GRANT_COMMAND,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            TextButton(onClick = viewModel::copyAdbCommand) {
-                                Text("Copy ADB command")
+                        Text(
+                            text = ReadLogsGrantHelper.ON_DEVICE_SHELL_COMMAND,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            TextButton(onClick = viewModel::copyOnDeviceCommand) {
+                                Text("Copy pm grant")
+                            }
+                            TextButton(onClick = viewModel::openWirelessDebugging) {
+                                Text("Wireless debugging")
                             }
                         }
+                        TextButton(onClick = viewModel::openShizuku) {
+                            Text("Open Shizuku / install")
+                        }
+                        Text(
+                            text = "From a computer (USB):",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = LogcatWatcherService.ADB_GRANT_COMMAND,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        TextButton(onClick = viewModel::copyAdbCommand) {
+                            Text("Copy ADB command")
+                        }
+                        TextButton(onClick = viewModel::refreshPermissions) {
+                            Text("I've granted it — Recheck")
+                        }
+                    }
 
-                        var pattern by rememberSaveable(settings.logcatPattern) {
-                            mutableStateOf(settings.logcatPattern)
+                    var pattern by rememberSaveable(settings.logcatPattern) {
+                        mutableStateOf(settings.logcatPattern)
+                    }
+                    OutlinedTextField(
+                        value = pattern,
+                        onValueChange = { pattern = it },
+                        label = { Text("Log match pattern") },
+                        supportingText = {
+                            Text("Nord 5 default is KEYCODE_ACTION_BUTTON_CLICK (one down/up per press).")
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(onClick = { viewModel.setLogcatPattern(pattern) }) {
+                            Text("Save pattern")
                         }
-                        OutlinedTextField(
-                            value = pattern,
-                            onValueChange = { pattern = it },
-                            label = { Text("Log match pattern") },
-                            supportingText = {
-                                Text("Nord 5 default is KEYCODE_ACTION_BUTTON_CLICK (one down/up per press).")
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TextButton(onClick = { viewModel.setLogcatPattern(pattern) }) {
-                                Text("Save pattern")
-                            }
-                            TextButton(onClick = viewModel::restartLogcatWatcher) {
-                                Text("Restart watcher")
-                            }
+                        TextButton(onClick = viewModel::restartLogcatWatcher) {
+                            Text("Restart watcher")
                         }
                     }
                 }

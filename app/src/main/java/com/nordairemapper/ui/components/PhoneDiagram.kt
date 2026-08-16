@@ -52,23 +52,21 @@ fun PhoneDiagram(
     Canvas(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 64.dp)
-            // Body aspect ≈ 77 / 163.4; canvas is slightly wider for side keys.
-            .aspectRatio(0.48f)
+            // Room for side keys only — keep the body large on Home.
+            .padding(horizontal = 12.dp)
+            .aspectRatio(0.47f)
             .semantics {
                 contentDescription = "OnePlus Nord 5 outline with Plus Key on the left"
             },
     ) {
-        val stroke = Stroke(width = size.minDimension * 0.012f)
-        // Fit 77×163.4 mm body inside the canvas, leaving room for side keys.
+        val stroke = Stroke(width = size.minDimension * 0.011f)
         val bodyAspect = 77f / 163.4f
-        val maxW = size.width * 0.70f
-        val maxH = size.height * 0.92f
+        val maxW = size.width * 0.92f
+        val maxH = size.height * 0.98f
         val phoneWidth = minOf(maxW, maxH * bodyAspect)
         val phoneHeight = phoneWidth / bodyAspect
         val left = (size.width - phoneWidth) / 2f
         val top = (size.height - phoneHeight) / 2f
-        // Slightly-rounded frame (marketing); not iPhone-aggressive.
         val radius = phoneWidth * 0.13f
 
         drawRoundRect(
@@ -90,7 +88,6 @@ fun PhoneDiagram(
             style = stroke,
         )
 
-        // ~1.65 mm bezels on 77 mm width ≈ 2.1% — keep the display nearly edge-to-edge.
         val bezel = phoneWidth * 0.035f
         val screenTop = top + bezel * 1.15f
         val screenLeft = left + bezel
@@ -103,7 +100,6 @@ fun PhoneDiagram(
             cornerRadius = CornerRadius(radius * 0.72f, radius * 0.72f),
         )
 
-        // Centered punch-hole (top-center of display)
         val holeRadius = phoneWidth * 0.026f
         val holeCenter = Offset(
             x = left + phoneWidth / 2f,
@@ -120,10 +116,9 @@ fun PhoneDiagram(
             center = holeCenter,
         )
 
-        val btnWidth = phoneWidth * 0.045f
+        val btnWidth = phoneWidth * 0.042f
         val rightEdge = left + phoneWidth
 
-        // Left: Plus Key only (short Action-style key, upper third)
         val plusHeight = phoneHeight * 0.055f
         val plusTop = top + phoneHeight * 0.20f
         val plusLeft = left - btnWidth * 0.55f
@@ -142,7 +137,6 @@ fun PhoneDiagram(
             cornerRadius = CornerRadius(btnWidth / 2f, btnWidth / 2f),
         )
 
-        // Right: volume rocker (taller), then power below — Coolsmartphone / OnePlus Lab
         val volHeight = phoneHeight * 0.115f
         val volTop = top + phoneHeight * 0.22f
         val rightBtnLeft = rightEdge - btnWidth * 0.45f

@@ -10,6 +10,7 @@ import com.nordairemapper.domain.repository.RemapConfigRepository
 import com.nordairemapper.domain.repository.SettingsRepository
 import com.nordairemapper.presentation.common.conflictKey
 import com.nordairemapper.service.AccessibilityUtils
+import com.nordairemapper.service.DetectionCoordinator
 import com.nordairemapper.service.LogcatWatcherService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -71,15 +72,11 @@ class HomeViewModel @Inject constructor(
     fun setServiceEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setServiceEnabled(enabled)
-            if (!enabled && uiState.value.detectionStrategy == DetectionStrategy.LOGCAT) {
-                LogcatWatcherService.stop(context)
-            } else if (
-                enabled &&
-                uiState.value.detectionStrategy == DetectionStrategy.LOGCAT &&
-                LogcatWatcherService.hasReadLogsPermission(context)
-            ) {
-                LogcatWatcherService.start(context)
-            }
+            DetectionCoordinator.syncLogcatWatcher(
+                context = context,
+                strategy = uiState.value.detectionStrategy,
+                serviceEnabled = enabled,
+            )
         }
     }
 
@@ -118,18 +115,38 @@ class HomeViewModel @Inject constructor(
                 )
             }
             when (strategy) {
-                DetectionStrategy.ACCESSIBILITY -> if (!keyConfigured) {
-                    return HomeBanner(
-                        title = "Plus Key not learned",
-                        body = "Open Key setup, press the Plus Key, then save the captured keyCode/scanCode.",
-                        primaryLabel = "Key setup",
-                        primaryAction = HomeBannerAction.OPEN_KEY_LEARNING,
-                    )
+                DetectionStrategy.ACCESSIBILITY -> {
+                    if (!readLogsGranted && !keyConfigured) {
+                        return HomeBanner(
+                            title = "Plus Key needs logcat on Nord 5",
+                            body = "Accessibility sees volume keys, but OxygenOS handles the Plus Key in system code so it never reaches Key setup. Grant READ_LOGS once (Wireless Debugging — no laptop) so the logcat companion can detect it. Accessibility stays on for system actions.",
+                            primaryLabel = "Grant READ_LOGS",
+                            primaryAction = HomeBannerAction.OPEN_DEVELOPER,
+                        )
+                    }
+                    if (!keyConfigured && readLogsGranted) {
+                        return HomeBanner(
+                            title = "Test Plus Key detection",
+                            body = "READ_LOGS is granted. Open Key setup and press the Plus Key — you should see a logcat row. No keyCode save is needed for logcat.",
+                            primaryLabel = "Key setup",
+                            primaryAction = HomeBannerAction.OPEN_KEY_LEARNING,
+                        )
+                    }
+                }
+                DetectionStrategy.AUTO -> {
+                    if (!readLogsGranted) {
+                        return HomeBanner(
+                            title = "READ_LOGS required on Nord 5",
+                            body = "Auto mode uses Accessibility when the OS delivers the key, and logcat when it does not (Nord 5). Grant READ_LOGS once via Wireless Debugging — no laptop needed.",
+                            primaryLabel = "Grant READ_LOGS",
+                            primaryAction = HomeBannerAction.OPEN_DEVELOPER,
+                        )
+                    }
                 }
                 DetectionStrategy.LOGCAT -> if (!readLogsGranted) {
                     return HomeBanner(
                         title = "READ_LOGS required",
-                        body = "Logcat detection needs a one-time ADB grant. Copy the command from Developer settings.",
+                        body = "Logcat detection needs a one-time grant. Use Wireless Debugging on the phone (no laptop) or USB ADB from a computer — see Developer settings.",
                         primaryLabel = "Developer",
                         primaryAction = HomeBannerAction.OPEN_DEVELOPER,
                     )

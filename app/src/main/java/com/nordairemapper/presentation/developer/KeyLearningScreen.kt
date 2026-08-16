@@ -155,7 +155,7 @@ fun KeyLearningScreen(
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                         )
                         Text(
-                            text = "Volume and other buttons are visible, but the Plus Key is handled by OnePlus system code and usually never arrives here. Switch to Logcat watcher in Developer, grant READ_LOGS via ADB, then press the Plus Key again.",
+                            text = "Volume and other buttons are visible, but the Plus Key is handled by OnePlus system code and never arrives as a KeyEvent. That is expected on Nord 5 — not an Accessibility bug. Grant READ_LOGS (Wireless Debugging + Shizuku/aShell, no laptop) so the logcat companion can detect the AI key. Accessibility stays required for screenshot, lock, and other system actions.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

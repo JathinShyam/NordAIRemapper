@@ -6,7 +6,7 @@ enum class HapticIntensity { LIGHT, MEDIUM, HEAVY }
 
 data class AppSettings(
     val serviceEnabled: Boolean = true,
-    val detectionStrategy: DetectionStrategy = DetectionStrategy.ACCESSIBILITY,
+    val detectionStrategy: DetectionStrategy = DetectionStrategy.AUTO,
     val keyIdentity: KeyIdentity = KeyIdentity.UNCONFIGURED,
     val doublePressWindowMs: Long = 300L,
     val longPressThresholdMs: Long = 500L,

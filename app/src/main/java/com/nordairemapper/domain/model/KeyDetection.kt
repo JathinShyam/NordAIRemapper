@@ -19,15 +19,21 @@ data class KeyIdentity(
 }
 
 enum class DetectionStrategy(val key: String) {
-    /** AccessibilityService with FLAG_REQUEST_FILTER_KEY_EVENTS. */
+    /**
+     * Prefer whichever detector sees the Plus Key: Accessibility when the OS
+     * delivers it, Logcat on Nord 5 / OxygenOS. Recommended default.
+     */
+    AUTO("auto"),
+
+    /** AccessibilityService with FLAG_REQUEST_FILTER_KEY_EVENTS (+ logcat companion). */
     ACCESSIBILITY("accessibility"),
 
-    /** Foreground service tailing logcat for OplusKeyEventUtil entries (needs READ_LOGS). */
+    /** Foreground service tailing logcat for KEYCODE_ACTION_BUTTON_CLICK (needs READ_LOGS). */
     LOGCAT("logcat");
 
     companion object {
         fun fromKey(key: String): DetectionStrategy =
-            entries.firstOrNull { it.key == key } ?: ACCESSIBILITY
+            entries.firstOrNull { it.key == key } ?: AUTO
     }
 }
 

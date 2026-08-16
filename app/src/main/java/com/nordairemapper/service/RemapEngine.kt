@@ -54,12 +54,21 @@ class RemapEngine @Inject constructor(
         started = true
 
         scope.launch {
-            settingsRepository.settings.collect { settings = it }
+            settingsRepository.settings.collect { next ->
+                settings = next
+                DetectionCoordinator.syncLogcatWatcher(
+                    context = context,
+                    strategy = next.detectionStrategy,
+                    serviceEnabled = next.serviceEnabled,
+                )
+            }
         }
         scope.launch {
             keyEventBus.rawEvents.collect { event ->
                 if (!settings.serviceEnabled) return@collect
-                if (event.source != settings.detectionStrategy) return@collect
+                if (!DetectionCoordinator.acceptsSource(settings.detectionStrategy, event.source)) {
+                    return@collect
+                }
                 when (event.action) {
                     KeyAction.DOWN -> if (isPlusKeyEvent(event)) classifier.onKeyDown()
                     KeyAction.UP -> if (isPlusKeyEvent(event)) classifier.onKeyUp()
@@ -68,6 +77,10 @@ class RemapEngine @Inject constructor(
             }
         }
     }
+
+    fun currentStrategy(): DetectionStrategy = settings.detectionStrategy
+
+    fun isServiceEnabled(): Boolean = settings.serviceEnabled
 
     /**
      * Logcat events are already filtered by the match pattern and use
@@ -94,10 +107,14 @@ class RemapEngine @Inject constructor(
     }
 
     /** Whether the accessibility service should consume this key event. */
-    fun shouldConsume(keyCode: Int, scanCode: Int): Boolean =
-        settings.serviceEnabled &&
-            settings.detectionStrategy == DetectionStrategy.ACCESSIBILITY &&
+    fun shouldConsume(keyCode: Int, scanCode: Int): Boolean {
+        val strategy = settings.detectionStrategy
+        val consumeViaAccessibility =
+            strategy == DetectionStrategy.ACCESSIBILITY || strategy == DetectionStrategy.AUTO
+        return settings.serviceEnabled &&
+            consumeViaAccessibility &&
             matchesPlusKey(keyCode, scanCode)
+    }
 
     private fun onGesture(gesture: Gesture) {
         val pressType = when (gesture) {

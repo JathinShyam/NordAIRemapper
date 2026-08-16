@@ -119,8 +119,8 @@ fun HomeScreen(
                 highlightKey = state.serviceEnabled && state.accessibilityEnabled,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(220.dp)
-                    .padding(vertical = 6.dp),
+                    .height(300.dp)
+                    .padding(vertical = 4.dp),
             )
 
             StatusChip(

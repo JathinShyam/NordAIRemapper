@@ -8,7 +8,9 @@ import androidx.lifecycle.viewModelScope
 import com.nordairemapper.domain.model.AppSettings
 import com.nordairemapper.domain.model.DetectionStrategy
 import com.nordairemapper.domain.repository.SettingsRepository
+import com.nordairemapper.service.DetectionCoordinator
 import com.nordairemapper.service.LogcatWatcherService
+import com.nordairemapper.service.ReadLogsGrantHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,16 +35,21 @@ class DeveloperViewModel @Inject constructor(
 
     fun refreshPermissions() {
         _readLogsGranted.value = LogcatWatcherService.hasReadLogsPermission(context)
+        DetectionCoordinator.syncLogcatWatcher(
+            context = context,
+            strategy = settings.value.detectionStrategy,
+            serviceEnabled = settings.value.serviceEnabled,
+        )
     }
 
     fun setStrategy(strategy: DetectionStrategy) {
         viewModelScope.launch {
             settingsRepository.setDetectionStrategy(strategy)
-            if (strategy == DetectionStrategy.LOGCAT && LogcatWatcherService.hasReadLogsPermission(context)) {
-                LogcatWatcherService.start(context)
-            } else {
-                LogcatWatcherService.stop(context)
-            }
+            DetectionCoordinator.syncLogcatWatcher(
+                context = context,
+                strategy = strategy,
+                serviceEnabled = settings.value.serviceEnabled,
+            )
         }
     }
 
@@ -61,14 +68,26 @@ class DeveloperViewModel @Inject constructor(
     fun copyAdbCommand() {
         val clipboard = context.getSystemService(ClipboardManager::class.java)
         clipboard.setPrimaryClip(
-            ClipData.newPlainText("adb command", LogcatWatcherService.ADB_GRANT_COMMAND)
+            ClipData.newPlainText("adb command", LogcatWatcherService.ADB_GRANT_COMMAND),
         )
     }
 
+    fun copyOnDeviceCommand() {
+        val clipboard = context.getSystemService(ClipboardManager::class.java)
+        clipboard.setPrimaryClip(
+            ClipData.newPlainText("pm grant", ReadLogsGrantHelper.ON_DEVICE_SHELL_COMMAND),
+        )
+    }
+
+    fun openWirelessDebugging() = ReadLogsGrantHelper.openWirelessDebugging(context)
+
+    fun openShizuku() = ReadLogsGrantHelper.openShizukuOrPlayStore(context)
+
     fun restartLogcatWatcher() {
-        LogcatWatcherService.stop(context)
-        if (LogcatWatcherService.hasReadLogsPermission(context)) {
-            LogcatWatcherService.start(context)
-        }
+        DetectionCoordinator.syncLogcatWatcher(
+            context = context,
+            strategy = settings.value.detectionStrategy,
+            serviceEnabled = settings.value.serviceEnabled,
+        )
     }
 }

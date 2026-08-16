@@ -15,7 +15,7 @@ data class BackupPayload(
 data class BackupSettings(
     val doublePressWindowMs: Long = 300L,
     val longPressThresholdMs: Long = 500L,
-    val detectionStrategy: String = DetectionStrategy.ACCESSIBILITY.key,
+    val detectionStrategy: String = DetectionStrategy.AUTO.key,
     val keyIdentity: KeyIdentity = KeyIdentity.UNCONFIGURED,
     val hapticFeedback: Boolean = true,
     val hapticIntensity: String = HapticIntensity.MEDIUM.name,
