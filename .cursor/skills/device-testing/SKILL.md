@@ -35,8 +35,10 @@ open the Wireless debugging **detail page** → **Pair device with pairing code*
 enter the 6-digit code (and port if asked) → Pair and grant. Then turn Wireless
 debugging off; `READ_LOGS` persists.
 
-If you only see Network name / Cancel / Allow: that is **not** the pairing screen.
-Tap Allow, then open Wireless debugging again and choose Pair device with pairing code.
+If connect fails after a correct pairing code: you likely entered only the
+**pairing** port. The Wireless debugging **main** page shows a different
+**IP address & port** — enter that as Connection port in Enable detection.
+See `docs/changes/2026-08-16-in-app-read-logs-grant/14-pairing-vs-connect-port.md`.
 
 ### Phone-only test plan
 

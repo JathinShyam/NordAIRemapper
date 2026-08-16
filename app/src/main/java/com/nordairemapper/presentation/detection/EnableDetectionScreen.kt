@@ -194,12 +194,17 @@ fun EnableDetectionScreen(
                 }
             }
 
-            SectionLabel("2 · Enter pairing code")
+            SectionLabel("2 · Pair, then connect")
             NordSurfaceCard {
                 Column(
                     modifier = Modifier.padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    Text(
+                        text = "Pairing port and Connection port are different. Pairing uses the port under the 6-digit code. Connection uses “IP address & port” on the main Wireless debugging page after you close the pairing dialog.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     OutlinedTextField(
                         value = state.pairingCode,
                         onValueChange = viewModel::onPairingCodeChange,
@@ -210,13 +215,25 @@ fun EnableDetectionScreen(
                         enabled = !state.isGranting,
                     )
                     OutlinedTextField(
-                        value = state.manualPort,
-                        onValueChange = viewModel::onManualPortChange,
-                        label = { Text("Pairing port (if not discovered)") },
+                        value = state.pairingPort,
+                        onValueChange = viewModel::onPairingPortChange,
+                        label = { Text("Pairing port") },
                         supportingText = {
-                            Text("Under the code you’ll see something like 192.168.x.x:37123 — type only the number after the colon.")
+                            Text("Under the code: 192.168.x.x:PAIRING_PORT — paste IP:port or just the port.")
                         },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !state.isGranting,
+                    )
+                    OutlinedTextField(
+                        value = state.connectPort,
+                        onValueChange = viewModel::onConnectPortChange,
+                        label = { Text("Connection port (required if connect fails)") },
+                        supportingText = {
+                            Text("Wireless debugging page → IP address & port (not the pairing dialog). Paste IP:port or just the port.")
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !state.isGranting,

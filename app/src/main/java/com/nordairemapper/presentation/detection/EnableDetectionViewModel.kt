@@ -21,7 +21,13 @@ import javax.inject.Inject
 data class EnableDetectionUiState(
     val readLogsGranted: Boolean = false,
     val pairingCode: String = "",
-    val manualPort: String = "",
+    /** Pairing dialog port only (under the 6-digit code). */
+    val pairingPort: String = "",
+    /**
+     * Wireless debugging page “IP address & port” — different from [pairingPort].
+     * Needed when mDNS cannot find the TLS connect service after pairing.
+     */
+    val connectPort: String = "",
     val discoveredPort: Int? = null,
     val discoveredHost: String? = null,
     val isDiscovering: Boolean = false,
@@ -66,9 +72,26 @@ class EnableDetectionViewModel @Inject constructor(
         _uiState.update { it.copy(pairingCode = digits, errorMessage = null) }
     }
 
-    fun onManualPortChange(value: String) {
-        val digits = value.filter { it.isDigit() }.take(5)
-        _uiState.update { it.copy(manualPort = digits) }
+    fun onPairingPortChange(value: String) {
+        val parsed = parseHostPortOrPort(value)
+        _uiState.update {
+            it.copy(
+                pairingPort = parsed.portText,
+                discoveredHost = parsed.host ?: it.discoveredHost,
+                errorMessage = null,
+            )
+        }
+    }
+
+    fun onConnectPortChange(value: String) {
+        val parsed = parseHostPortOrPort(value)
+        _uiState.update {
+            it.copy(
+                connectPort = parsed.portText,
+                discoveredHost = parsed.host ?: it.discoveredHost,
+                errorMessage = null,
+            )
+        }
     }
 
     fun setShowAdvanced(show: Boolean) {
@@ -83,7 +106,8 @@ class EnableDetectionViewModel @Inject constructor(
         ReadLogsGrantHelper.openDeveloperOptions(context)
         _uiState.update {
             it.copy(
-                statusMessage = "In Developer options: turn on Wireless debugging → tap the Wireless debugging row → Pair device with pairing code.",
+                statusMessage = "Wireless debugging → Pair device with pairing code for the 6-digit " +
+                    "code. After that, the main Wireless debugging page shows a different IP:port for connection.",
             )
         }
     }
@@ -92,7 +116,7 @@ class EnableDetectionViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 isDiscovering = false,
-                statusMessage = "Nearby Wi‑Fi permission denied — enter the pairing port manually from the system dialog.",
+                statusMessage = "Nearby Wi‑Fi permission denied — enter pairing port and connection port manually.",
             )
         }
     }
@@ -104,7 +128,7 @@ class EnableDetectionViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     isDiscovering = true,
-                    statusMessage = "Looking for pairing port… Keep “Pair device with pairing code” open (not the SSID Allow screen).",
+                    statusMessage = "Looking for pairing port… Keep “Pair device with pairing code” open.",
                     errorMessage = null,
                 )
             }
@@ -115,12 +139,15 @@ class EnableDetectionViewModel @Inject constructor(
                         isDiscovering = false,
                         discoveredHost = endpoint.host,
                         discoveredPort = endpoint.port,
-                        statusMessage = "Found pairing port ${endpoint.port}. Enter the 6-digit code.",
+                        pairingPort = endpoint.port.toString(),
+                        statusMessage = "Found pairing port ${endpoint.port}. Enter the 6-digit code. " +
+                            "Also note the Wireless debugging page IP:port for Connection port if connect fails.",
                     )
                 } else {
                     it.copy(
                         isDiscovering = false,
-                        statusMessage = "Port not found automatically. Open Pair device with pairing code and enter the port after the colon (IP:port).",
+                        statusMessage = "Port not found automatically. Enter pairing port from under the code, " +
+                            "and Connection port from the Wireless debugging page IP address & port.",
                     )
                 }
             }
@@ -135,14 +162,16 @@ class EnableDetectionViewModel @Inject constructor(
                 it.copy(
                     isGranting = true,
                     errorMessage = null,
-                    statusMessage = "Pairing and granting READ_LOGS…",
+                    statusMessage = "Pairing, then connecting (uses a different port)…",
                 )
             }
-            val port = state.manualPort.toIntOrNull() ?: state.discoveredPort
+            val pairingPort = state.pairingPort.toIntOrNull() ?: state.discoveredPort
+            val connectPort = state.connectPort.toIntOrNull()
             val result = grantViaWirelessAdb.pairAndGrant(
                 pairingCode = state.pairingCode,
                 host = state.discoveredHost,
-                pairingPort = port,
+                pairingPort = pairingPort,
+                connectPort = connectPort,
             )
             when (result) {
                 ReadLogsGrantViaWirelessAdb.GrantResult.AlreadyGranted,
@@ -172,5 +201,18 @@ class EnableDetectionViewModel @Inject constructor(
             ClipData.newPlainText("adb command", LogcatWatcherService.ADB_GRANT_COMMAND),
         )
         _uiState.update { it.copy(statusMessage = "USB ADB command copied.") }
+    }
+
+    private data class HostPortParse(val host: String?, val portText: String)
+
+    /** Accepts "37123" or "192.168.1.5:37123". */
+    private fun parseHostPortOrPort(raw: String): HostPortParse {
+        val trimmed = raw.trim()
+        if (trimmed.contains(':')) {
+            val host = trimmed.substringBeforeLast(':').trim().ifEmpty { null }
+            val port = trimmed.substringAfterLast(':').filter { it.isDigit() }.take(5)
+            return HostPortParse(host, port)
+        }
+        return HostPortParse(null, trimmed.filter { it.isDigit() }.take(5))
     }
 }

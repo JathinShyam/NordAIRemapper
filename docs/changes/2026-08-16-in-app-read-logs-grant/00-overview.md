@@ -24,6 +24,7 @@ On stock Nord 5, OxygenOS/`OplusKeyEventUtil` never delivers the Plus Key to `Ac
 | [11-entry-points.md](./11-entry-points.md) | All navigation paths to Enable detection |
 | [12-privacy-and-limits.md](./12-privacy-and-limits.md) | Claims, non-claims, log tags, shell surface |
 | [13-wireless-debugging-ssid-allow.md](./13-wireless-debugging-ssid-allow.md) | SSID Allow dialog vs pairing code page |
+| [14-pairing-vs-connect-port.md](./14-pairing-vs-connect-port.md) | Failed to connect: pairing port ≠ connection port |
 
 ## End-to-end flow
 

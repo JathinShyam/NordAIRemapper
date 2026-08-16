@@ -1,6 +1,8 @@
 package com.nordairemapper.service.adb
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.LinkProperties
 import android.util.Log
 import com.nordairemapper.domain.repository.SettingsRepository
 import com.nordairemapper.service.DetectionCoordinator
@@ -9,10 +11,12 @@ import com.nordairemapper.service.ReadLogsGrantHelper
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.muntashirakon.adb.android.AdbMdns
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import java.net.Inet4Address
 import java.net.InetAddress
 import java.nio.charset.StandardCharsets
 import javax.inject.Inject
@@ -22,6 +26,9 @@ import kotlin.coroutines.resume
 /**
  * One-time in-app Wireless Debugging flow that grants only
  * `android.permission.READ_LOGS` via loopback ADB — no Shizuku, no laptop.
+ *
+ * Pairing uses the temporary pairing port; connecting uses a *different*
+ * TLS connect port from the Wireless debugging detail page (IP address & port).
  */
 @Singleton
 class ReadLogsGrantViaWirelessAdb @Inject constructor(
@@ -42,23 +49,25 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
 
     fun hasReadLogs(): Boolean = LogcatWatcherService.hasReadLogsPermission(context)
 
-    /**
-     * Discover the Wireless Debugging TLS pairing endpoint advertised while
-     * "Pair device with pairing code" is open.
-     */
     suspend fun discoverPairingEndpoint(
         timeoutMs: Long = PAIRING_DISCOVERY_TIMEOUT_MS,
+    ): DiscoveredEndpoint? = discoverMdnsEndpoint(AdbMdns.SERVICE_TYPE_TLS_PAIRING, timeoutMs)
+
+    suspend fun discoverConnectEndpoint(
+        timeoutMs: Long = CONNECT_DISCOVERY_TIMEOUT_MS,
+    ): DiscoveredEndpoint? = discoverMdnsEndpoint(AdbMdns.SERVICE_TYPE_TLS_CONNECT, timeoutMs)
+
+    private suspend fun discoverMdnsEndpoint(
+        serviceType: String,
+        timeoutMs: Long,
     ): DiscoveredEndpoint? = withContext(Dispatchers.IO) {
         withTimeoutOrNull(timeoutMs) {
             suspendCancellableCoroutine { cont ->
                 lateinit var mdns: AdbMdns
-                mdns = AdbMdns(
-                    context,
-                    AdbMdns.SERVICE_TYPE_TLS_PAIRING,
-                ) { host: InetAddress?, port: Int ->
+                mdns = AdbMdns(context, serviceType) { host: InetAddress?, port: Int ->
                     if (host != null && port > 0 && cont.isActive) {
                         val endpoint = DiscoveredEndpoint(
-                            host = host.hostAddress?.substringBefore('%') ?: host.hostName,
+                            host = normalizeHost(host.hostAddress ?: host.hostName),
                             port = port,
                         )
                         mdns.stop()
@@ -72,17 +81,17 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
     }
 
     /**
-     * Pair with Wireless Debugging, connect, run the single `pm grant` command,
-     * verify permission, then start the logcat watcher when remapping is enabled.
-     *
-     * @param pairingCode six-digit code from the system pairing dialog
-     * @param host optional override (defaults to discovered / loopback IP)
-     * @param pairingPort optional override when mDNS did not find the pairing port
+     * @param pairingCode six-digit code from the pairing dialog
+     * @param host Wi‑Fi IP from the pairing dialog (preferred over 127.0.0.1)
+     * @param pairingPort temporary port under the pairing code
+     * @param connectPort port from Wireless debugging main page “IP address & port”
+     *   (different from [pairingPort])
      */
     suspend fun pairAndGrant(
         pairingCode: String,
         host: String? = null,
         pairingPort: Int? = null,
+        connectPort: Int? = null,
     ): GrantResult = withContext(Dispatchers.IO) {
         if (hasReadLogs()) {
             syncWatcherAfterGrant()
@@ -96,31 +105,52 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
 
         val manager = NordAdbConnectionManager.getInstance(context)
         try {
-            val endpoint = when {
+            val wifiIp = resolveWifiIpv4()
+            val pairingEndpoint = when {
                 host != null && pairingPort != null && pairingPort > 0 ->
-                    DiscoveredEndpoint(host.trim(), pairingPort)
+                    DiscoveredEndpoint(normalizeHost(host), pairingPort)
                 pairingPort != null && pairingPort > 0 ->
-                    DiscoveredEndpoint(host?.trim().orEmpty().ifEmpty { DEFAULT_HOST }, pairingPort)
+                    DiscoveredEndpoint(
+                        normalizeHost(host).ifEmpty { wifiIp ?: DEFAULT_HOST },
+                        pairingPort,
+                    )
                 else -> discoverPairingEndpoint()
                     ?: return@withContext GrantResult.Failed(
-                        "Could not find the pairing port. Open “Pair device with pairing code”, " +
-                            "keep that screen open, and try again — or enter the port shown under the code.",
+                        "Could not find the pairing port. Keep “Pair device with pairing code” open " +
+                            "and enter the port after the colon under the code.",
                     )
             }
 
-            manager.hostAddress = endpoint.host
-            Log.i(TAG, "Pairing with ${endpoint.host}:${endpoint.port}")
-            val paired = manager.pair(endpoint.host, endpoint.port, code)
+            manager.hostAddress = pairingEndpoint.host
+            Log.i(TAG, "Pairing with ${pairingEndpoint.host}:${pairingEndpoint.port}")
+            val paired = try {
+                manager.pair(pairingEndpoint.host, pairingEndpoint.port, code)
+            } catch (e: Exception) {
+                Log.w(TAG, "pair() threw", e)
+                return@withContext GrantResult.Failed(
+                    "Pairing failed: ${e.message ?: e.javaClass.simpleName}. " +
+                        "Use a fresh pairing code and keep the pairing dialog open.",
+                )
+            }
             if (!paired) {
-                return@withContext GrantResult.Failed("Pairing failed. Check the code and try again.")
+                return@withContext GrantResult.Failed(
+                    "Pairing failed. Generate a new pairing code and try again.",
+                )
             }
 
-            // After pairing, connect to the TLS connect service (not the pairing port).
-            val connected = manager.connectTls(context, CONNECT_TIMEOUT_MS) ||
-                manager.autoConnect(context, CONNECT_TIMEOUT_MS)
+            // Pairing port is temporary. Connect uses the Wireless debugging page port.
+            delay(POST_PAIR_DELAY_MS)
+            val connected = connectAfterPair(
+                manager = manager,
+                preferredHost = pairingEndpoint.host,
+                wifiIp = wifiIp,
+                connectPort = connectPort,
+            )
             if (!connected) {
                 return@withContext GrantResult.Failed(
-                    "Paired, but could not connect. Keep Wireless debugging on and try again.",
+                    "Paired, but could not connect. On the Wireless debugging page (not the pairing " +
+                        "dialog), note “IP address & port”, enter that port in Connection port, " +
+                        "keep Wireless debugging on, and try again.",
                 )
             }
 
@@ -136,15 +166,73 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
             GrantResult.Success
         } catch (e: Exception) {
             Log.w(TAG, "Wireless ADB grant failed", e)
-            GrantResult.Failed(e.message?.takeIf { it.isNotBlank() } ?: "Grant failed: ${e.javaClass.simpleName}")
+            val detail = e.message?.takeIf { it.isNotBlank() } ?: e.javaClass.simpleName
+            GrantResult.Failed(
+                "Failed to connect ($detail). After pairing, enter the Connection port from the " +
+                    "Wireless debugging page IP address & port (not the pairing port).",
+            )
         } finally {
             runCatching { manager.disconnect() }
         }
     }
 
-    /**
-     * Re-check permission and start the watcher without pairing (e.g. after USB grant).
-     */
+    private suspend fun connectAfterPair(
+        manager: NordAdbConnectionManager,
+        preferredHost: String,
+        wifiIp: String?,
+        connectPort: Int?,
+    ): Boolean {
+        // 1) Manual connection port from Wireless debugging detail page.
+        if (connectPort != null && connectPort > 0) {
+            val hosts = linkedSetOf(preferredHost, wifiIp, DEFAULT_HOST).filterNotNull()
+            for (h in hosts) {
+                if (tryConnect(manager, h, connectPort)) return true
+            }
+        }
+
+        // 2) mDNS TLS connect (adb-tls-connect) — different service from pairing.
+        val discovered = discoverConnectEndpoint()
+        if (discovered != null && tryConnect(manager, discovered.host, discovered.port)) {
+            return true
+        }
+
+        // 3) Library helpers (also mDNS-based).
+        for (attempt in 1..CONNECT_ATTEMPTS) {
+            Log.i(TAG, "connectTls/autoConnect attempt $attempt")
+            val ok = runCatching {
+                manager.connectTls(context, CONNECT_TIMEOUT_MS) ||
+                    manager.autoConnect(context, CONNECT_TIMEOUT_MS)
+            }.onFailure { Log.w(TAG, "connect attempt $attempt failed", it) }
+                .getOrDefault(false)
+            if (ok) return true
+            delay(POST_PAIR_DELAY_MS)
+        }
+
+        // 4) Last resort: same hosts with discovered port only if we got one mid-retry.
+        return false
+    }
+
+    private fun tryConnect(manager: NordAdbConnectionManager, host: String, port: Int): Boolean {
+        return runCatching {
+            manager.hostAddress = host
+            Log.i(TAG, "Connecting to $host:$port")
+            manager.connect(host, port)
+        }.onFailure { Log.w(TAG, "connect($host, $port) failed", it) }
+            .getOrDefault(false)
+    }
+
+    private fun resolveWifiIpv4(): String? {
+        val cm = context.getSystemService(ConnectivityManager::class.java) ?: return null
+        val network = cm.activeNetwork ?: return null
+        val props: LinkProperties = cm.getLinkProperties(network) ?: return null
+        return props.linkAddresses
+            .asSequence()
+            .map { it.address }
+            .filterIsInstance<Inet4Address>()
+            .map { it.hostAddress }
+            .firstOrNull { !it.isNullOrBlank() && it != "127.0.0.1" }
+    }
+
     suspend fun verifyAndSyncWatcher(): Boolean = withContext(Dispatchers.IO) {
         val ok = hasReadLogs()
         if (ok) syncWatcherAfterGrant()
@@ -178,7 +266,13 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
         private const val TAG = "ReadLogsWirelessAdb"
         private const val DEFAULT_HOST = "127.0.0.1"
         private const val PAIRING_DISCOVERY_TIMEOUT_MS = 12_000L
-        private const val CONNECT_TIMEOUT_MS = 10_000L
+        private const val CONNECT_DISCOVERY_TIMEOUT_MS = 12_000L
+        private const val CONNECT_TIMEOUT_MS = 8_000L
+        private const val POST_PAIR_DELAY_MS = 1_200L
+        private const val CONNECT_ATTEMPTS = 3
         private val PAIRING_CODE_REGEX = Regex("^\\d{6}$")
+
+        fun normalizeHost(host: String?): String =
+            host?.trim()?.substringBefore('%').orEmpty()
     }
 }
