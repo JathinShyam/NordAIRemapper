@@ -30,8 +30,13 @@ JDK for Gradle: `export JAVA_HOME="$HOME/.jdks/jdk17"`.
 ## READ_LOGS (Strategy B)
 
 **Preferred (phone only, no laptop / no Shizuku):** in the app open **Enable detection**
-→ Wireless debugging → Pair device with pairing code → enter the 6-digit code →
-Pair and grant. Then turn Wireless debugging off; `READ_LOGS` persists.
+→ Wireless debugging → **Allow** the Wi‑Fi network if prompted (SSID/BSSID dialog) →
+open the Wireless debugging **detail page** → **Pair device with pairing code** →
+enter the 6-digit code (and port if asked) → Pair and grant. Then turn Wireless
+debugging off; `READ_LOGS` persists.
+
+If you only see Network name / Cancel / Allow: that is **not** the pairing screen.
+Tap Allow, then open Wireless debugging again and choose Pair device with pairing code.
 
 ### Phone-only test plan
 

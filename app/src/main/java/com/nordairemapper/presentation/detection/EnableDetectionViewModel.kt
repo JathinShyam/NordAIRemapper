@@ -77,7 +77,24 @@ class EnableDetectionViewModel @Inject constructor(
 
     fun openWirelessDebugging() {
         ReadLogsGrantHelper.openWirelessDebugging(context)
-        startDiscovery()
+    }
+
+    fun openDeveloperOptions() {
+        ReadLogsGrantHelper.openDeveloperOptions(context)
+        _uiState.update {
+            it.copy(
+                statusMessage = "In Developer options: turn on Wireless debugging → tap the Wireless debugging row → Pair device with pairing code.",
+            )
+        }
+    }
+
+    fun onNearbyWifiDenied() {
+        _uiState.update {
+            it.copy(
+                isDiscovering = false,
+                statusMessage = "Nearby Wi‑Fi permission denied — enter the pairing port manually from the system dialog.",
+            )
+        }
     }
 
     fun startDiscovery() {
@@ -87,7 +104,7 @@ class EnableDetectionViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     isDiscovering = true,
-                    statusMessage = "Looking for pairing port… Keep “Pair device with pairing code” open.",
+                    statusMessage = "Looking for pairing port… Keep “Pair device with pairing code” open (not the SSID Allow screen).",
                     errorMessage = null,
                 )
             }
@@ -103,7 +120,7 @@ class EnableDetectionViewModel @Inject constructor(
                 } else {
                     it.copy(
                         isDiscovering = false,
-                        statusMessage = "Port not found automatically. Enter the port shown under the pairing code.",
+                        statusMessage = "Port not found automatically. Open Pair device with pairing code and enter the port after the colon (IP:port).",
                     )
                 }
             }

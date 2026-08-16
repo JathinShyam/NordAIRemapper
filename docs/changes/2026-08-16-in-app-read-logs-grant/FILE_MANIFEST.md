@@ -8,8 +8,8 @@ Complete inventory of paths touched by this change set. Use this when bisecting 
 |------|------|-----|
 | `app/src/main/java/com/nordairemapper/service/adb/NordAdbConnectionManager.kt` | ADB RSA key/cert + `AbsAdbConnectionManager` | [03](./03-nord-adb-connection-manager.md) |
 | `app/src/main/java/com/nordairemapper/service/adb/ReadLogsGrantViaWirelessAdb.kt` | Pair / grant / verify / sync watcher | [04](./04-read-logs-grant-via-wireless-adb.md) |
-| `app/src/main/java/com/nordairemapper/presentation/detection/EnableDetectionScreen.kt` | Consumer setup UI | [05](./05-enable-detection-ui.md) |
-| `app/src/main/java/com/nordairemapper/presentation/detection/EnableDetectionViewModel.kt` | Setup UI state + actions | [05](./05-enable-detection-ui.md) |
+| `presentation/detection/EnableDetectionScreen.kt` | Consumer setup UI | [05](./05-enable-detection-ui.md), [13](./13-wireless-debugging-ssid-allow.md) |
+| `presentation/detection/EnableDetectionViewModel.kt` | Setup UI state + actions | [05](./05-enable-detection-ui.md), [13](./13-wireless-debugging-ssid-allow.md) |
 
 ## Modified — build / platform
 
