@@ -44,7 +44,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -56,6 +55,8 @@ import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.presentation.common.RemapActionCatalog
 import com.nordairemapper.presentation.common.RemapActionCategory
 import com.nordairemapper.presentation.common.RemapActionItem
+import com.nordairemapper.presentation.common.categoryAccent
+import com.nordairemapper.presentation.common.categoryFor
 import com.nordairemapper.presentation.common.conflictKey
 import com.nordairemapper.presentation.common.displayDescription
 import com.nordairemapper.presentation.common.displayName
@@ -65,7 +66,6 @@ import com.nordairemapper.ui.components.NordHeading
 import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.NordSurfaceCard
 import com.nordairemapper.ui.components.SectionLabel
-import com.nordairemapper.ui.theme.Destructive
 import com.nordairemapper.ui.theme.NordBlue
 
 private enum class RemapSheet { None, AppPicker, UrlInput }
@@ -454,46 +454,6 @@ private fun ActionPickRow(
         }
     }
 }
-
-private data class CategoryAccent(val container: Color, val tint: Color)
-
-@Composable
-private fun categoryAccent(category: RemapActionCategory): CategoryAccent = when (category) {
-    RemapActionCategory.APPS -> CategoryAccent(
-        container = Color(0xFF3D2E14),
-        tint = Color(0xFFFFB020),
-    )
-    RemapActionCategory.MEDIA -> CategoryAccent(
-        container = Color(0xFF14321F),
-        tint = Color(0xFF3DDC84),
-    )
-    RemapActionCategory.SYSTEM -> CategoryAccent(
-        container = MaterialTheme.colorScheme.primaryContainer,
-        tint = NordBlue,
-    )
-    RemapActionCategory.OVERLAY -> CategoryAccent(
-        container = Color(0xFF2A2A2A),
-        tint = Color(0xFFB0B0B0),
-    )
-    RemapActionCategory.NONE -> CategoryAccent(
-        container = Color(0xFF3A1818),
-        tint = Destructive,
-    )
-}
-
-private fun categoryFor(action: RemapAction): RemapActionCategory =
-    RemapActionCatalog.items.firstOrNull {
-        when {
-            action is RemapAction.LaunchApp -> it.action is RemapAction.LaunchApp
-            action is RemapAction.OpenUrl -> it.action is RemapAction.OpenUrl
-            else -> it.action.conflictKey() == action.conflictKey()
-        }
-    }?.category ?: when (action) {
-        is RemapAction.None -> RemapActionCategory.NONE
-        is RemapAction.ShowOverlay -> RemapActionCategory.OVERLAY
-        is RemapAction.LaunchApp, is RemapAction.OpenUrl -> RemapActionCategory.APPS
-        else -> RemapActionCategory.SYSTEM
-    }
 
 private fun pressTitle(pressType: PressType): String = when (pressType) {
     PressType.SINGLE -> "Single"

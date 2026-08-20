@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nordairemapper.domain.model.OverlayConfig
@@ -139,16 +141,43 @@ fun OverlayPreview(
                     }
 
                     OverlayLayoutStyle.PILL_BAR -> {
-                        Row(
+                        Column(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
-                            animatedSlots.forEach { action ->
-                                PreviewPillTile(
-                                    action = action,
-                                    accent = accent,
-                                    iconSize = config.iconSize,
-                                )
+                            val tileW = when (config.iconSize) {
+                                OverlayIconSize.SMALL -> 48.dp
+                                OverlayIconSize.MEDIUM -> 54.dp
+                                OverlayIconSize.LARGE -> 60.dp
+                            }
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.Top,
+                            ) {
+                                animatedSlots.take(3).forEach { action ->
+                                    PreviewPillTile(
+                                        action = action,
+                                        accent = accent,
+                                        iconSize = config.iconSize,
+                                        tileWidth = tileW,
+                                    )
+                                }
+                            }
+                            if (animatedSlots.size > 3) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    verticalAlignment = Alignment.Top,
+                                ) {
+                                    animatedSlots.drop(3).forEach { action ->
+                                        PreviewPillTile(
+                                            action = action,
+                                            accent = accent,
+                                            iconSize = config.iconSize,
+                                            tileWidth = tileW,
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -207,8 +236,10 @@ private fun PreviewPillTile(
     action: RemapAction,
     accent: Color,
     iconSize: OverlayIconSize,
+    tileWidth: Dp,
 ) {
     Column(
+        modifier = Modifier.width(tileWidth),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -228,6 +259,7 @@ private fun PreviewPillTile(
         }
         Text(
             text = action.displayName(),
+            modifier = Modifier.fillMaxWidth(),
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,

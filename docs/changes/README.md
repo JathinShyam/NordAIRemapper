@@ -64,3 +64,4 @@ Going forward: write/update these notes in the **same turn** as the code.
 | 2026-08-20 | [overlay-padding-compile-fix](./2026-08-20-overlay-padding-compile-fix/) | Fix invalid `Modifier.padding(horizontal, top, bottom)` breaking CI assembleDebug |
 | 2026-08-20 | [home-overlay-type-polish](./2026-08-20-home-overlay-type-polish/) | Home Settings icon, overlay radial/pill layout, ExtraBold headings |
 | 2026-08-20 | [ux-review-polish](./2026-08-20-ux-review-polish/) | Critical UX review: Home/Remap scan, status ribbon, Material hub icons, motion/empty states |
+| 2026-08-20 | [overlay-never-settle-positions](./2026-08-20-overlay-never-settle-positions/) | Never Settle on silhouette; Top/Middle/Bottom overlay; pill bar align; slot picker accents |

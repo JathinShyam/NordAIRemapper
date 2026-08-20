@@ -1,8 +1,10 @@
 package com.nordairemapper.presentation.overlay
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -37,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -48,6 +52,9 @@ import com.nordairemapper.domain.model.OverlayLayoutStyle
 import com.nordairemapper.domain.model.OverlayPosition
 import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.presentation.common.RemapActionCatalog
+import com.nordairemapper.presentation.common.RemapActionItem
+import com.nordairemapper.presentation.common.categoryAccent
+import com.nordairemapper.presentation.common.displayDescription
 import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.presentation.common.icon
 import com.nordairemapper.ui.components.ActionCard
@@ -197,9 +204,9 @@ fun OverlaySettingsScreen(
                         OverlayPosition.entries.forEach { pos ->
                             val selected = config.position == pos
                             val label = when (pos) {
-                                OverlayPosition.BOTTOM_CENTER -> "Bottom"
-                                OverlayPosition.LEFT_EDGE     -> "Left"
-                                OverlayPosition.RIGHT_EDGE    -> "Right"
+                                OverlayPosition.TOP -> "Top"
+                                OverlayPosition.MIDDLE -> "Middle"
+                                OverlayPosition.BOTTOM -> "Bottom"
                             }
                             SegButton(label = label, selected = selected) {
                                 viewModel.setPosition(pos)
@@ -339,26 +346,82 @@ private fun ActionCatalogSheet(
     onSelect: (RemapAction) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val grouped = remember {
+        RemapActionCatalog.grouped()
+            .mapValues { (_, items) ->
+                items.filter {
+                    it.action !is RemapAction.LaunchApp && it.action !is RemapAction.OpenUrl
+                }
+            }
+            .filterValues { it.isNotEmpty() }
+            .toList()
+    }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            Text("Choose action", style = MaterialTheme.typography.titleLarge)
-            RemapActionCatalog.items
-                .filter { it.action !is RemapAction.LaunchApp && it.action !is RemapAction.OpenUrl }
-                .forEach { item ->
-                    Text(
-                        text = item.action.displayName(),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelect(item.action) }
-                            .padding(vertical = 12.dp),
-                        style = MaterialTheme.typography.bodyLarge,
+            Text(
+                text = "Choose action",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            grouped.forEach { (category, items) ->
+                SectionLabel(category.label)
+                items.forEach { item ->
+                    OverlayActionPickRow(
+                        item = item,
+                        onClick = { onSelect(item.action) },
                     )
                 }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun OverlayActionPickRow(
+    item: RemapActionItem,
+    onClick: () -> Unit,
+) {
+    val action = item.action
+    val accent = categoryAccent(item.category)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp, horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(42.dp)
+                .background(accent.container, MaterialTheme.shapes.small),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = action.icon(),
+                contentDescription = null,
+                tint = accent.tint,
+                modifier = Modifier.size(22.dp),
+            )
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = action.displayName(),
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = action.displayDescription(),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

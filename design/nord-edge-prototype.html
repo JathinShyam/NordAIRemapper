@@ -317,7 +317,33 @@
     .device:not(.paused) .nord5 .glass {
       fill: #0B1820;
     }
-    .nord5 .ear { fill: #121212; }
+    .nord5 .motto-wrap {
+      pointer-events: none;
+    }
+    .nord5 .motto-logo {
+      fill: none;
+      stroke: #EB0028;
+      stroke-width: 1.35;
+    }
+    .nord5 .motto-plus { fill: #EB0028; }
+    .nord5 .motto-one {
+      fill: #EB0028;
+      font-family: var(--heading), system-ui, sans-serif;
+      font-size: 9.5px;
+      font-weight: 700;
+      text-anchor: middle;
+      dominant-baseline: central;
+    }
+    .nord5 .motto-bar { fill: #EB0028; }
+    .nord5 .motto-word {
+      fill: #fff;
+      font-family: var(--body), system-ui, sans-serif;
+      font-size: 4.4px;
+      font-weight: 700;
+      letter-spacing: 0.35px;
+      text-anchor: middle;
+      dominant-baseline: central;
+    }
     .nord5 .hole-outer { fill: #030303; }
     .nord5 .hole-inner { fill: #1a1a1a; }
     .nord5 .side {
@@ -1342,6 +1368,18 @@
               <rect class="body" x="1.5" y="0" width="77" height="163.4" rx="9.2" ry="9.2"/>
               <!-- Display ~90% STB, thin flat bezels -->
               <rect class="glass" x="3.4" y="2.2" width="73.2" height="158.6" rx="7.4" ry="7.4"/>
+              <g class="motto-wrap" transform="translate(40 86)">
+                <!-- OnePlus mark -->
+                <rect class="motto-logo" x="-8.2" y="-28" width="14.5" height="14.5" rx="1.1"/>
+                <text class="motto-one" x="-0.9" y="-20.4">1</text>
+                <rect class="motto-plus" x="5.2" y="-30.2" width="5.2" height="1.35"/>
+                <rect class="motto-plus" x="7.12" y="-32.1" width="1.35" height="5.2"/>
+                <!-- NEVER / SETTLE bars -->
+                <rect class="motto-bar" x="-16" y="-6" width="32" height="7.2" rx="0.4"/>
+                <text class="motto-word" x="0" y="-2.2">NEVER</text>
+                <rect class="motto-bar" x="-16" y="3" width="32" height="7.2" rx="0.4"/>
+                <text class="motto-word" x="0" y="6.8">SETTLE</text>
+              </g>
               <!-- Earpiece + centered punch-hole -->
               <rect class="ear" x="33.5" y="5.2" width="13" height="1.15" rx="0.55"/>
               <circle class="hole-outer" cx="40" cy="10.4" r="1.55"/>

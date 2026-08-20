@@ -1,8 +1,36 @@
 package com.nordairemapper.domain.model
 
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
-enum class OverlayPosition { LEFT_EDGE, RIGHT_EDGE, BOTTOM_CENTER }
+/** Vertical placement of the floating overlay panel (grid or pill bar). */
+@Serializable(with = OverlayPositionSerializer::class)
+enum class OverlayPosition {
+    TOP,
+    MIDDLE,
+    BOTTOM,
+}
+
+object OverlayPositionSerializer : KSerializer<OverlayPosition> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("OverlayPosition", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: OverlayPosition) {
+        encoder.encodeString(value.name)
+    }
+
+    override fun deserialize(decoder: Decoder): OverlayPosition = when (decoder.decodeString()) {
+        "TOP" -> OverlayPosition.TOP
+        "MIDDLE", "LEFT_EDGE", "RIGHT_EDGE" -> OverlayPosition.MIDDLE
+        "BOTTOM", "BOTTOM_CENTER" -> OverlayPosition.BOTTOM
+        else -> OverlayPosition.MIDDLE
+    }
+}
 
 enum class OverlayIconSize { SMALL, MEDIUM, LARGE }
 
@@ -18,7 +46,7 @@ data class OverlayConfig(
     /** When false, [RemapAction.ShowOverlay] will not open the floating menu. */
     val enabled: Boolean = true,
     val slots: List<RemapAction> = emptyList(),
-    val position: OverlayPosition = OverlayPosition.RIGHT_EDGE,
+    val position: OverlayPosition = OverlayPosition.MIDDLE,
     val opacity: Float = 1f,
     val iconSize: OverlayIconSize = OverlayIconSize.MEDIUM,
     val animation: OverlayAnimation = OverlayAnimation.SCALE,

@@ -22,6 +22,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -90,6 +91,23 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private fun overlayPanelAlignment(position: OverlayPosition): Alignment = when (position) {
+    OverlayPosition.TOP -> Alignment.TopCenter
+    OverlayPosition.MIDDLE -> Alignment.Center
+    OverlayPosition.BOTTOM -> Alignment.BottomCenter
+}
+
+private fun overlayPanelPadding(position: OverlayPosition): PaddingValues = when (position) {
+    OverlayPosition.TOP -> PaddingValues(start = 18.dp, top = 56.dp, end = 18.dp, bottom = 18.dp)
+    OverlayPosition.MIDDLE -> PaddingValues(horizontal = 18.dp, vertical = 24.dp)
+    OverlayPosition.BOTTOM -> PaddingValues(start = 18.dp, top = 18.dp, end = 18.dp, bottom = 48.dp)
+}
+
+private fun pillTileWidth(iconSize: OverlayIconSize): Dp = when (iconSize) {
+    OverlayIconSize.SMALL -> 52.dp
+    OverlayIconSize.MEDIUM -> 58.dp
+    OverlayIconSize.LARGE -> 64.dp
+}
 /**
  * Floating Plus Key menu. Hosts Compose in a WindowManager overlay, so this
  * service must manually provide Lifecycle / SavedState / ViewModelStore owners
@@ -377,16 +395,19 @@ private fun OverlayWindowContent(
                 ),
         )
 
-        // ── Panel — layout style drives rendering; position only used by PILL_BAR ──
+        // ── Panel — layout style + vertical position (Top / Middle / Bottom) ──
+        val panelAlign = overlayPanelAlignment(config.position)
+        val panelPad = overlayPanelPadding(config.position)
+
         when (config.layoutStyle) {
 
-            // ── RADIAL: always bottom-center sheet, fixed 300dp wide ──────────────
+            // ── RADIAL: 3×2 square tile grid ──────────────────────────────────
             OverlayLayoutStyle.RADIAL -> {
                 Box(
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(horizontal = 18.dp, vertical = 48.dp)
-                        .width(300.dp)            // fixed width — not full screen
+                        .align(panelAlign)
+                        .padding(panelPad)
+                        .width(300.dp)
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() },
@@ -425,7 +446,7 @@ private fun OverlayWindowContent(
                             accent = accent,
                             iconSize = config.iconSize,
                             animation = config.animation,
-                            position = OverlayPosition.BOTTOM_CENTER,
+                            position = config.position,
                             onAction = onAction,
                         )
                         TextButton(
@@ -444,103 +465,73 @@ private fun OverlayWindowContent(
                 }
             }
 
-            // ── PILL_BAR: compact strip, position controls edge/bottom ──────────
+            // ── PILL_BAR: horizontal strip, fixed-width tiles (aligned icons) ──
             OverlayLayoutStyle.PILL_BAR -> {
-                when (config.position) {
-
-                    // Bottom: up to 3 per row, 2 rows max, centred
-                    OverlayPosition.BOTTOM_CENTER -> {
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(horizontal = 18.dp, vertical = 48.dp)
-                                .wrapContentSize()
-                                .clickable(
-                                    indication = null,
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    onClick = {},
+                val tileW = pillTileWidth(config.iconSize)
+                Box(
+                    modifier = Modifier
+                        .align(panelAlign)
+                        .padding(panelPad)
+                        .wrapContentSize()
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() },
+                            onClick = {},
+                        )
+                        .then(
+                            if (config.glowEffects) {
+                                Modifier.shadow(
+                                    elevation = 20.dp,
+                                    shape = RoundedCornerShape(24.dp),
+                                    ambientColor = accent.copy(alpha = 0.3f),
+                                    spotColor = accent.copy(alpha = 0.4f),
                                 )
-                                .then(
-                                    if (config.glowEffects) Modifier.shadow(
-                                        elevation = 20.dp,
-                                        shape = RoundedCornerShape(24.dp),
-                                        ambientColor = accent.copy(alpha = 0.3f),
-                                        spotColor = accent.copy(alpha = 0.4f),
-                                    ) else Modifier
-                                )
-                                .background(
-                                    Color(0xFF141414).copy(alpha = config.opacity.coerceIn(0.3f, 1f)),
-                                    RoundedCornerShape(24.dp),
-                                )
-                                .border(1.dp, Color(0xFF2C2C2C), RoundedCornerShape(24.dp))
-                                .padding(12.dp),
-                            contentAlignment = Alignment.Center,
+                            } else Modifier
+                        )
+                        .background(
+                            Color(0xFF141414).copy(alpha = config.opacity.coerceIn(0.3f, 1f)),
+                            RoundedCornerShape(24.dp),
+                        )
+                        .border(1.dp, Color(0xFF2C2C2C), RoundedCornerShape(24.dp))
+                        .padding(horizontal = 12.dp, vertical = 12.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.Top,
                         ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
-                            ) {
-                                // Row 1: first 3 slots
-                                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    slots.take(3).forEachIndexed { i, action ->
-                                        PillTile(
-                                            action = action, index = i, accent = accent,
-                                            iconSize = config.iconSize, animation = config.animation,
-                                            position = config.position, onClick = { onAction(action) },
-                                        )
-                                    }
-                                }
-                                // Row 2: slots 4-6 if present
-                                if (slots.size > 3) {
-                                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                        slots.drop(3).forEachIndexed { i, action ->
-                                            PillTile(
-                                                action = action, index = i + 3, accent = accent,
-                                                iconSize = config.iconSize, animation = config.animation,
-                                                position = config.position, onClick = { onAction(action) },
-                                            )
-                                        }
-                                    }
-                                }
+                            slots.take(3).forEachIndexed { i, action ->
+                                PillTile(
+                                    action = action,
+                                    index = i,
+                                    accent = accent,
+                                    iconSize = config.iconSize,
+                                    animation = config.animation,
+                                    position = config.position,
+                                    tileWidth = tileW,
+                                    onClick = { onAction(action) },
+                                )
                             }
                         }
-                    }
-
-                    // Left/Right edges: narrow vertical column hugging the edge
-                    OverlayPosition.LEFT_EDGE, OverlayPosition.RIGHT_EDGE -> {
-                        val edgeAlignment = if (config.position == OverlayPosition.LEFT_EDGE)
-                            Alignment.CenterStart else Alignment.CenterEnd
-                        Box(
-                            modifier = Modifier
-                                .align(edgeAlignment)
-                                .padding(vertical = 0.dp)   // no vertical push — centred naturally
-                                .wrapContentSize()
-                                .clickable(
-                                    indication = null,
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    onClick = {},
-                                )
-                                .then(
-                                    if (config.glowEffects) Modifier.shadow(
-                                        elevation = 20.dp,
-                                        shape = RoundedCornerShape(20.dp),
-                                        ambientColor = accent.copy(alpha = 0.3f),
-                                        spotColor = accent.copy(alpha = 0.4f),
-                                    ) else Modifier
-                                )
-                                .background(
-                                    Color(0xFF141414).copy(alpha = config.opacity.coerceIn(0.3f, 1f)),
-                                    RoundedCornerShape(20.dp),
-                                )
-                                .border(1.dp, Color(0xFF2C2C2C), RoundedCornerShape(20.dp))
-                                .padding(10.dp),
-                        ) {
-                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                slots.forEachIndexed { i, action ->
+                        if (slots.size > 3) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.Top,
+                            ) {
+                                slots.drop(3).forEachIndexed { i, action ->
                                     PillTile(
-                                        action = action, index = i, accent = accent,
-                                        iconSize = config.iconSize, animation = config.animation,
-                                        position = config.position, onClick = { onAction(action) },
+                                        action = action,
+                                        index = i + 3,
+                                        accent = accent,
+                                        iconSize = config.iconSize,
+                                        animation = config.animation,
+                                        position = config.position,
+                                        tileWidth = tileW,
+                                        onClick = { onAction(action) },
                                     )
                                 }
                             }
@@ -564,7 +555,6 @@ private fun TileGrid(
     onAction: (RemapAction) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // Row 1 — slots 0..2
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -585,7 +575,6 @@ private fun TileGrid(
                 Spacer(modifier = Modifier.weight(1f))
             }
         }
-        // Row 2 — slots 3..5
         if (slots.size > 3) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -646,15 +635,12 @@ private fun OverlayTile(
                         translationY = (1f - t) * 18.dp.toPx()
                     }
                     OverlayAnimation.SLIDE -> {
-                        val fromX = when (position) {
-                            OverlayPosition.LEFT_EDGE  -> -28f
-                            OverlayPosition.RIGHT_EDGE -> 28f
-                            OverlayPosition.BOTTOM_CENTER -> 0f
+                        val fromY = when (position) {
+                            OverlayPosition.TOP -> -28.dp.toPx()
+                            OverlayPosition.MIDDLE -> 16.dp.toPx()
+                            OverlayPosition.BOTTOM -> 28.dp.toPx()
                         }
-                        translationX = (1f - t) * fromX
-                        translationY = if (position == OverlayPosition.BOTTOM_CENTER) {
-                            (1f - t) * 28.dp.toPx()
-                        } else 0f
+                        translationY = (1f - t) * fromY
                     }
                 }
             }
@@ -703,6 +689,7 @@ private fun PillTile(
     iconSize: OverlayIconSize,
     animation: OverlayAnimation,
     position: OverlayPosition,
+    tileWidth: Dp,
     onClick: () -> Unit,
 ) {
     val appear = remember { Animatable(0f) }
@@ -716,6 +703,7 @@ private fun PillTile(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
+            .width(tileWidth)
             .graphicsLayer {
                 val t = appear.value
                 alpha = t
@@ -726,13 +714,12 @@ private fun PillTile(
                         scaleY = 0.7f + t * 0.3f
                     }
                     OverlayAnimation.SLIDE -> {
-                        val dx = when (position) {
-                            OverlayPosition.LEFT_EDGE  -> -20f
-                            OverlayPosition.RIGHT_EDGE -> 20f
-                            OverlayPosition.BOTTOM_CENTER -> 0f
+                        val fromY = when (position) {
+                            OverlayPosition.TOP -> -20.dp.toPx()
+                            OverlayPosition.MIDDLE -> 12.dp.toPx()
+                            OverlayPosition.BOTTOM -> 20.dp.toPx()
                         }
-                        translationX = (1f - t) * dx
-                        translationY = if (position == OverlayPosition.BOTTOM_CENTER) (1f - t) * 20f else 0f
+                        translationY = (1f - t) * fromY
                     }
                 }
             }
@@ -755,6 +742,7 @@ private fun PillTile(
         Spacer(Modifier.height(4.dp))
         Text(
             text = action.displayName(),
+            modifier = Modifier.fillMaxWidth(),
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
