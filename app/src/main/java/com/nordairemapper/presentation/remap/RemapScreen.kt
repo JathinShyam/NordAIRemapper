@@ -21,11 +21,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -41,10 +44,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.widget.Toast
 import com.nordairemapper.domain.model.PressType
 import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.presentation.common.RemapActionCatalog
@@ -59,6 +65,8 @@ import com.nordairemapper.ui.components.NordHeading
 import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.NordSurfaceCard
 import com.nordairemapper.ui.components.SectionLabel
+import com.nordairemapper.ui.theme.Destructive
+import com.nordairemapper.ui.theme.NordBlue
 
 private enum class RemapSheet { None, AppPicker, UrlInput }
 
@@ -74,6 +82,7 @@ fun RemapScreen(
     var sheet by remember { mutableStateOf(RemapSheet.None) }
     var query by remember { mutableStateOf("") }
     var categoryFilter by remember { mutableStateOf<RemapActionCategory?>(null) }
+    val context = LocalContext.current
     val grouped = remember { RemapActionCatalog.grouped().toList() }
     val filtered = remember(query, grouped, categoryFilter) {
         val base = if (categoryFilter == null || query.isNotBlank()) {
@@ -120,7 +129,7 @@ fun RemapScreen(
                             style = MaterialTheme.typography.titleLarge,
                         )
                         Text(
-                            text = "Assign an action",
+                            text = "${pressTitle(state.pressType)} press · Assign an action",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -152,7 +161,10 @@ fun RemapScreen(
                 )
                 NordPrimaryButton(
                     text = "Done",
-                    onClick = onBack,
+                    onClick = {
+                        Toast.makeText(context, "Saved", Toast.LENGTH_SHORT).show()
+                        onBack()
+                    },
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -166,6 +178,7 @@ fun RemapScreen(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             item {
+                val searchShape = RoundedCornerShape(999.dp)
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
@@ -174,7 +187,27 @@ fun RemapScreen(
                         .padding(bottom = 8.dp),
                     placeholder = { Text("Search actions or apps") },
                     singleLine = true,
-                    shape = MaterialTheme.shapes.small,
+                    shape = searchShape,
+                    leadingIcon = {
+                        Icon(
+                            Icons.Outlined.Search,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                    trailingIcon = {
+                        if (query.isNotEmpty()) {
+                            IconButton(onClick = { query = "" }) {
+                                Icon(Icons.Outlined.Close, contentDescription = "Clear search")
+                            }
+                        }
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedBorderColor = NordBlue.copy(alpha = 0.55f),
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    ),
                 )
             }
 
@@ -201,10 +234,9 @@ fun RemapScreen(
 
             item {
                 SectionLabel("Current")
-                Text(
-                    text = state.currentAction.displayName(),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                CurrentSelectionPill(
+                    action = state.currentAction,
+                    category = categoryFor(state.currentAction),
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
             }
@@ -302,6 +334,43 @@ private fun CategoryChips(
 }
 
 @Composable
+private fun CurrentSelectionPill(
+    action: RemapAction,
+    category: RemapActionCategory,
+    modifier: Modifier = Modifier,
+) {
+    val accent = categoryAccent(category)
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(accent.container.copy(alpha = 0.55f))
+            .border(BorderStroke(1.dp, accent.tint.copy(alpha = 0.35f)), RoundedCornerShape(999.dp))
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .background(accent.container, MaterialTheme.shapes.small),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = action.icon(),
+                contentDescription = null,
+                tint = accent.tint,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        Text(
+            text = action.displayName(),
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+            color = accent.tint,
+        )
+    }
+}
+
+@Composable
 private fun ActionPickRow(
     item: RemapActionItem,
     selected: Boolean,
@@ -309,6 +378,7 @@ private fun ActionPickRow(
     onClick: () -> Unit,
 ) {
     val action = item.action
+    val accent = categoryAccent(item.category)
     val title = when {
         action is RemapAction.LaunchApp -> "Launch app…"
         action is RemapAction.OpenUrl -> "Open URL / deep link…"
@@ -327,7 +397,7 @@ private fun ActionPickRow(
             .then(
                 if (selected) {
                     Modifier.border(
-                        BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)),
+                        BorderStroke(1.dp, accent.tint.copy(alpha = 0.55f)),
                         MaterialTheme.shapes.medium,
                     )
                 } else {
@@ -342,7 +412,7 @@ private fun ActionPickRow(
             modifier = Modifier
                 .size(42.dp)
                 .background(
-                    color = MaterialTheme.colorScheme.primaryContainer,
+                    color = accent.container,
                     shape = MaterialTheme.shapes.small,
                 ),
             contentAlignment = Alignment.Center,
@@ -350,7 +420,7 @@ private fun ActionPickRow(
             Icon(
                 imageVector = action.icon(),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = accent.tint,
                 modifier = Modifier.size(22.dp),
             )
         }
@@ -359,7 +429,7 @@ private fun ActionPickRow(
                 Text(
                     text = item.category.label,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = accent.tint,
                 )
             }
             Text(
@@ -367,11 +437,7 @@ private fun ActionPickRow(
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
                 ),
-                color = if (selected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                },
+                color = if (selected) accent.tint else MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = hint,
@@ -383,11 +449,51 @@ private fun ActionPickRow(
             Icon(
                 Icons.Outlined.Check,
                 contentDescription = "Selected",
-                tint = MaterialTheme.colorScheme.primary,
+                tint = accent.tint,
             )
         }
     }
 }
+
+private data class CategoryAccent(val container: Color, val tint: Color)
+
+@Composable
+private fun categoryAccent(category: RemapActionCategory): CategoryAccent = when (category) {
+    RemapActionCategory.APPS -> CategoryAccent(
+        container = Color(0xFF3D2E14),
+        tint = Color(0xFFFFB020),
+    )
+    RemapActionCategory.MEDIA -> CategoryAccent(
+        container = Color(0xFF14321F),
+        tint = Color(0xFF3DDC84),
+    )
+    RemapActionCategory.SYSTEM -> CategoryAccent(
+        container = MaterialTheme.colorScheme.primaryContainer,
+        tint = NordBlue,
+    )
+    RemapActionCategory.OVERLAY -> CategoryAccent(
+        container = Color(0xFF2A2A2A),
+        tint = Color(0xFFB0B0B0),
+    )
+    RemapActionCategory.NONE -> CategoryAccent(
+        container = Color(0xFF3A1818),
+        tint = Destructive,
+    )
+}
+
+private fun categoryFor(action: RemapAction): RemapActionCategory =
+    RemapActionCatalog.items.firstOrNull {
+        when {
+            action is RemapAction.LaunchApp -> it.action is RemapAction.LaunchApp
+            action is RemapAction.OpenUrl -> it.action is RemapAction.OpenUrl
+            else -> it.action.conflictKey() == action.conflictKey()
+        }
+    }?.category ?: when (action) {
+        is RemapAction.None -> RemapActionCategory.NONE
+        is RemapAction.ShowOverlay -> RemapActionCategory.OVERLAY
+        is RemapAction.LaunchApp, is RemapAction.OpenUrl -> RemapActionCategory.APPS
+        else -> RemapActionCategory.SYSTEM
+    }
 
 private fun pressTitle(pressType: PressType): String = when (pressType) {
     PressType.SINGLE -> "Single"

@@ -2,6 +2,7 @@ package com.nordairemapper.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,7 +10,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.Card
@@ -20,6 +23,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -34,15 +41,40 @@ fun ActionCard(
     badge: String? = null,
     icon: ImageVector? = null,
     showConflict: Boolean = false,
+    /** Empty / unassigned press type — dashed border + assign cue. */
+    empty: Boolean = false,
 ) {
+    val outline = MaterialTheme.colorScheme.outline
+    val shape = MaterialTheme.shapes.medium
     Card(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (empty) {
+                    Modifier.drawBehind {
+                        drawRoundRect(
+                            color = outline,
+                            style = Stroke(
+                                width = 1.dp.toPx(),
+                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f)),
+                            ),
+                            cornerRadius = CornerRadius(12.dp.toPx()),
+                        )
+                    }
+                } else {
+                    Modifier
+                },
+            ),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = if (empty) {
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)
+            } else {
+                MaterialTheme.colorScheme.surface
+            },
         ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        shape = MaterialTheme.shapes.medium,
+        border = if (empty) null else BorderStroke(1.dp, outline),
+        shape = shape,
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Row(
@@ -51,13 +83,39 @@ fun ActionCard(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             when {
+                icon != null -> {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(
+                                color = if (empty) {
+                                    MaterialTheme.colorScheme.surfaceVariant
+                                } else {
+                                    MaterialTheme.colorScheme.primaryContainer
+                                },
+                                shape = RoundedCornerShape(10.dp),
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = if (empty) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            },
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
                 badge != null -> {
                     Box(
                         modifier = Modifier
                             .size(36.dp)
                             .background(
                                 color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = MaterialTheme.shapes.small,
+                                shape = RoundedCornerShape(10.dp),
                             ),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -68,18 +126,15 @@ fun ActionCard(
                         )
                     }
                 }
-                icon != null -> {
+                empty -> {
                     Box(
                         modifier = Modifier
                             .size(36.dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = MaterialTheme.shapes.small,
-                            ),
+                            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.45f), RoundedCornerShape(10.dp)),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
-                            imageVector = icon,
+                            imageVector = Icons.Outlined.Add,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp),
@@ -93,9 +148,13 @@ fun ActionCard(
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                 )
                 Text(
-                    text = subtitle,
+                    text = if (empty) "+ Assign an action" else subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (empty) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                 )
             }
             if (showConflict) {

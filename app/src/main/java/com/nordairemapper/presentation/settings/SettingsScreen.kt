@@ -19,7 +19,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.RestartAlt
+import androidx.compose.material.icons.outlined.Science
+import androidx.compose.material.icons.outlined.TouchApp
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Vibration
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.Widgets
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
@@ -147,25 +157,25 @@ fun SettingsScreen(
             // ── Feedback & overlay ────────────────────────────────────────
             SectionLabel("Feedback & overlay")
             HubRow(
-                icon = "∿",
+                icon = Icons.Outlined.Vibration,
                 title = "Feedback",
                 subtitle = "Haptic feedback & vibration intensity",
                 onClick = onOpenFeedback,
             )
             HubRow(
-                icon = "◐",
+                icon = Icons.Outlined.Tune,
                 title = "Preferences",
                 subtitle = "How you're notified when an action triggers",
                 onClick = onOpenPreferences,
             )
             HubRow(
-                icon = "▬",
+                icon = Icons.Outlined.Visibility,
                 title = "Visual overlay",
                 subtitle = "Action popup style when a remap fires",
                 onClick = onOpenVisualOverlay,
             )
             HubRow(
-                icon = "▦",
+                icon = Icons.Outlined.Widgets,
                 title = "Overlay settings",
                 subtitle = "Floating menu slots & layout",
                 onClick = onOpenOverlay,
@@ -174,13 +184,13 @@ fun SettingsScreen(
             // ── Behavior ──────────────────────────────────────────────────
             SectionLabel("Behavior")
             HubRow(
-                icon = "⊡",
+                icon = Icons.Outlined.Lock,
                 title = "Lock Screen",
                 subtitle = "Gestures while the screen is locked",
                 onClick = onOpenLockScreen,
             )
             HubRow(
-                icon = "⇄",
+                icon = Icons.Outlined.Backup,
                 title = "Backup & Restore",
                 subtitle = "Export and import remaps",
                 onClick = onOpenBackup,
@@ -189,19 +199,19 @@ fun SettingsScreen(
             // ── Advanced ──────────────────────────────────────────────────
             SectionLabel("Advanced")
             HubRow(
-                icon = "◉",
+                icon = Icons.Outlined.TouchApp,
                 title = "Key setup",
                 subtitle = "Learn / verify Plus Key",
                 onClick = onOpenKeyLearning,
             )
             HubRow(
-                icon = "⚗",
+                icon = Icons.Outlined.Science,
                 title = "Lab",
                 subtitle = "Strategy, timing, USB unlock (Developer)",
                 onClick = onOpenDeveloper,
             )
             HubRow(
-                icon = "↻",
+                icon = Icons.Outlined.RestartAlt,
                 title = "Restart onboarding",
                 subtitle = "Walk through setup again",
                 onClick = {
@@ -217,6 +227,14 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (settings.excludedApps.isEmpty()) {
+                Text(
+                    text = "No apps excluded — remapping is active in all apps",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 4.dp),
+                )
+            }
             settings.excludedApps.forEach { pkg ->
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -295,7 +313,7 @@ fun SettingsScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HubRow(icon: String, title: String, subtitle: String, onClick: () -> Unit) {
+private fun HubRow(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -317,7 +335,12 @@ private fun HubRow(icon: String, title: String, subtitle: String, onClick: () ->
                     .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(11.dp)),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(icon, color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp),
+                )
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(

@@ -127,17 +127,29 @@ fun OverlaySettingsScreen(
 
             // ── Slots ─────────────────────────────────────────────────────
             SectionLabel("Slots")
-            Text(
-                text = "Tap a slot to assign an action. Up to 6 slots are shown in the overlay.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            val allSlotsEmpty = config.slots.none { it !is RemapAction.None }
+            if (allSlotsEmpty) {
+                Text(
+                    text = "Tap a slot to add an action — at least one is needed for the overlay to show",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 4.dp),
+                )
+            } else {
+                Text(
+                    text = "Tap a slot to assign an action. Up to 6 slots are shown in the overlay.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             repeat(OverlayConfig.MAX_SLOTS) { index ->
                 val action = config.slots.getOrNull(index) ?: RemapAction.None
+                val empty = action is RemapAction.None
                 ActionCard(
                     title = "Slot ${index + 1}",
                     subtitle = action.displayName(),
-                    icon = action.icon(),
+                    icon = if (empty) null else action.icon(),
+                    empty = empty,
                     onClick = { editingSlot = index },
                 )
             }

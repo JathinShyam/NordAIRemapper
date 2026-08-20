@@ -1,15 +1,19 @@
 package com.nordairemapper.ui.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,6 +32,7 @@ import com.nordairemapper.domain.model.OverlayConfig
 import com.nordairemapper.domain.model.OverlayIconSize
 import com.nordairemapper.domain.model.OverlayLayoutStyle
 import com.nordairemapper.domain.model.RemapAction
+import com.nordairemapper.presentation.common.conflictKey
 import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.presentation.common.icon
 
@@ -56,6 +61,7 @@ fun OverlayPreview(
     val slots = config.slots.filter { it !is RemapAction.None }.take(OverlayConfig.MAX_SLOTS)
     val accent = Color(config.accentColorArgb)
     val alpha = config.opacity.coerceIn(0.3f, 1f)
+    val slotKey = slots.joinToString("|") { it.conflictKey() }
 
     Box(
         modifier = modifier
@@ -67,41 +73,39 @@ fun OverlayPreview(
             .border(1.dp, Color(0xFF2C2C2C), RoundedCornerShape(22.dp))
             .padding(horizontal = 14.dp, vertical = 16.dp),
     ) {
-        if (slots.isEmpty()) {
-            Text(
-                text = "No overlay slots configured",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.align(Alignment.Center),
-            )
-        } else {
-            when (config.layoutStyle) {
-                OverlayLayoutStyle.RADIAL -> {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        // Row 1
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            slots.take(3).forEach { action ->
-                                PreviewTile(
-                                    action = action,
-                                    accent = accent,
-                                    iconSize = config.iconSize,
-                                    modifier = Modifier.weight(1f),
-                                )
-                            }
-                            repeat((3 - slots.take(3).size).coerceAtLeast(0)) {
-                                Box(modifier = Modifier.weight(1f))
-                            }
-                        }
-                        // Row 2
-                        if (slots.size > 3) {
+        AnimatedContent(
+            targetState = slotKey to config.layoutStyle,
+            transitionSpec = {
+                (fadeIn() + scaleIn(initialScale = 0.92f)) togetherWith
+                    (fadeOut() + scaleOut(targetScale = 0.96f))
+            },
+            label = "overlayPreviewSlots",
+            modifier = Modifier.fillMaxWidth(),
+        ) { (key, layoutStyle) ->
+            val animatedSlots = if (key.isEmpty()) {
+                emptyList()
+            } else {
+                slots
+            }
+            if (animatedSlots.isEmpty()) {
+                Text(
+                    text = "No overlay slots configured",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    textAlign = TextAlign.Center,
+                )
+            } else {
+                when (layoutStyle) {
+                    OverlayLayoutStyle.RADIAL -> {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                             ) {
-                                slots.drop(3).forEach { action ->
+                                animatedSlots.take(3).forEach { action ->
                                     PreviewTile(
                                         action = action,
                                         accent = accent,
@@ -109,25 +113,43 @@ fun OverlayPreview(
                                         modifier = Modifier.weight(1f),
                                     )
                                 }
-                                repeat((3 - slots.drop(3).size).coerceAtLeast(0)) {
+                                repeat((3 - animatedSlots.take(3).size).coerceAtLeast(0)) {
                                     Box(modifier = Modifier.weight(1f))
+                                }
+                            }
+                            if (animatedSlots.size > 3) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                ) {
+                                    animatedSlots.drop(3).forEach { action ->
+                                        PreviewTile(
+                                            action = action,
+                                            accent = accent,
+                                            iconSize = config.iconSize,
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                    }
+                                    repeat((3 - animatedSlots.drop(3).size).coerceAtLeast(0)) {
+                                        Box(modifier = Modifier.weight(1f))
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                OverlayLayoutStyle.PILL_BAR -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-                    ) {
-                        slots.forEach { action ->
-                            PreviewPillTile(
-                                action = action,
-                                accent = accent,
-                                iconSize = config.iconSize,
-                            )
+                    OverlayLayoutStyle.PILL_BAR -> {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+                        ) {
+                            animatedSlots.forEach { action ->
+                                PreviewPillTile(
+                                    action = action,
+                                    accent = accent,
+                                    iconSize = config.iconSize,
+                                )
+                            }
                         }
                     }
                 }

@@ -1,21 +1,8 @@
 package com.nordairemapper.presentation.home
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -35,9 +22,17 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -45,14 +40,29 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.PressType
 import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.presentation.common.displayName
+import com.nordairemapper.presentation.common.icon
 import com.nordairemapper.ui.components.ActionCard
 import com.nordairemapper.ui.components.NordHeading
 import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.PhoneDiagram
 import com.nordairemapper.ui.components.SectionLabel
-import com.nordairemapper.ui.components.StatusChip
-import com.nordairemapper.ui.components.StatusTone
+import com.nordairemapper.ui.theme.StatusActive
+import com.nordairemapper.ui.theme.StatusInactive
 import com.nordairemapper.ui.theme.StatusWarning
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -134,6 +144,7 @@ fun HomeScreen(
             PhoneDiagram(
                 // Remapping master on → Plus Key cyan; off → neutral side key
                 highlightKey = state.serviceEnabled,
+                edgeRipple = state.serviceEnabled,
                 modifier = Modifier
                     // Exact GSMArena body ratio 77/163.4; ~56% width so it reads as a phone
                     .fillMaxWidth(0.56f)
@@ -142,23 +153,16 @@ fun HomeScreen(
                     .padding(vertical = 8.dp),
             )
 
-            StatusChip(
-                label = when {
-                    !state.accessibilityEnabled -> "Accessibility off"
-                    state.serviceEnabled -> "Service active"
-                    else -> "Remapping paused"
-                },
-                tone = when {
-                    !state.accessibilityEnabled -> StatusTone.Inactive
-                    state.serviceEnabled -> StatusTone.Active
-                    else -> StatusTone.Warning
-                },
-                onClick = if (!state.accessibilityEnabled) {
-                    { viewModel.openAccessibilitySettings() }
-                } else {
-                    null
-                },
-            )
+            val statusLabel = when {
+                !state.accessibilityEnabled -> "Accessibility off"
+                state.serviceEnabled -> "Service active"
+                else -> "Remapping paused"
+            }
+            val statusDot = when {
+                !state.accessibilityEnabled -> StatusInactive
+                state.serviceEnabled -> StatusActive
+                else -> StatusWarning
+            }
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -167,27 +171,39 @@ fun HomeScreen(
                 shape = MaterialTheme.shapes.medium,
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Remapping",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                        )
-                        Text(
-                            text = "Master switch for Plus Key actions",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                Column {
+                    StatusRibbon(
+                        label = statusLabel,
+                        dotColor = statusDot,
+                        pulse = state.serviceEnabled && state.accessibilityEnabled,
+                        onClick = if (!state.accessibilityEnabled) {
+                            { viewModel.openAccessibilitySettings() }
+                        } else {
+                            null
+                        },
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Remapping",
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                            )
+                            Text(
+                                text = "Master switch for Plus Key actions",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(
+                            checked = state.serviceEnabled,
+                            onCheckedChange = viewModel::setServiceEnabled,
                         )
                     }
-                    Switch(
-                        checked = state.serviceEnabled,
-                        onCheckedChange = viewModel::setServiceEnabled,
-                    )
                 }
             }
 
@@ -208,6 +224,7 @@ fun HomeScreen(
             SectionLabel("Actions")
             PressType.entries.forEach { pressType ->
                 val action = state.actions[pressType] ?: RemapAction.None
+                val empty = action is RemapAction.None
                 ActionCard(
                     title = when (pressType) {
                         PressType.SINGLE -> "Single"
@@ -215,11 +232,8 @@ fun HomeScreen(
                         PressType.LONG -> "Long"
                     },
                     subtitle = action.displayName(),
-                    badge = when (pressType) {
-                        PressType.SINGLE -> "1"
-                        PressType.DOUBLE -> "2"
-                        PressType.LONG -> "—"
-                    },
+                    icon = action.icon(),
+                    empty = empty,
                     showConflict = pressType in state.conflictPressTypes,
                     onClick = { onOpenRemap(pressType) },
                 )
@@ -227,6 +241,50 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+}
+
+@Composable
+private fun StatusRibbon(
+    label: String,
+    dotColor: Color,
+    pulse: Boolean,
+    onClick: (() -> Unit)?,
+) {
+    val pulseAlpha by rememberInfiniteTransition(label = "statusPulse").animateFloat(
+        initialValue = 0.45f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1100),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "pulseAlpha",
+    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+            .then(
+                if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
+            )
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(9.dp)
+                .alpha(if (pulse) pulseAlpha else 1f)
+                .background(dotColor, CircleShape),
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleSmall.copy(
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 15.sp,
+            ),
+            color = MaterialTheme.colorScheme.onSurface,
+        )
     }
 }
 

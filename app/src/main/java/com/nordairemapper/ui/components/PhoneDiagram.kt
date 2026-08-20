@@ -35,6 +35,8 @@ import com.nordairemapper.ui.theme.SurfaceVariantDark
 fun PhoneDiagram(
     highlightKey: Boolean,
     modifier: Modifier = Modifier,
+    /** Soft traveling glow along the left edge when remapping is live. */
+    edgeRipple: Boolean = false,
     bodyColor: Color = SurfaceVariantDark,
     keyColor: Color = NordBlue,
 ) {
@@ -46,6 +48,15 @@ fun PhoneDiagram(
             repeatMode = RepeatMode.Reverse,
         ),
         label = "glowAlpha",
+    )
+    val rippleTravel by rememberInfiniteTransition(label = "edgeRipple").animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2200),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "rippleTravel",
     )
 
     Canvas(
@@ -106,7 +117,11 @@ fun PhoneDiagram(
         val screenHeight = phoneHeight - bezelTop - bezelBottom
         val screenRadius = radius * 0.82f
         drawRoundRect(
-            color = Color.Black.copy(alpha = 0.92f),
+            color = if (highlightKey) {
+                Color(0xFF0B1820).copy(alpha = 0.96f)
+            } else {
+                Color.Black.copy(alpha = 0.92f)
+            },
             topLeft = Offset(screenLeft, screenTop),
             size = Size(screenWidth, screenHeight),
             cornerRadius = CornerRadius(screenRadius, screenRadius),
@@ -153,6 +168,25 @@ fun PhoneDiagram(
             size = Size(btnWidth, plusHeight),
             cornerRadius = CornerRadius(btnWidth / 2f, btnWidth / 2f),
         )
+
+        if (edgeRipple && highlightKey) {
+            val rippleH = phoneHeight * 0.22f
+            val rippleY = top + (phoneHeight - rippleH) * rippleTravel
+            drawRoundRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color.Transparent,
+                        keyColor.copy(alpha = 0.55f),
+                        Color.Transparent,
+                    ),
+                    startY = rippleY,
+                    endY = rippleY + rippleH,
+                ),
+                topLeft = Offset(left - keyGutter * 0.35f, rippleY),
+                size = Size(keyGutter * 0.55f, rippleH),
+                cornerRadius = CornerRadius(keyGutter, keyGutter),
+            )
+        }
 
         val rightBtnLeft = left + phoneWidth - btnWidth * 0.08f
         val volHeight = phoneHeight * (19.2f / 163.4f)

@@ -62,3 +62,5 @@ Going forward: write/update these notes in the **same turn** as the code.
 | 2026-08-20 | [feature-wiring](./2026-08-20-feature-wiring/) | Wire Visual Overlay popup, floating overlay config, haptics preview, service notif |
 | 2026-08-20 | [readme](./2026-08-20-readme/) | Full README: onboarding, Unlock why, permissions, limits |
 | 2026-08-20 | [overlay-padding-compile-fix](./2026-08-20-overlay-padding-compile-fix/) | Fix invalid `Modifier.padding(horizontal, top, bottom)` breaking CI assembleDebug |
+| 2026-08-20 | [home-overlay-type-polish](./2026-08-20-home-overlay-type-polish/) | Home Settings icon, overlay radial/pill layout, ExtraBold headings |
+| 2026-08-20 | [ux-review-polish](./2026-08-20-ux-review-polish/) | Critical UX review: Home/Remap scan, status ribbon, Material hub icons, motion/empty states |

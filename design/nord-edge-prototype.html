@@ -250,22 +250,42 @@
     .remap-footer .btn { flex: 1; }
 
     .ribbon {
-      display: inline-flex; align-items: center; gap: 8px;
-      align-self: flex-start;
-      padding: 7px 11px; border-radius: 999px;
-      border: 1px solid var(--outline); background: var(--surface);
-      font-size: 11px; font-weight: 500; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--outline);
+      font-size: 12px; font-weight: 600;
+      background: rgba(46, 204, 113, 0.06);
+    }
+    .ribbon.warn {
+      background: rgba(255, 176, 32, 0.08);
     }
     .ribbon .dot {
-      width: 7px; height: 7px; border-radius: 50%; background: var(--ok);
+      width: 8px; height: 8px; border-radius: 50%; background: var(--ok);
       box-shadow: 0 0 0 0 rgba(46,204,113,.5);
       animation: pulseDot 1.8s infinite;
+      flex-shrink: 0;
     }
     .ribbon.warn .dot { background: var(--warn); animation: none; }
     @keyframes pulseDot {
       0% { box-shadow: 0 0 0 0 rgba(46,204,113,.45); }
       70% { box-shadow: 0 0 0 8px rgba(46,204,113,0); }
       100% { box-shadow: 0 0 0 0 rgba(46,204,113,0); }
+    }
+
+    .master-card {
+      background: var(--surface);
+      border: 1px solid var(--outline);
+      border-radius: 14px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .master {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px;
+      border: 0;
+      background: transparent;
+      border-radius: 0;
+      margin-bottom: 0;
     }
 
     /* Stage — Nord 5 silhouette at exact GSMArena ratio 77 × 163.4 mm */
@@ -292,6 +312,10 @@
       fill: #050505;
       stroke: #0e0e0e;
       stroke-width: 0.2;
+      transition: fill .35s;
+    }
+    .device:not(.paused) .nord5 .glass {
+      fill: #0B1820;
     }
     .nord5 .ear { fill: #121212; }
     .nord5 .hole-outer { fill: #030303; }
@@ -344,6 +368,10 @@
       background: linear-gradient(180deg, transparent, var(--accent), transparent);
       opacity: 0;
     }
+    .device:not(.paused) .edge-ripple::after {
+      opacity: 1;
+      animation: edgeRunContinuous 2.2s linear infinite;
+    }
     .device.live:not(.paused) .edge-ripple::after {
       animation: edgeRun .7s var(--spring);
     }
@@ -352,12 +380,11 @@
       20% { opacity: 1; }
       100% { top: 100%; opacity: 0; }
     }
-
-    .master {
-      display: flex; align-items: center; justify-content: space-between;
-      background: var(--surface); border: 1px solid var(--outline);
-      border-radius: 14px; padding: 10px 12px; margin-bottom: 12px;
+    @keyframes edgeRunContinuous {
+      0% { top: -30%; }
+      100% { top: 110%; }
     }
+
     .master span { font-size: 13px; font-weight: 600; }
     .sw {
       width: 44px; height: 26px; border-radius: 999px; background: var(--accent);
@@ -391,14 +418,37 @@
       background: linear-gradient(90deg, rgba(10,198,255,.12), var(--surface));
     }
     .badge {
-      width: 38px; height: 38px; border-radius: 12px;
+      width: 36px; height: 36px; border-radius: 10px;
       background: var(--accent-dim); color: var(--accent);
       display: grid; place-items: center; font-weight: 700; font-size: 13px;
       transition: border-radius .4s var(--spring);
+      flex-shrink: 0;
+      border: 1px solid rgba(10, 198, 255, 0.18);
+    }
+    .badge svg {
+      width: 20px; height: 20px;
+      stroke: currentColor; fill: none;
+      stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
     }
     .pad.hit .badge { border-radius: 50%; }
     .pad .t { font-size: 14px; font-weight: 600; }
     .pad .d { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .pad.empty {
+      border-style: dashed;
+      background: rgba(20, 20, 20, 0.55);
+      opacity: 0.92;
+    }
+    .pad.empty .badge {
+      background: transparent;
+      border: 1px solid rgba(10, 198, 255, 0.45);
+      color: var(--accent);
+      font-size: 18px;
+      font-weight: 500;
+    }
+    .pad.empty .d {
+      color: var(--accent);
+      font-weight: 500;
+    }
     .chev { margin-left: auto; color: #3a3a3a; }
 
     /* Unlock */
@@ -608,10 +658,67 @@
       background: rgba(10, 198, 255, 0.22);
       border-color: rgba(10, 198, 255, 0.4);
     }
-    .action .ic.tone-muted {
+    .action .ic.tone-apps {
+      background: rgba(255, 176, 32, 0.14);
+      color: #FFB020;
+      border-color: rgba(255, 176, 32, 0.28);
+    }
+    .action .ic.tone-media {
+      background: rgba(61, 220, 132, 0.14);
+      color: #3DDC84;
+      border-color: rgba(61, 220, 132, 0.28);
+    }
+    .action .ic.tone-system {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border-color: rgba(10, 198, 255, 0.18);
+    }
+    .action .ic.tone-muted,
+    .action .ic.tone-none {
+      background: rgba(255, 77, 77, 0.12);
+      color: #FF4D4D;
+      border-color: rgba(255, 77, 77, 0.28);
+    }
+    .action .ic.tone-overlay {
       background: rgba(255, 255, 255, 0.06);
-      color: var(--muted);
-      border-color: rgba(255, 255, 255, 0.1);
+      color: #B0B0B0;
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+    .current-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(10, 198, 255, 0.12);
+      border: 1px solid rgba(10, 198, 255, 0.35);
+      margin-bottom: 10px;
+      flex-shrink: 0;
+      max-width: 100%;
+    }
+    .current-pill .ic {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--accent-dim); color: var(--accent);
+      display: grid; place-items: center; flex-shrink: 0;
+    }
+    .current-pill .ic svg {
+      width: 20px; height: 20px;
+      stroke: currentColor; fill: none;
+      stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .current-pill .n {
+      font-size: 13px; font-weight: 600; color: var(--accent);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .current-pill .ic.tone-apps { background: rgba(255, 176, 32, 0.14); color: #FFB020; }
+    .current-pill .ic.tone-media { background: rgba(61, 220, 132, 0.14); color: #3DDC84; }
+    .current-pill .ic.tone-overlay { background: rgba(255, 255, 255, 0.06); color: #B0B0B0; }
+    .current-pill .ic.tone-muted,
+    .current-pill .ic.tone-none { background: rgba(255, 77, 77, 0.12); color: #FF4D4D; }
+    .action .ic.tone-muted {
+      background: rgba(255, 77, 77, 0.12);
+      color: #FF4D4D;
+      border-color: rgba(255, 77, 77, 0.28);
     }
     .action.sel .ic.tone-muted {
       background: rgba(235, 0, 40, 0.12);
@@ -619,7 +726,9 @@
       border-color: rgba(235, 0, 40, 0.35);
     }
     .action .ic.tone-overlay {
-      background: rgba(10, 198, 255, 0.1);
+      background: rgba(255, 255, 255, 0.06);
+      color: #B0B0B0;
+      border-color: rgba(255, 255, 255, 0.12);
     }
     .action .meta { flex: 1; min-width: 0; }
     .action .n {
@@ -866,11 +975,35 @@
     .hub-ico {
       width: 36px; height: 36px; border-radius: 11px;
       background: var(--accent-dim); color: var(--accent);
-      display: grid; place-items: center; font-size: 15px; flex-shrink: 0;
+      display: grid; place-items: center; flex-shrink: 0;
+    }
+    .hub-ico svg {
+      width: 18px; height: 18px;
+      stroke: currentColor; fill: none;
+      stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
     }
     .hub-row .t { font-size: 13px; font-weight: 600; }
     .hub-row .d { font-size: 11px; color: var(--muted); margin-top: 2px; }
     .hub-row .chev { margin-left: auto; color: #3a3a3a; font-size: 16px; }
+    .empty-hint {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+      padding: 4px 2px 10px;
+    }
+    .empty-hint.accent { color: var(--accent); }
+    .expand-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 2px; cursor: pointer; color: var(--muted);
+      font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; user-select: none;
+    }
+    .expand-row .chev-exp {
+      margin-left: auto; font-size: 14px; transition: transform .2s;
+    }
+    .expand-row.open .chev-exp { transform: rotate(180deg); }
+    .expand-body { display: none; margin-bottom: 8px; }
+    .expand-body.open { display: block; }
 
     /* Pref cards / toggles */
     .pref-card {
@@ -953,7 +1086,18 @@
       border: 1px solid var(--outline); display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 8px; cursor: pointer;
       font: inherit; color: var(--muted); padding: 8px 6px;
-      transition: border-color .25s, background .25s, transform .3s var(--spring);
+      transition: border-color .25s, background .25s, transform .3s var(--spring), opacity .25s;
+    }
+    .slot.pop {
+      animation: slotPop .35s var(--spring);
+    }
+    @keyframes slotPop {
+      from { transform: scale(0.92); opacity: 0.5; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .slot.empty {
+      border-style: dashed;
+      opacity: 0.75;
     }
     .slot .num {
       position: absolute; top: 8px; left: 8px;
@@ -1066,12 +1210,14 @@
       <div class="eyebrow">Interactive prototype</div>
       <h1>Nord Edge</h1>
       <p class="lede">
-        Full end-to-end review set for Direction A — every app screen, clickable,
-        so you can approve motion and structure before any Compose is written.
+        Full end-to-end review set for Direction A — every app screen, clickable.
+        Synced with the Compose UX polish: Home icons &amp; status ribbon, Remap category
+        tints / Current pill / Done toast, Material hub icons, Backup local snapshot collapsed.
       </p>
       <div class="hint">
         Browser prototype (HTML/CSS/JS), not Figma and not the Android app.
-        Existing Stage / Unlock / Remap / Overlay behaviors still work via play controls.
+        Double-click an overlay slot to clear it and see the empty-state hint.
+        Home Double starts empty (dashed + Assign) to demo the incomplete state.
       </div>
       <nav class="nav" id="nav">
         <div class="nav-section">Flow</div>
@@ -1175,7 +1321,6 @@
             </div>
             <button class="ico" id="openSettings" type="button" title="Settings">⚙</button>
           </div>
-          <div class="ribbon" id="ribbon"><span class="dot"></span> Service active</div>
           <div class="stage-hero">
             <div class="edge-ripple"></div>
             <!--
@@ -1206,33 +1351,36 @@
               <rect class="side" x="78.15" y="56.5" width="1.7" height="10.2" rx="0.55"/>
             </svg>
           </div>
-          <div class="master">
-            <div>
-              <span>Remapping</span>
-              <div class="hint-t" style="margin:2px 0 0">Master switch for Plus Key actions</div>
+          <div class="master-card">
+            <div class="ribbon" id="ribbon"><span class="dot"></span> Service active</div>
+            <div class="master">
+              <div>
+                <span>Remapping</span>
+                <div class="hint-t" style="margin:2px 0 0">Master switch for Plus Key actions</div>
+              </div>
+              <div class="sw" id="master" role="switch" tabindex="0" aria-checked="true"></div>
             </div>
-            <div class="sw" id="master" role="switch" tabindex="0" aria-checked="true"></div>
           </div>
           <div class="sec-label">Actions</div>
           <div class="pads">
-            <div class="pad" data-pad="single">
-              <div class="badge">1</div>
+            <div class="pad" data-pad="single" data-icon="flash">
+              <div class="badge" data-pad-icon></div>
               <div>
                 <div class="t">Single</div>
                 <div class="d">Flashlight</div>
               </div>
               <div class="chev">›</div>
             </div>
-            <div class="pad" data-pad="double">
-              <div class="badge">2</div>
+            <div class="pad empty" data-pad="double" data-icon="">
+              <div class="badge" data-pad-icon>+</div>
               <div>
                 <div class="t">Double</div>
-                <div class="d">Rear camera</div>
+                <div class="d">+ Assign an action</div>
               </div>
               <div class="chev">›</div>
             </div>
-            <div class="pad" data-pad="long">
-              <div class="badge">—</div>
+            <div class="pad" data-pad="long" data-icon="overlay">
+              <div class="badge" data-pad-icon></div>
               <div>
                 <div class="t">Long</div>
                 <div class="d">Show overlay</div>
@@ -1290,7 +1438,7 @@
             <button class="ico" id="backStage" type="button" title="Back">‹</button>
             <div>
               <div class="h" id="remapTitle">Single</div>
-              <div class="sub">Assign an action</div>
+              <div class="sub" id="remapSub">Single press · Assign an action</div>
             </div>
           </div>
           <div class="search-wrap">
@@ -1306,6 +1454,11 @@
             <div class="chip on" data-g="system">System</div>
             <div class="chip" data-g="overlay">Overlay</div>
             <div class="chip" data-g="none">None</div>
+          </div>
+          <div class="sec-label">Current</div>
+          <div class="current-pill" id="currentPill">
+            <div class="ic" id="currentPillIc"></div>
+            <div class="n" id="currentPillName">Flashlight</div>
           </div>
           <div class="actions" id="actions"></div>
           <div class="remap-footer">
@@ -1364,52 +1517,55 @@
             </div>
             <div class="sec-label">Feedback &amp; overlay</div>
             <div class="hub-row" data-go="feedback">
-              <div class="hub-ico">∿</div>
+              <div class="hub-ico"><svg viewBox="0 0 24 24"><path d="M2 10v4h4l5 5V5L6 10H2z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18 6a8.5 8.5 0 0 1 0 12"/></svg></div>
               <div><div class="t">Feedback</div><div class="d">Haptic feedback &amp; vibration intensity</div></div>
               <div class="chev">›</div>
             </div>
             <div class="hub-row" data-go="preferences">
-              <div class="hub-ico">◐</div>
+              <div class="hub-ico"><svg viewBox="0 0 24 24"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/></svg></div>
               <div><div class="t">Preferences</div><div class="d">How you’re notified when an action triggers</div></div>
               <div class="chev">›</div>
             </div>
             <div class="hub-row" data-go="visual">
-              <div class="hub-ico">▬</div>
+              <div class="hub-ico"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div>
               <div><div class="t">Visual overlay</div><div class="d">Action popup style when a remap fires</div></div>
               <div class="chev">›</div>
             </div>
             <div class="hub-row" data-go="overlay-settings">
-              <div class="hub-ico">▦</div>
+              <div class="hub-ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
               <div><div class="t">Overlay settings</div><div class="d">Floating menu slots &amp; layout</div></div>
               <div class="chev">›</div>
             </div>
             <div class="sec-label">Behavior</div>
             <div class="hub-row" data-go="lock">
-              <div class="hub-ico">⊡</div>
+              <div class="hub-ico"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
               <div><div class="t">Lock Screen</div><div class="d">Gestures while the screen is locked</div></div>
               <div class="chev">›</div>
             </div>
             <div class="hub-row" data-go="backup">
-              <div class="hub-ico">⇄</div>
+              <div class="hub-ico"><svg viewBox="0 0 24 24"><path d="M4 14.5V17a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2.5"/><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/></svg></div>
               <div><div class="t">Backup &amp; Restore</div><div class="d">Export and import remaps</div></div>
               <div class="chev">›</div>
             </div>
             <div class="sec-label">Advanced</div>
             <div class="hub-row" data-go="keysetup">
-              <div class="hub-ico">◉</div>
+              <div class="hub-ico"><svg viewBox="0 0 24 24"><path d="M8 13v-3a4 4 0 1 1 8 0v3"/><rect x="5" y="13" width="14" height="8" rx="2"/><circle cx="12" cy="17" r="1"/></svg></div>
               <div><div class="t">Key setup</div><div class="d">Learn / verify Plus Key</div></div>
               <div class="chev">›</div>
             </div>
             <div class="hub-row" data-go="lab">
-              <div class="hub-ico">⚗</div>
+              <div class="hub-ico"><svg viewBox="0 0 24 24"><path d="M9 3h6"/><path d="M10 3v7l-5.5 9.5A1.5 1.5 0 0 0 5.8 22h12.4a1.5 1.5 0 0 0 1.3-2.5L14 10V3"/><path d="M8.5 14h7"/></svg></div>
               <div><div class="t">Lab</div><div class="d">Strategy, timing, USB unlock (Developer)</div></div>
               <div class="chev">›</div>
             </div>
             <div class="hub-row" data-go="onboarding" id="restartOnboarding">
-              <div class="hub-ico">↻</div>
+              <div class="hub-ico"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></div>
               <div><div class="t">Restart onboarding</div><div class="d">Walk through setup again</div></div>
               <div class="chev">›</div>
             </div>
+            <div class="sec-label">Per-app exclusions</div>
+            <p class="empty-hint">No apps excluded — remapping is active in all apps</p>
+            <button class="btn ghost" id="addExclusionDemo" type="button" style="margin-bottom:12px">Add excluded app</button>
           </div>
         </section>
 
@@ -1575,6 +1731,18 @@
               <div class="hint-t">Replace current config from a backup file.</div>
               <button class="btn ghost" id="importBtn" type="button">Import backup</button>
             </div>
+            <div class="expand-row" id="localSnapToggle" role="button" tabindex="0">
+              Local snapshot
+              <span class="chev-exp">▾</span>
+            </div>
+            <div class="expand-body" id="localSnapBody">
+              <p class="empty-hint">Optional on-device copies — most people only need Export / Import.</p>
+              <div class="pref-card">
+                <div class="label">Snapshot name</div>
+                <input type="text" placeholder="e.g. Before trip" style="width:100%;margin:8px 0 12px;padding:10px 12px;border-radius:10px;border:1px solid var(--outline);background:#0d0d0d;color:var(--text);font:inherit" />
+                <button class="btn" id="saveLocalSnap" type="button">Save local snapshot</button>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -1588,7 +1756,10 @@
             </div>
           </div>
           <div class="scroll">
-            <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.45">
+            <p class="empty-hint accent" id="overlayEmptyHint" hidden>
+              Tap a slot to add an action — at least one is needed for the overlay to show
+            </p>
+            <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.45" id="overlaySlotsCopy">
               Tap a slot to select it. Preview opens the live overlay. Full layout controls are in the app.
             </p>
             <div class="slots" id="slots"></div>
@@ -1748,6 +1919,75 @@
       return `<svg viewBox="0 0 24 24" aria-hidden="true">${actionIcons[key] || actionIcons.flash}</svg>`;
     }
 
+    function findActionMeta(name) {
+      const short = (name || "").replace(/…$/, "");
+      for (const [group, items] of Object.entries(actionCatalog)) {
+        for (const item of items) {
+          if (item.name === name || item.name.replace(/…$/, "") === short) {
+            return { ...item, group };
+          }
+        }
+      }
+      return { name: short || "No action", icon: "block", tone: "none", group: "none", hint: "" };
+    }
+
+    function groupTone(group, itemTone) {
+      if (itemTone) return itemTone;
+      if (group === "apps") return "apps";
+      if (group === "media") return "media";
+      if (group === "overlay") return "overlay";
+      if (group === "none") return "none";
+      return "system";
+    }
+
+    function syncHomePadIcons() {
+      document.querySelectorAll(".pad").forEach((pad) => {
+        const iconKey = pad.dataset.icon || "";
+        const badge = pad.querySelector("[data-pad-icon]");
+        if (!badge) return;
+        if (!iconKey || pad.classList.contains("empty")) {
+          badge.innerHTML = "+";
+          pad.classList.add("empty");
+        } else {
+          badge.innerHTML = iconSvg(iconKey);
+          pad.classList.remove("empty");
+        }
+      });
+    }
+
+    function updateCurrentPill(name) {
+      const meta = findActionMeta(name);
+      const ic = document.getElementById("currentPillIc");
+      const nm = document.getElementById("currentPillName");
+      if (ic) ic.innerHTML = iconSvg(meta.icon);
+      if (nm) nm.textContent = (meta.name || name || "No action").replace(/…$/, "");
+      const pill = document.getElementById("currentPill");
+      if (pill) {
+        const tone = groupTone(meta.group, meta.tone);
+        pill.querySelector(".ic").className = "ic tone-" + tone;
+      }
+    }
+
+    function setPadAction(kind, name) {
+      const pad = document.querySelector(`.pad[data-pad="${kind}"]`);
+      if (!pad) return;
+      const meta = findActionMeta(name);
+      const label = (meta.name || name).replace(/…$/, "");
+      const d = pad.querySelector(".d");
+      if (d) {
+        if (!name || meta.group === "none" || label === "No action") {
+          d.textContent = "+ Assign an action";
+          pad.classList.add("empty");
+          pad.dataset.icon = "";
+        } else {
+          d.textContent = label;
+          pad.classList.remove("empty");
+          pad.dataset.icon = meta.icon;
+        }
+      }
+      syncHomePadIcons();
+    }
+
     /* Shared chord slots — same icons/labels as Remap studio actions */
     const overlaySlots = [
       { name: "Flashlight", short: "Flashlight", icon: "flash" },
@@ -1788,10 +2028,15 @@
       const root = document.getElementById("slots");
       if (!root) return;
       root.innerHTML = "";
+      const allEmpty = overlaySlots.every((s) => !s.name || s.name === "No action");
+      const hint = document.getElementById("overlayEmptyHint");
+      const copy = document.getElementById("overlaySlotsCopy");
+      if (hint) hint.hidden = !allEmpty;
+      if (copy) copy.hidden = allEmpty;
       overlaySlots.forEach((slot, i) => {
         const el = document.createElement("button");
         el.type = "button";
-        el.className = "slot" + (i === selectedSlot ? " on" : "");
+        el.className = "slot" + (i === selectedSlot ? " on" : "") + (slot.name === "No action" ? " empty" : "");
         el.dataset.i = String(i);
         el.innerHTML =
           `<div class="num">${i + 1}</div>` +
@@ -1801,11 +2046,19 @@
           selectedSlot = i;
           document.querySelectorAll("#slots .slot").forEach((s, j) => {
             s.classList.toggle("on", j === i);
+            s.classList.add("pop");
+            setTimeout(() => s.classList.remove("pop"), 360);
           });
           document.querySelectorAll("#overlayTiles .tile").forEach((t, j) => {
             t.classList.toggle("sel", j === i);
           });
           showToast("Slot " + (i + 1) + " · " + slot.name);
+        });
+        el.addEventListener("dblclick", () => {
+          overlaySlots[i] = { name: "No action", short: "No action", icon: "block" };
+          renderOverlayEditor();
+          renderOverlayChord();
+          showToast("Slot " + (i + 1) + " cleared");
         });
         root.appendChild(el);
       });
@@ -1885,7 +2138,9 @@
 
     function padActionLabel(kind) {
       const el = document.querySelector(`.pad[data-pad="${kind}"] .d`);
-      return el ? el.textContent.trim() : "";
+      if (!el) return "";
+      const t = el.textContent.trim();
+      return t.startsWith("+ Assign") ? "No action" : t;
     }
 
     function hitPad(kind) {
@@ -1907,7 +2162,11 @@
       activePress = kind;
       const title = document.getElementById("remapTitle");
       if (title) title.textContent = pressLabels[kind] || "Single";
+      const sub = document.getElementById("remapSub");
+      if (sub) sub.textContent = (pressLabels[kind] || "Single") + " press · Assign an action";
       selected = padActionLabel(kind) || selected;
+      if (selected.startsWith("+ Assign")) selected = "No action";
+      updateCurrentPill(selected);
       const done = document.getElementById("confirmAction");
       if (done) done.textContent = "Done";
       go("remap");
@@ -2075,7 +2334,8 @@
         const el = document.createElement("button");
         el.type = "button";
         el.className = "action" + (item.name === selected ? " sel" : "");
-        const tone = item.tone ? ` tone-${item.tone}` : "";
+        const toneName = groupTone(item.group, item.tone);
+        const tone = ` tone-${toneName}`;
         const catLine = searching
           ? `<div class="cat-tag">${groupLabels[item.group]}</div>`
           : "";
@@ -2086,6 +2346,7 @@
         el.onclick = () => {
           selected = item.name;
           document.getElementById("confirmAction").textContent = "Done";
+          updateCurrentPill(selected);
           renderActions(activeGroup);
           if (item.picker) showToast("Would open app / URL picker");
         };
@@ -2095,6 +2356,8 @@
 
     renderActions("system");
     document.getElementById("confirmAction").textContent = "Done";
+    syncHomePadIcons();
+    updateCurrentPill(selected);
     groupsEl.addEventListener("click", (e) => {
       const chip = e.target.closest(".chip");
       if (!chip || groupsEl.classList.contains("searching")) return;
@@ -2110,9 +2373,8 @@
     });
     document.getElementById("confirmAction").onclick = () => {
       const short = selected.replace(/…$/, "");
-      const pad = document.querySelector(`.pad[data-pad="${activePress}"] .d`);
-      if (pad) pad.textContent = short;
-      showToast(pressLabels[activePress] + " · " + short);
+      setPadAction(activePress, short);
+      showToast("Saved");
       go("stage");
     };
     document.getElementById("tryAction").onclick = () => {
@@ -2445,6 +2707,22 @@
 
     document.getElementById("exportBtn").onclick = () => showToast("Backup exported");
     document.getElementById("importBtn").onclick = () => showToast("Backup imported");
+    const localSnapToggle = document.getElementById("localSnapToggle");
+    const localSnapBody = document.getElementById("localSnapBody");
+    if (localSnapToggle && localSnapBody) {
+      localSnapToggle.addEventListener("click", () => {
+        localSnapToggle.classList.toggle("open");
+        localSnapBody.classList.toggle("open");
+      });
+    }
+    const saveLocalSnap = document.getElementById("saveLocalSnap");
+    if (saveLocalSnap) {
+      saveLocalSnap.onclick = () => showToast("Local snapshot saved");
+    }
+    const addExclusion = document.getElementById("addExclusionDemo");
+    if (addExclusion) {
+      addExclusion.onclick = () => showToast("Would open app picker");
+    }
 
     document.getElementById("previewOverlay").onclick = () => go("overlay");
 

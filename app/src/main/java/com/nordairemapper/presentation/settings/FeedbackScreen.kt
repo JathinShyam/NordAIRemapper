@@ -3,6 +3,9 @@ package com.nordairemapper.presentation.settings
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,8 +38,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -45,6 +52,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.HapticIntensity
 import com.nordairemapper.ui.components.NordGhostButton
 import com.nordairemapper.ui.components.NordHeading
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,6 +62,10 @@ fun FeedbackScreen(
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val ringScale = remember { Animatable(1f) }
+    val ringAlpha = remember { Animatable(0.4f) }
+    val coreScale = remember { Animatable(1f) }
 
     fun previewIntensity(intensity: HapticIntensity) {
         val vibrator = context.getSystemService(VibratorManager::class.java)?.defaultVibrator
@@ -67,6 +79,21 @@ fun FeedbackScreen(
                 VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK)
         }
         vibrator?.vibrate(effect)
+        scope.launch {
+            ringScale.snapTo(1f)
+            ringAlpha.snapTo(0.55f)
+            coreScale.snapTo(1f)
+            launch {
+                ringScale.animateTo(1.55f, tween(520, easing = FastOutSlowInEasing))
+            }
+            launch {
+                ringAlpha.animateTo(0f, tween(520, easing = FastOutSlowInEasing))
+            }
+            coreScale.animateTo(1.18f, tween(160, easing = FastOutSlowInEasing))
+            coreScale.animateTo(1f, tween(220, easing = FastOutSlowInEasing))
+            ringScale.snapTo(1f)
+            ringAlpha.snapTo(0.4f)
+        }
     }
 
     Scaffold(
@@ -207,18 +234,24 @@ fun FeedbackScreen(
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                     )
                     Box(
-                        modifier = Modifier
-                            .size(64.dp)
-                            .border(
-                                2.dp,
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-                                CircleShape,
-                            ),
+                        modifier = Modifier.size(72.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Box(
                             modifier = Modifier
+                                .size(64.dp)
+                                .scale(ringScale.value)
+                                .graphicsLayer { alpha = ringAlpha.value }
+                                .border(
+                                    2.dp,
+                                    MaterialTheme.colorScheme.primary,
+                                    CircleShape,
+                                ),
+                        )
+                        Box(
+                            modifier = Modifier
                                 .size(28.dp)
+                                .scale(coreScale.value)
                                 .background(MaterialTheme.colorScheme.primary, CircleShape),
                         )
                     }

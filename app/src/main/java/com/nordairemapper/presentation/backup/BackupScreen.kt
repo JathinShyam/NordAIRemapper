@@ -2,6 +2,7 @@ package com.nordairemapper.presentation.backup
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -57,6 +60,7 @@ fun BackupScreen(
     val snackbar = remember { SnackbarHostState() }
     var snapshotName by remember { mutableStateOf("") }
     var pendingRestoreId by remember { mutableStateOf<Long?>(null) }
+    var localExpanded by remember { mutableStateOf(false) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json"),
@@ -120,47 +124,77 @@ fun BackupScreen(
                 )
             }
 
-            SectionLabel("Local snapshot")
-            OutlinedTextField(
-                value = snapshotName,
-                onValueChange = { snapshotName = it },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Snapshot name") },
-                singleLine = true,
-                shape = MaterialTheme.shapes.small,
-            )
-            NordPrimaryButton(
-                text = "Save local snapshot",
-                onClick = {
-                    viewModel.saveSnapshot(snapshotName)
-                    snapshotName = ""
-                },
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { localExpanded = !localExpanded }
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Local snapshot",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    imageVector = if (localExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                    contentDescription = if (localExpanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (localExpanded) {
+                Text(
+                    text = "Optional on-device copies — most people only need Export / Import.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedTextField(
+                    value = snapshotName,
+                    onValueChange = { snapshotName = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Snapshot name") },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.small,
+                )
+                NordPrimaryButton(
+                    text = "Save local snapshot",
+                    onClick = {
+                        viewModel.saveSnapshot(snapshotName)
+                        snapshotName = ""
+                    },
+                )
 
-            SectionLabel("Saved")
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(snapshots, key = { it.id }) { snapshot ->
-                    NordSurfaceCard(onClick = { pendingRestoreId = snapshot.id }) {
-                        Row(
-                            modifier = Modifier.padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    snapshot.name,
-                                    style = MaterialTheme.typography.titleSmall.copy(
-                                        fontWeight = FontWeight.SemiBold,
-                                    ),
-                                )
-                                Text(
-                                    text = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
-                                        .format(Date(snapshot.createdAtEpochMs)),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            IconButton(onClick = { viewModel.deleteSnapshot(snapshot.id) }) {
-                                Icon(Icons.Outlined.Delete, contentDescription = "Delete")
+                if (snapshots.isNotEmpty()) {
+                    SectionLabel("Saved")
+                    LazyColumn(
+                        modifier = Modifier.weight(1f, fill = false),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(snapshots, key = { it.id }) { snapshot ->
+                            NordSurfaceCard(onClick = { pendingRestoreId = snapshot.id }) {
+                                Row(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            snapshot.name,
+                                            style = MaterialTheme.typography.titleSmall.copy(
+                                                fontWeight = FontWeight.SemiBold,
+                                            ),
+                                        )
+                                        Text(
+                                            text = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
+                                                .format(Date(snapshot.createdAtEpochMs)),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                    IconButton(onClick = { viewModel.deleteSnapshot(snapshot.id) }) {
+                                        Icon(Icons.Outlined.Delete, contentDescription = "Delete")
+                                    }
+                                }
                             }
                         }
                     }
