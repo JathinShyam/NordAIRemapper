@@ -58,7 +58,11 @@ class OverlaySettingsViewModel @Inject constructor(
         val slots = current.slots.toMutableList()
         while (slots.size <= index) slots.add(RemapAction.None)
         slots[index] = action
-        current.copy(slots = slots.take(OverlayConfig.MAX_SLOTS))
+        val next = slots.take(OverlayConfig.MAX_SLOTS)
+        current.copy(
+            slots = next,
+            enabled = if (action !is RemapAction.None) true else current.enabled,
+        )
     }
 
     fun clearSlot(index: Int) = setSlot(index, RemapAction.None)

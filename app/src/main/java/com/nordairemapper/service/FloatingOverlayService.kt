@@ -63,7 +63,11 @@ import com.nordairemapper.presentation.MainActivity
 import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.presentation.common.icon
 import com.nordairemapper.ui.theme.NordAIRemapperTheme
-import com.nordairemapper.ui.theme.NordBlue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.border
+import com.nordairemapper.domain.model.OverlayAnimation
+import com.nordairemapper.domain.model.OverlayVisualStyle
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -147,6 +151,12 @@ class FloatingOverlayService :
         serviceScope.launch {
             runCatching {
                 val config = remapConfigRepository.observeOverlayConfig().first()
+                if (!config.enabled) {
+                    Log.w(TAG, "Overlay disabled in settings")
+                    toast("Turn on Enable overlay in Overlay settings")
+                    stopSelf()
+                    return@launch
+                }
                 val slots = config.slots
                     .filter { it !is RemapAction.None }
                     .take(OverlayConfig.MAX_SLOTS)
@@ -317,6 +327,13 @@ private fun OverlayWindowContent(
         OverlayIconSize.MEDIUM -> 36.dp
         OverlayIconSize.LARGE -> 48.dp
     }
+    val accent = Color(config.accentColorArgb)
+    val onePlus = config.visualStyle == OverlayVisualStyle.ONEPLUS
+    val surfaceColor = if (onePlus) {
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)
+    } else {
+        Color(0xFFF2F2F2).copy(alpha = 0.96f)
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -333,10 +350,29 @@ private fun OverlayWindowContent(
     ) {
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+            color = surfaceColor,
             modifier = Modifier
                 .padding(20.dp)
                 .alpha(config.opacity.coerceIn(0.3f, 1f))
+                .then(
+                    if (config.glowEffects) {
+                        Modifier.shadow(
+                            elevation = 14.dp,
+                            shape = RoundedCornerShape(24.dp),
+                            ambientColor = accent.copy(alpha = 0.4f),
+                            spotColor = accent.copy(alpha = 0.5f),
+                        )
+                    } else {
+                        Modifier
+                    },
+                )
+                .then(
+                    if (config.glowEffects && onePlus) {
+                        Modifier.border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
+                    } else {
+                        Modifier
+                    },
+                )
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() },
@@ -352,7 +388,15 @@ private fun OverlayWindowContent(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         slots.forEachIndexed { index, action ->
-                            OverlayActionButton(action, iconDp, index) { onAction(action) }
+                            OverlayActionButton(
+                                action = action,
+                                iconDp = iconDp,
+                                index = index,
+                                accent = accent,
+                                animation = config.animation,
+                                position = config.position,
+                                onClick = { onAction(action) },
+                            )
                         }
                     }
                 }
@@ -364,12 +408,28 @@ private fun OverlayWindowContent(
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             slots.take(3).forEachIndexed { index, action ->
-                                OverlayActionButton(action, iconDp, index) { onAction(action) }
+                                OverlayActionButton(
+                                    action = action,
+                                    iconDp = iconDp,
+                                    index = index,
+                                    accent = accent,
+                                    animation = config.animation,
+                                    position = config.position,
+                                    onClick = { onAction(action) },
+                                )
                             }
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             slots.drop(3).forEachIndexed { index, action ->
-                                OverlayActionButton(action, iconDp, index + 3) { onAction(action) }
+                                OverlayActionButton(
+                                    action = action,
+                                    iconDp = iconDp,
+                                    index = index + 3,
+                                    accent = accent,
+                                    animation = config.animation,
+                                    position = config.position,
+                                    onClick = { onAction(action) },
+                                )
                             }
                         }
                     }
@@ -384,10 +444,13 @@ private fun OverlayActionButton(
     action: RemapAction,
     iconDp: androidx.compose.ui.unit.Dp,
     index: Int,
+    accent: Color,
+    animation: OverlayAnimation,
+    position: OverlayPosition,
     onClick: () -> Unit,
 ) {
     val appear = remember { Animatable(0f) }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(animation) {
         delay(index * 50L)
         appear.animateTo(
             targetValue = 1f,
@@ -398,29 +461,49 @@ private fun OverlayActionButton(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .graphicsLayer {
-                alpha = appear.value
-                translationY = (1f - appear.value) * 18f
-                scaleX = 0.86f + appear.value * 0.14f
-                scaleY = 0.86f + appear.value * 0.14f
+                val t = appear.value
+                alpha = t
+                when (animation) {
+                    OverlayAnimation.FADE -> Unit
+                    OverlayAnimation.SCALE -> {
+                        scaleX = 0.86f + t * 0.14f
+                        scaleY = 0.86f + t * 0.14f
+                        translationY = (1f - t) * 18f
+                    }
+                    OverlayAnimation.SLIDE -> {
+                        val fromX = when (position) {
+                            OverlayPosition.LEFT_EDGE -> -24f
+                            OverlayPosition.RIGHT_EDGE -> 24f
+                            OverlayPosition.BOTTOM_CENTER -> 0f
+                        }
+                        translationX = (1f - t) * fromX
+                        translationY = if (position == OverlayPosition.BOTTOM_CENTER) {
+                            (1f - t) * 24f
+                        } else {
+                            0f
+                        }
+                    }
+                }
             }
             .clickable(onClick = onClick),
     ) {
         Box(
             modifier = Modifier
                 .size(iconDp + 16.dp)
-                .background(NordBlue.copy(alpha = 0.2f), RoundedCornerShape(12.dp)),
+                .background(accent.copy(alpha = 0.2f), RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = action.icon(),
                 contentDescription = action.displayName(),
-                tint = NordBlue,
+                tint = accent,
                 modifier = Modifier.size(iconDp * 0.55f),
             )
         }
         Text(
             text = action.displayName(),
             style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
         )
     }

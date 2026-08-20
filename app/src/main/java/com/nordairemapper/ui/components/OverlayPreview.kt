@@ -24,7 +24,7 @@ import com.nordairemapper.domain.model.OverlayLayoutStyle
 import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.presentation.common.icon
-import com.nordairemapper.ui.theme.NordBlue
+import androidx.compose.ui.graphics.Color
 import com.nordairemapper.ui.theme.SurfaceDark
 
 @Composable
@@ -56,7 +56,7 @@ fun OverlayPreview(
         } else when (config.layoutStyle) {
             OverlayLayoutStyle.PILL_BAR -> {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    slots.forEach { SlotChip(it, iconDp) }
+                    slots.forEach { SlotChip(it, iconDp, Color(config.accentColorArgb)) }
                 }
             }
             OverlayLayoutStyle.RADIAL -> {
@@ -65,10 +65,10 @@ fun OverlayPreview(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        slots.take(3).forEach { SlotChip(it, iconDp) }
+                        slots.take(3).forEach { SlotChip(it, iconDp, Color(config.accentColorArgb)) }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        slots.drop(3).forEach { SlotChip(it, iconDp) }
+                        slots.drop(3).forEach { SlotChip(it, iconDp, Color(config.accentColorArgb)) }
                     }
                 }
             }
@@ -77,18 +77,18 @@ fun OverlayPreview(
 }
 
 @Composable
-private fun SlotChip(action: RemapAction, iconDp: androidx.compose.ui.unit.Dp) {
+private fun SlotChip(action: RemapAction, iconDp: androidx.compose.ui.unit.Dp, accent: Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
                 .size(iconDp + 12.dp)
-                .background(NordBlue.copy(alpha = 0.2f), CircleShape),
+                .background(accent.copy(alpha = 0.2f), CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = action.icon(),
                 contentDescription = action.displayName(),
-                tint = NordBlue,
+                tint = accent,
                 modifier = Modifier.size(iconDp * 0.6f),
             )
         }

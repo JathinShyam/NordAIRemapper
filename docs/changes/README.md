@@ -59,3 +59,4 @@ Going forward: write/update these notes in the **same turn** as the code.
 | 2026-08-20 | [nord-edge-proposal](../design/2026-08-20-nord-edge-proposal.md) | Nord Edge Direction A — approved; Compose implementing |
 | 2026-08-20 | [nord-edge-prototype](./2026-08-20-nord-edge-prototype/) | Interactive HTML prototype for Nord Edge Direction A (+ Nord 5 silhouette / Plus Key glow) |
 | 2026-08-20 | [nord-edge-impl](./2026-08-20-nord-edge-impl/) | Nord Edge Compose: Unlock USB-first, Home/Settings/Lab, Remap studio, overlay chord |
+| 2026-08-20 | [feature-wiring](./2026-08-20-feature-wiring/) | Wire Visual Overlay popup, floating overlay config, haptics preview, service notif |

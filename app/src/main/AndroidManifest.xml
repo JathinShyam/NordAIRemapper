@@ -87,6 +87,15 @@
                 android:value="Shows a floating action menu triggered by the Plus Key" />
         </service>
 
+        <service
+            android:name=".service.ActionFeedbackOverlayService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Shows a brief on-screen confirmation when a Plus Key remap fires" />
+        </service>
+
         <receiver
             android:name=".service.BootReceiver"
             android:exported="true"

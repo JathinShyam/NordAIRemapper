@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.BlurOn
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,13 +36,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.AppSettings
 import com.nordairemapper.domain.model.OverlayVisualStyle
+import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.presentation.overlay.OverlaySettingsViewModel
+import com.nordairemapper.service.ActionFeedbackOverlayService
+import com.nordairemapper.ui.components.NordGhostButton
 import com.nordairemapper.ui.components.NordHeading
 
 private val AccentPresets = listOf(
@@ -57,8 +62,11 @@ private val AccentPresets = listOf(
 fun VisualOverlayScreen(
     onBack: () -> Unit,
     viewModel: OverlaySettingsViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val config by viewModel.config.collectAsStateWithLifecycle()
+    val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -84,11 +92,21 @@ fun VisualOverlayScreen(
                 .verticalScroll(rememberScrollState()),
         ) {
             Text(
-                text = "Customize how the action popup looks and behaves.",
+                text = "Brief popup when a remap fires. Needs Display over other apps.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 12.dp),
             )
+
+            SettingsGroupCard {
+                SettingsToggleRow(
+                    title = "Enable visual overlay",
+                    subtitle = "Show a brief popup when an action triggers",
+                    checked = settings.visualOverlayEnabled,
+                    onCheckedChange = settingsViewModel::setVisualOverlayEnabled,
+                    icon = Icons.Outlined.Visibility,
+                )
+            }
 
             QuietSectionLabel("Style")
             Row(
@@ -194,7 +212,17 @@ fun VisualOverlayScreen(
                     )
                 }
             }
-            Spacer(Modifier.height(24.dp))
+
+            NordGhostButton(
+                text = "Preview popup",
+                onClick = {
+                    ActionFeedbackOverlayService.show(context, RemapAction.ToggleFlashlight)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+            )
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

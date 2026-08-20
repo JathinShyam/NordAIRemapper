@@ -15,7 +15,8 @@ enum class OverlayVisualStyle { ONEPLUS, STOCK }
 
 @Serializable
 data class OverlayConfig(
-    val enabled: Boolean = false,
+    /** When false, [RemapAction.ShowOverlay] will not open the floating menu. */
+    val enabled: Boolean = true,
     val slots: List<RemapAction> = emptyList(),
     val position: OverlayPosition = OverlayPosition.RIGHT_EDGE,
     val opacity: Float = 1f,

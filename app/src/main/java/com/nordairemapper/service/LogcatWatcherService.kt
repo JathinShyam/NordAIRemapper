@@ -53,7 +53,7 @@ class LogcatWatcherService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground(
             NOTIFICATION_ID,
-            buildNotification(),
+            buildNotification(showDetails = true),
             ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
         )
         remapEngine.start()
@@ -64,7 +64,14 @@ class LogcatWatcherService : Service() {
             return START_NOT_STICKY
         }
 
-        scope.launch { watchLogcat() }
+        scope.launch {
+            val showDetails = settingsRepository.settings.first().showServiceNotification
+            if (!showDetails) {
+                getSystemService(NotificationManager::class.java)
+                    .notify(NOTIFICATION_ID, buildNotification(showDetails = false))
+            }
+            watchLogcat()
+        }
         return START_STICKY
     }
 
@@ -126,7 +133,7 @@ class LogcatWatcherService : Service() {
         }
     }
 
-    private fun buildNotification(): Notification {
+    private fun buildNotification(showDetails: Boolean): Notification {
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(
             NotificationChannel(
@@ -141,13 +148,23 @@ class LogcatWatcherService : Service() {
             Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE,
         )
-        return Notification.Builder(this, CHANNEL_ID)
+        // FGS notification is required while the watcher runs. When the user
+        // turns Service notification off, keep a minimal silent ongoing entry.
+        val builder = Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Plus Key detection active")
-            .setContentText("Watching for Plus Key presses")
             .setContentIntent(contentIntent)
             .setOngoing(true)
-            .build()
+        return if (showDetails) {
+            builder
+                .setContentTitle("Plus Key detection active")
+                .setContentText("Watching for Plus Key presses")
+                .build()
+        } else {
+            builder
+                .setContentTitle("Nord AI Remapper")
+                .setContentText("Running")
+                .build()
+        }
     }
 
     override fun onDestroy() {

@@ -76,6 +76,9 @@ class RemapActionExecutor @Inject constructor(
             if (settings.hapticFeedback) {
                 performHaptic(settings.hapticIntensity)
             }
+            if (settings.visualOverlayEnabled) {
+                ActionFeedbackOverlayService.show(context, action)
+            }
         }
         runCatching { dispatch(action) }
             .onFailure {

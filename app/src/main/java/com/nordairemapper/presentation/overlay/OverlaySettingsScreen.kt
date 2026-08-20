@@ -106,7 +106,7 @@ fun OverlaySettingsScreen(
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                         )
                         Text(
-                            text = "Assign “Show overlay” to a press type to open this menu",
+                            text = "When off, Show overlay actions will not open this menu",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

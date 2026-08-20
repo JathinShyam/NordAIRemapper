@@ -1,5 +1,8 @@
 package com.nordairemapper.presentation.settings
 
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -18,6 +21,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,6 +36,21 @@ fun FeedbackScreen(
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val intensities = HapticIntensity.entries
+    val context = LocalContext.current
+
+    fun previewIntensity(intensity: HapticIntensity) {
+        val vibrator = context.getSystemService(VibratorManager::class.java)?.defaultVibrator
+            ?: context.getSystemService(Vibrator::class.java)
+        val effect = when (intensity) {
+            HapticIntensity.LIGHT ->
+                VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
+            HapticIntensity.MEDIUM ->
+                VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
+            HapticIntensity.HEAVY ->
+                VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK)
+        }
+        vibrator?.vibrate(effect)
+    }
 
     Scaffold(
         topBar = {
@@ -81,7 +100,10 @@ fun FeedbackScreen(
                             HapticIntensity.HEAVY -> "Firm vibration"
                         },
                         selected = settings.hapticIntensity == intensity,
-                        onClick = { viewModel.setHapticIntensity(intensity) },
+                        onClick = {
+                            viewModel.setHapticIntensity(intensity)
+                            previewIntensity(intensity)
+                        },
                         showDivider = index < intensities.lastIndex,
                     )
                 }
