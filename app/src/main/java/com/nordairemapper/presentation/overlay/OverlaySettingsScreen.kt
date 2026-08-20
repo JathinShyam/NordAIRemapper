@@ -14,6 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,6 +22,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -52,8 +54,6 @@ import com.nordairemapper.ui.components.ActionCard
 import com.nordairemapper.ui.components.NordHeading
 import com.nordairemapper.ui.components.OverlayPreview
 import com.nordairemapper.ui.components.SectionLabel
-import com.nordairemapper.ui.components.StatusChip
-import com.nordairemapper.ui.components.StatusTone
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,31 +97,22 @@ fun OverlaySettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(
-                text = "Tap a slot to select it. Full layout controls are below.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
 
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                shape = MaterialTheme.shapes.medium,
-            ) {
+            // ── Enable toggle ─────────────────────────────────────────────
+            PrefCard {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 14.dp),
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             "Enable overlay",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                            style = MaterialTheme.typography.titleSmall,
                         )
                         Text(
-                            text = "When off, Show overlay actions will not open this menu",
+                            text = "Show overlay actions will not open this menu when off",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -130,10 +121,17 @@ fun OverlaySettingsScreen(
                 }
             }
 
+            // ── Live preview ──────────────────────────────────────────────
             SectionLabel("Live preview")
             OverlayPreview(config = config)
 
+            // ── Slots ─────────────────────────────────────────────────────
             SectionLabel("Slots")
+            Text(
+                text = "Tap a slot to assign an action. Up to 6 slots are shown in the overlay.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             repeat(OverlayConfig.MAX_SLOTS) { index ->
                 val action = config.slots.getOrNull(index) ?: RemapAction.None
                 ActionCard(
@@ -144,66 +142,123 @@ fun OverlaySettingsScreen(
                 )
             }
 
-            SectionLabel("Layout")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OverlayLayoutStyle.entries.forEach { style ->
-                    StatusChip(
-                        label = style.name.replace('_', ' ').lowercase()
-                            .replaceFirstChar { it.titlecase() },
-                        tone = StatusTone.Active,
-                        selected = config.layoutStyle == style,
-                        showDot = false,
-                        onClick = { viewModel.setLayoutStyle(style) },
+            // ── Layout ────────────────────────────────────────────────────
+            SectionLabel("Layout style")
+            PrefCard {
+                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+                    Text(
+                        text = "Grid",
+                        style = MaterialTheme.typography.titleSmall,
                     )
+                    Text(
+                        text = "3×2 square tile grid — the default design panel",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 10.dp),
+                    )
+                    SegRow {
+                        OverlayLayoutStyle.entries.forEach { style ->
+                            val selected = config.layoutStyle == style
+                            val label = when (style) {
+                                OverlayLayoutStyle.RADIAL   -> "Grid"
+                                OverlayLayoutStyle.PILL_BAR -> "Pill bar"
+                            }
+                            SegButton(label = label, selected = selected) {
+                                viewModel.setLayoutStyle(style)
+                            }
+                        }
+                    }
                 }
             }
 
+            // ── Position ──────────────────────────────────────────────────
             SectionLabel("Position")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OverlayPosition.entries.forEach { position ->
-                    StatusChip(
-                        label = position.name.replace('_', ' ').lowercase()
-                            .replaceFirstChar { it.titlecase() },
-                        tone = StatusTone.Active,
-                        selected = config.position == position,
-                        showDot = false,
-                        onClick = { viewModel.setPosition(position) },
+            PrefCard {
+                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+                    Text(
+                        text = "Where the panel appears on screen",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 10.dp),
                     )
+                    SegRow {
+                        OverlayPosition.entries.forEach { pos ->
+                            val selected = config.position == pos
+                            val label = when (pos) {
+                                OverlayPosition.BOTTOM_CENTER -> "Bottom"
+                                OverlayPosition.LEFT_EDGE     -> "Left"
+                                OverlayPosition.RIGHT_EDGE    -> "Right"
+                            }
+                            SegButton(label = label, selected = selected) {
+                                viewModel.setPosition(pos)
+                            }
+                        }
+                    }
                 }
             }
 
-            SectionLabel("Opacity ${(config.opacity * 100).toInt()}%")
-            Slider(
-                value = config.opacity,
-                onValueChange = viewModel::setOpacity,
-                valueRange = 0.3f..1f,
-            )
-
+            // ── Icon size ─────────────────────────────────────────────────
             SectionLabel("Icon size")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OverlayIconSize.entries.forEach { size ->
-                    StatusChip(
-                        label = size.name.lowercase().replaceFirstChar { it.titlecase() },
-                        tone = StatusTone.Active,
-                        selected = config.iconSize == size,
-                        showDot = false,
-                        onClick = { viewModel.setIconSize(size) },
+            PrefCard {
+                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+                    Text(
+                        text = "Size of icons inside each tile",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 10.dp),
+                    )
+                    SegRow {
+                        OverlayIconSize.entries.forEach { size ->
+                            val selected = config.iconSize == size
+                            val label = size.name.lowercase().replaceFirstChar { it.titlecase() }
+                            SegButton(label = label, selected = selected) {
+                                viewModel.setIconSize(size)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Animation ─────────────────────────────────────────────────
+            SectionLabel("Entry animation")
+            PrefCard {
+                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+                    Text(
+                        text = "How tiles animate in when the overlay opens",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 10.dp),
+                    )
+                    SegRow {
+                        OverlayAnimation.entries.forEach { anim ->
+                            val selected = config.animation == anim
+                            val label = anim.name.lowercase().replaceFirstChar { it.titlecase() }
+                            SegButton(label = label, selected = selected) {
+                                viewModel.setAnimation(anim)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Opacity ───────────────────────────────────────────────────
+            SectionLabel("Opacity · ${(config.opacity * 100).toInt()}%")
+            PrefCard {
+                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+                    Text(
+                        text = "Panel background transparency",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 4.dp),
+                    )
+                    Slider(
+                        value = config.opacity,
+                        onValueChange = viewModel::setOpacity,
+                        valueRange = 0.3f..1f,
                     )
                 }
             }
 
-            SectionLabel("Animation")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OverlayAnimation.entries.forEach { animation ->
-                    StatusChip(
-                        label = animation.name.lowercase().replaceFirstChar { it.titlecase() },
-                        tone = StatusTone.Active,
-                        selected = config.animation == animation,
-                        showDot = false,
-                        onClick = { viewModel.setAnimation(animation) },
-                    )
-                }
-            }
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
@@ -219,6 +274,51 @@ fun OverlaySettingsScreen(
         )
     }
 }
+
+// ─── Reusable primitives ──────────────────────────────────────────────────
+
+@Composable
+private fun PrefCard(content: @Composable () -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        elevation = CardDefaults.cardElevation(0.dp),
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        content()
+    }
+}
+
+@Composable
+private fun SegRow(content: @Composable () -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { content() }
+}
+
+@Composable
+private fun SegButton(label: String, selected: Boolean, onClick: () -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = if (selected) MaterialTheme.colorScheme.primary
+                             else MaterialTheme.colorScheme.surface,
+            contentColor = if (selected) MaterialTheme.colorScheme.onPrimary
+                           else MaterialTheme.colorScheme.onSurfaceVariant,
+        ),
+        border = BorderStroke(
+            1.dp,
+            if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+        ),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            horizontal = 14.dp,
+            vertical = 6.dp,
+        ),
+    ) {
+        Text(label, style = MaterialTheme.typography.labelMedium)
+    }
+}
+
+// ─── Action catalog sheet ─────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

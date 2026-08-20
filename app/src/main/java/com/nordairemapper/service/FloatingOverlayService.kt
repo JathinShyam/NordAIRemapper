@@ -19,28 +19,44 @@ import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleRegistry
@@ -53,6 +69,7 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.nordairemapper.R
+import com.nordairemapper.domain.model.OverlayAnimation
 import com.nordairemapper.domain.model.OverlayConfig
 import com.nordairemapper.domain.model.OverlayIconSize
 import com.nordairemapper.domain.model.OverlayLayoutStyle
@@ -62,22 +79,8 @@ import com.nordairemapper.domain.repository.RemapConfigRepository
 import com.nordairemapper.presentation.MainActivity
 import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.presentation.common.icon
-import com.nordairemapper.ui.theme.NordAIRemapperTheme
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.TextButton
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.sp
-import com.nordairemapper.domain.model.OverlayAnimation
-import com.nordairemapper.domain.model.OverlayVisualStyle
 import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.theme.NordAIRemapperTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -326,16 +329,36 @@ class FloatingOverlayService :
     }
 }
 
-@androidx.compose.runtime.Composable
+// ─────────────────────────────────────────────────────────────────────────────
+// Composable UI
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Icon size in dp driven by [OverlayIconSize]. */
+private fun iconSizeDp(size: OverlayIconSize): Dp = when (size) {
+    OverlayIconSize.SMALL -> 18.dp
+    OverlayIconSize.MEDIUM -> 22.dp
+    OverlayIconSize.LARGE -> 28.dp
+}
+
+/** Ring/box size = icon + comfortable padding. */
+private fun ringBoxDp(size: OverlayIconSize): Dp = when (size) {
+    OverlayIconSize.SMALL -> 34.dp
+    OverlayIconSize.MEDIUM -> 40.dp
+    OverlayIconSize.LARGE -> 50.dp
+}
+
+@Composable
 private fun OverlayWindowContent(
     config: OverlayConfig,
     onAction: (RemapAction) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val accent = Color(config.accentColorArgb)
+    val slots = config.slots
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // ── Scrim / background ──────────────────────────────────────────
+
+        // ── Scrim — full screen dark + radial accent glow, tap to dismiss ──
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -344,7 +367,7 @@ private fun OverlayWindowContent(
                         colors = listOf(accent.copy(alpha = 0.08f), Color.Transparent),
                         center = Offset(0.3f * 1080f, 0.2f * 2400f),
                         radius = 600f,
-                    )
+                    ),
                 )
                 .background(Color(0xFF0B0B0B).copy(alpha = 0.85f))
                 .clickable(
@@ -354,107 +377,219 @@ private fun OverlayWindowContent(
                 ),
         )
 
-        // ── Bottom panel ────────────────────────────────────────────────
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(horizontal = 18.dp, vertical = 48.dp)
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() },
-                    onClick = {},
-                )
-                .shadow(
-                    elevation = 24.dp,
-                    shape = RoundedCornerShape(28.dp),
-                    ambientColor = accent.copy(alpha = 0.3f),
-                    spotColor = accent.copy(alpha = 0.4f),
-                )
-                .background(Color(0xFF141414).copy(alpha = 0.92f), RoundedCornerShape(28.dp))
-                .border(1.dp, Color(0xFF2C2C2C), RoundedCornerShape(28.dp))
-                .padding(start = 16.dp, top = 22.dp, end = 16.dp, bottom = 18.dp),
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                // Heading
-                NordHeading(
-                    text = "Overlay",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        letterSpacing = (-0.02).sp,
-                        textAlign = TextAlign.Center,
-                    ),
+        // ── Panel — position + layout style drive how it renders ───────────
+        when (config.layoutStyle) {
+            OverlayLayoutStyle.RADIAL -> {
+                // Full 3×2 grid panel, anchored by position
+                val alignment = when (config.position) {
+                    OverlayPosition.BOTTOM_CENTER -> Alignment.BottomCenter
+                    OverlayPosition.LEFT_EDGE     -> Alignment.CenterStart
+                    OverlayPosition.RIGHT_EDGE    -> Alignment.CenterEnd
+                }
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                )
-
-                // 3×2 tile grid
-                val slots = config.slots
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        slots.take(3).forEachIndexed { i, action ->
-                            OverlayTile(
-                                action = action,
-                                index = i,
-                                accent = accent,
-                                onClick = { onAction(action) },
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-                        repeat((3 - slots.take(3).size).coerceAtLeast(0)) {
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
-                    }
-                    if (slots.size > 3) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            slots.drop(3).forEachIndexed { i, action ->
-                                OverlayTile(
-                                    action = action,
-                                    index = i + 3,
-                                    accent = accent,
-                                    onClick = { onAction(action) },
-                                    modifier = Modifier.weight(1f),
+                        .align(alignment)
+                        .padding(horizontal = 18.dp, vertical = 48.dp)
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() },
+                            onClick = {},
+                        )
+                        .then(
+                            if (config.glowEffects) {
+                                Modifier.shadow(
+                                    elevation = 24.dp,
+                                    shape = RoundedCornerShape(28.dp),
+                                    ambientColor = accent.copy(alpha = 0.3f),
+                                    spotColor = accent.copy(alpha = 0.4f),
                                 )
-                            }
-                            repeat((3 - slots.drop(3).size).coerceAtLeast(0)) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
+                            } else Modifier,
+                        )
+                        .background(
+                            Color(0xFF141414).copy(alpha = config.opacity.coerceIn(0.3f, 1f)),
+                            RoundedCornerShape(28.dp),
+                        )
+                        .border(1.dp, Color(0xFF2C2C2C), RoundedCornerShape(28.dp))
+                        .padding(horizontal = 16.dp, top = 22.dp, bottom = 18.dp),
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        NordHeading(
+                            text = "Overlay",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                letterSpacing = (-0.02).sp,
+                                textAlign = TextAlign.Center,
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp),
+                        )
+                        TileGrid(
+                            slots = slots,
+                            accent = accent,
+                            iconSize = config.iconSize,
+                            animation = config.animation,
+                            position = config.position,
+                            onAction = onAction,
+                        )
+                        TextButton(
+                            onClick = onDismiss,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 14.dp),
+                        ) {
+                            Text(
+                                text = "Close",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                     }
                 }
+            }
 
-                // Close button
-                TextButton(
-                    onClick = onDismiss,
+            OverlayLayoutStyle.PILL_BAR -> {
+                // Compact horizontal or vertical strip depending on position
+                val alignment = when (config.position) {
+                    OverlayPosition.BOTTOM_CENTER -> Alignment.BottomCenter
+                    OverlayPosition.LEFT_EDGE     -> Alignment.CenterStart
+                    OverlayPosition.RIGHT_EDGE    -> Alignment.CenterEnd
+                }
+                val vertical = config.position == OverlayPosition.LEFT_EDGE ||
+                    config.position == OverlayPosition.RIGHT_EDGE
+
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 14.dp),
+                        .align(alignment)
+                        .padding(
+                            horizontal = if (vertical) 12.dp else 18.dp,
+                            vertical = if (vertical) 0.dp else 48.dp,
+                        )
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() },
+                            onClick = {},
+                        )
+                        .then(
+                            if (config.glowEffects) {
+                                Modifier.shadow(
+                                    elevation = 20.dp,
+                                    shape = RoundedCornerShape(24.dp),
+                                    ambientColor = accent.copy(alpha = 0.3f),
+                                    spotColor = accent.copy(alpha = 0.4f),
+                                )
+                            } else Modifier,
+                        )
+                        .background(
+                            Color(0xFF141414).copy(alpha = config.opacity.coerceIn(0.3f, 1f)),
+                            RoundedCornerShape(24.dp),
+                        )
+                        .border(1.dp, Color(0xFF2C2C2C), RoundedCornerShape(24.dp))
+                        .padding(12.dp),
                 ) {
-                    Text(
-                        text = "Close",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    if (vertical) {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            slots.forEachIndexed { i, action ->
+                                PillTile(
+                                    action = action,
+                                    index = i,
+                                    accent = accent,
+                                    iconSize = config.iconSize,
+                                    animation = config.animation,
+                                    position = config.position,
+                                    onClick = { onAction(action) },
+                                )
+                            }
+                        }
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            slots.forEachIndexed { i, action ->
+                                PillTile(
+                                    action = action,
+                                    index = i,
+                                    accent = accent,
+                                    iconSize = config.iconSize,
+                                    animation = config.animation,
+                                    position = config.position,
+                                    onClick = { onAction(action) },
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-@androidx.compose.runtime.Composable
+// ─── 3×2 grid (RADIAL layout) ─────────────────────────────────────────────
+
+@Composable
+private fun TileGrid(
+    slots: List<RemapAction>,
+    accent: Color,
+    iconSize: OverlayIconSize,
+    animation: OverlayAnimation,
+    position: OverlayPosition,
+    onAction: (RemapAction) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Row 1 — slots 0..2
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            slots.take(3).forEachIndexed { i, action ->
+                OverlayTile(
+                    action = action,
+                    index = i,
+                    accent = accent,
+                    iconSize = iconSize,
+                    animation = animation,
+                    position = position,
+                    onClick = { onAction(action) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            repeat((3 - slots.take(3).size).coerceAtLeast(0)) {
+                Spacer(modifier = Modifier.weight(1f))
+            }
+        }
+        // Row 2 — slots 3..5
+        if (slots.size > 3) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                slots.drop(3).forEachIndexed { i, action ->
+                    OverlayTile(
+                        action = action,
+                        index = i + 3,
+                        accent = accent,
+                        iconSize = iconSize,
+                        animation = animation,
+                        position = position,
+                        onClick = { onAction(action) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                repeat((3 - slots.drop(3).size).coerceAtLeast(0)) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+// ─── Square tile (RADIAL layout) ──────────────────────────────────────────
+
+@Composable
 private fun OverlayTile(
     action: RemapAction,
     index: Int,
     accent: Color,
+    iconSize: OverlayIconSize,
+    animation: OverlayAnimation,
+    position: OverlayPosition,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -470,10 +605,27 @@ private fun OverlayTile(
         modifier = modifier
             .aspectRatio(1f)
             .graphicsLayer {
-                alpha = appear.value
-                scaleX = 0.86f + appear.value * 0.14f
-                scaleY = 0.86f + appear.value * 0.14f
-                translationY = (1f - appear.value) * 18.dp.toPx()
+                val t = appear.value
+                alpha = t
+                when (animation) {
+                    OverlayAnimation.FADE -> Unit
+                    OverlayAnimation.SCALE -> {
+                        scaleX = 0.86f + t * 0.14f
+                        scaleY = 0.86f + t * 0.14f
+                        translationY = (1f - t) * 18.dp.toPx()
+                    }
+                    OverlayAnimation.SLIDE -> {
+                        val fromX = when (position) {
+                            OverlayPosition.LEFT_EDGE  -> -28f
+                            OverlayPosition.RIGHT_EDGE -> 28f
+                            OverlayPosition.BOTTOM_CENTER -> 0f
+                        }
+                        translationX = (1f - t) * fromX
+                        translationY = if (position == OverlayPosition.BOTTOM_CENTER) {
+                            (1f - t) * 28.dp.toPx()
+                        } else 0f
+                    }
+                }
             }
             .background(Color(0xFF171717), RoundedCornerShape(22.dp))
             .border(1.dp, Color(0xFF2A2A2A), RoundedCornerShape(22.dp))
@@ -484,10 +636,9 @@ private fun OverlayTile(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            // Ring / icon box
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(ringBoxDp(iconSize))
                     .background(accent.copy(alpha = 0.14f), RoundedCornerShape(12.dp))
                     .border(1.dp, accent.copy(alpha = 0.22f), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center,
@@ -496,10 +647,9 @@ private fun OverlayTile(
                     imageVector = action.icon(),
                     contentDescription = action.displayName(),
                     tint = accent,
-                    modifier = Modifier.size(22.dp),
+                    modifier = Modifier.size(iconSizeDp(iconSize)),
                 )
             }
-            // Label
             Text(
                 text = action.displayName(),
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
@@ -509,5 +659,76 @@ private fun OverlayTile(
                 textAlign = TextAlign.Center,
             )
         }
+    }
+}
+
+// ─── Compact icon-only pill (PILL_BAR layout) ─────────────────────────────
+
+@Composable
+private fun PillTile(
+    action: RemapAction,
+    index: Int,
+    accent: Color,
+    iconSize: OverlayIconSize,
+    animation: OverlayAnimation,
+    position: OverlayPosition,
+    onClick: () -> Unit,
+) {
+    val appear = remember { Animatable(0f) }
+    LaunchedEffect(index) {
+        delay(index * 45L)
+        appear.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(dampingRatio = 0.6f, stiffness = 420f),
+        )
+    }
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .graphicsLayer {
+                val t = appear.value
+                alpha = t
+                when (animation) {
+                    OverlayAnimation.FADE -> Unit
+                    OverlayAnimation.SCALE -> {
+                        scaleX = 0.7f + t * 0.3f
+                        scaleY = 0.7f + t * 0.3f
+                    }
+                    OverlayAnimation.SLIDE -> {
+                        val dx = when (position) {
+                            OverlayPosition.LEFT_EDGE  -> -20f
+                            OverlayPosition.RIGHT_EDGE -> 20f
+                            OverlayPosition.BOTTOM_CENTER -> 0f
+                        }
+                        translationX = (1f - t) * dx
+                        translationY = if (position == OverlayPosition.BOTTOM_CENTER) (1f - t) * 20f else 0f
+                    }
+                }
+            }
+            .clickable(onClick = onClick),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(ringBoxDp(iconSize))
+                .background(accent.copy(alpha = 0.14f), RoundedCornerShape(12.dp))
+                .border(1.dp, accent.copy(alpha = 0.22f), RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = action.icon(),
+                contentDescription = action.displayName(),
+                tint = accent,
+                modifier = Modifier.size(iconSizeDp(iconSize)),
+            )
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = action.displayName(),
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+        )
     }
 }
