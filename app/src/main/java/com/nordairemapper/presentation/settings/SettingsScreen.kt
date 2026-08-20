@@ -3,7 +3,9 @@ package com.nordairemapper.presentation.settings
 import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,7 +13,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -19,10 +23,11 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -41,6 +46,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -85,7 +91,16 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { NordHeading("Settings", style = MaterialTheme.typography.titleLarge) },
+                title = {
+                    Column {
+                        NordHeading("Settings", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            text = "Appearance, feedback & tools",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -106,16 +121,15 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            // ── Appearance ────────────────────────────────────────────────
             SectionLabel("Appearance")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ThemeMode.entries.forEach { mode ->
-                    FilterChip(
-                        selected = settings.themeMode == mode,
-                        onClick = { viewModel.setThemeMode(mode) },
-                        label = { Text(mode.name.lowercase().replaceFirstChar { it.titlecase() }) },
-                    )
-                }
-            }
+
+            // Theme pref-card with segmented control
+            ThemePrefCard(
+                selectedMode = settings.themeMode,
+                onSelect = viewModel::setThemeMode,
+            )
+
             SettingsToggleCard(
                 title = "Dynamic color",
                 checked = settings.dynamicColor,
@@ -130,40 +144,73 @@ fun SettingsScreen(
                 subtitle = "Ongoing status while remapping",
             )
 
+            // ── Feedback & overlay ────────────────────────────────────────
             SectionLabel("Feedback & overlay")
-            SettingsLinkRow(
-                title = "Preferences",
-                subtitle = "How you’re notified when an action triggers",
-                onClick = onOpenPreferences,
-            )
-            SettingsLinkRow(
+            HubRow(
+                icon = "∿",
                 title = "Feedback",
                 subtitle = "Haptic feedback & vibration intensity",
                 onClick = onOpenFeedback,
             )
-            SettingsLinkRow(
-                title = "Visual Overlay",
+            HubRow(
+                icon = "◐",
+                title = "Preferences",
+                subtitle = "How you're notified when an action triggers",
+                onClick = onOpenPreferences,
+            )
+            HubRow(
+                icon = "▬",
+                title = "Visual overlay",
                 subtitle = "Action popup style when a remap fires",
                 onClick = onOpenVisualOverlay,
             )
-            SettingsLinkRow(
+            HubRow(
+                icon = "▦",
                 title = "Overlay settings",
                 subtitle = "Floating menu slots & layout",
                 onClick = onOpenOverlay,
             )
 
+            // ── Behavior ──────────────────────────────────────────────────
             SectionLabel("Behavior")
-            SettingsLinkRow(
+            HubRow(
+                icon = "⊡",
                 title = "Lock Screen",
                 subtitle = "Gestures while the screen is locked",
                 onClick = onOpenLockScreen,
             )
-            SettingsLinkRow(
+            HubRow(
+                icon = "⇄",
                 title = "Backup & Restore",
                 subtitle = "Export and import remaps",
                 onClick = onOpenBackup,
             )
 
+            // ── Advanced ──────────────────────────────────────────────────
+            SectionLabel("Advanced")
+            HubRow(
+                icon = "◉",
+                title = "Key setup",
+                subtitle = "Learn / verify Plus Key",
+                onClick = onOpenKeyLearning,
+            )
+            HubRow(
+                icon = "⚗",
+                title = "Lab",
+                subtitle = "Strategy, timing, USB unlock (Developer)",
+                onClick = onOpenDeveloper,
+            )
+            HubRow(
+                icon = "↻",
+                title = "Restart onboarding",
+                subtitle = "Walk through setup again",
+                onClick = {
+                    viewModel.resetOnboarding()
+                    onRestartOnboarding()
+                },
+            )
+
+            // ── Per-app exclusions ────────────────────────────────────────
             SectionLabel("Per-app exclusions")
             Text(
                 text = "Remapping is disabled while these apps are in the foreground.",
@@ -209,6 +256,7 @@ fun SettingsScreen(
                 },
             )
 
+            // ── Power ─────────────────────────────────────────────────────
             SectionLabel("Power")
             Text(
                 text = if (batteryExempt) "Battery optimization exempt" else "Not exempt — detection may be killed",
@@ -222,24 +270,7 @@ fun SettingsScreen(
                 )
             }
 
-            SectionLabel("Advanced")
-            SettingsLinkRow(
-                title = "Key setup",
-                subtitle = "Learn / verify Plus Key",
-                onClick = onOpenKeyLearning,
-            )
-            SettingsLinkRow(
-                title = "Lab",
-                subtitle = "Strategy, timing, USB unlock",
-                onClick = onOpenDeveloper,
-            )
-            TextButton(
-                onClick = {
-                    viewModel.resetOnboarding()
-                    onRestartOnboarding()
-                },
-            ) { Text("Restart onboarding") }
-
+            // ── About ─────────────────────────────────────────────────────
             SectionLabel("About")
             Text("Version ${viewModel.versionName()}", style = MaterialTheme.typography.bodyMedium)
             TextButton(onClick = viewModel::openGithub) { Text("GitHub") }
@@ -259,6 +290,107 @@ fun SettingsScreen(
         )
     }
 }
+
+// ── HubRow ────────────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HubRow(icon: String, title: String, subtitle: String, onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        elevation = CardDefaults.cardElevation(0.dp),
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(11.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(icon, color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                )
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text("›", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.outline)
+        }
+    }
+}
+
+// ── ThemePrefCard ─────────────────────────────────────────────────────────────
+
+@Composable
+private fun ThemePrefCard(selectedMode: ThemeMode, onSelect: (ThemeMode) -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "Theme",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+            )
+            Text(
+                text = "Prototype stays dark; chips mirror the app control.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                ThemeMode.entries.forEach { mode ->
+                    val selected = selectedMode == mode
+                    val label = mode.name.lowercase().replaceFirstChar { it.titlecase() }
+                    OutlinedButton(
+                        onClick = { onSelect(mode) },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (selected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.surface,
+                            contentColor = if (selected) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
+                        border = BorderStroke(
+                            width = 1.dp,
+                            color = if (selected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.outline,
+                        ),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 14.dp,
+                            vertical = 6.dp,
+                        ),
+                    ) {
+                        Text(label, style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ── SettingsToggleCard ────────────────────────────────────────────────────────
 
 @Composable
 private fun SettingsToggleCard(

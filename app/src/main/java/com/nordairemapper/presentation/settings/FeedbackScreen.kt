@@ -3,29 +3,47 @@ package com.nordairemapper.presentation.settings
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Vibration
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.HapticIntensity
+import com.nordairemapper.ui.components.NordGhostButton
 import com.nordairemapper.ui.components.NordHeading
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,7 +53,6 @@ fun FeedbackScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
-    val intensities = HapticIntensity.entries
     val context = LocalContext.current
 
     fun previewIntensity(intensity: HapticIntensity) {
@@ -55,7 +72,16 @@ fun FeedbackScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { NordHeading("Feedback", style = MaterialTheme.typography.titleLarge) },
+                title = {
+                    Column {
+                        NordHeading("Feedback", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            text = "Haptic confirmation",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -74,37 +100,131 @@ fun FeedbackScreen(
                 .padding(padding)
                 .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            SettingsGroupCard {
-                SettingsToggleRow(
-                    title = "Haptic feedback",
-                    subtitle = "Vibrate when button action triggers",
-                    checked = settings.hapticFeedback,
-                    onCheckedChange = viewModel::setHapticFeedback,
-                    icon = Icons.Outlined.Vibration,
-                )
+            // Card 1: Haptic feedback toggle
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                shape = MaterialTheme.shapes.medium,
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Haptic feedback",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                        )
+                        Text(
+                            text = "Vibrate when button action triggers",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = settings.hapticFeedback,
+                        onCheckedChange = viewModel::setHapticFeedback,
+                    )
+                }
             }
 
-            QuietSectionLabel("Vibration intensity")
-            SettingsGroupCard {
-                intensities.forEachIndexed { index, intensity ->
-                    SettingsChoiceRow(
-                        title = when (intensity) {
-                            HapticIntensity.LIGHT -> "Light"
-                            HapticIntensity.MEDIUM -> "Medium"
-                            HapticIntensity.HEAVY -> "Heavy"
-                        },
-                        subtitle = when (intensity) {
-                            HapticIntensity.LIGHT -> "Subtle tap"
-                            HapticIntensity.MEDIUM -> "Balanced feedback"
-                            HapticIntensity.HEAVY -> "Firm vibration"
-                        },
-                        selected = settings.hapticIntensity == intensity,
-                        onClick = {
-                            viewModel.setHapticIntensity(intensity)
-                            previewIntensity(intensity)
-                        },
-                        showDivider = index < intensities.lastIndex,
+            // Card 2: Vibration intensity segmented control
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                shape = MaterialTheme.shapes.medium,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = "Vibration intensity",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                    )
+                    Text(
+                        text = "How strong the Plus Key confirmation feels.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        HapticIntensity.entries.forEach { intensity ->
+                            val selected = settings.hapticIntensity == intensity
+                            val label = when (intensity) {
+                                HapticIntensity.LIGHT -> "Light"
+                                HapticIntensity.MEDIUM -> "Medium"
+                                HapticIntensity.HEAVY -> "Heavy"
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    viewModel.setHapticIntensity(intensity)
+                                    previewIntensity(intensity)
+                                },
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    containerColor = if (selected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.surface,
+                                    contentColor = if (selected) MaterialTheme.colorScheme.onPrimary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                                ),
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (selected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.outline,
+                                ),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                            ) {
+                                Text(label, style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Card 3: Preview with pulse ring indicator
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                shape = MaterialTheme.shapes.medium,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        text = "Preview",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .border(
+                                2.dp,
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                                CircleShape,
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape),
+                        )
+                    }
+                    NordGhostButton(
+                        text = "Pulse preview",
+                        onClick = { previewIntensity(settings.hapticIntensity) },
                     )
                 }
             }

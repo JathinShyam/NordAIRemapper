@@ -67,7 +67,16 @@ fun OverlaySettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { NordHeading("Overlay", style = MaterialTheme.typography.titleLarge) },
+                title = {
+                    Column {
+                        NordHeading("Overlay", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            text = "Floating menu slots",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -88,6 +97,12 @@ fun OverlaySettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            Text(
+                text = "Tap a slot to select it. Full layout controls are below.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),

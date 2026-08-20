@@ -1,277 +1,285 @@
 # Nord AI Remapper
 
-Remap the **OnePlus Nord 5 Plus Key** (the physical side button marketed for AI features; it replaced the alert slider) to your own actions.
+**Remap the OnePlus Nord 5 Plus Key** — the physical side button marketed for AI — into *your* shortcuts: single press, double press, long press, plus an optional floating menu.
 
-Assign independent actions to **single press**, **double press**, and **long press**, plus an optional **floating overlay** with up to six quick actions — in the spirit of Essential Key remappers on Nothing Phone, adapted for OnePlus’s harder-to-intercept key path.
+No root. No Magisk. No cloud. Local-only configuration.
 
 > **Not affiliated with, endorsed by, or connected to OnePlus / OPPO.**
 
 | | |
 |---|---|
 | Package | `com.nordairemapper` |
-| Version | `0.1.0` |
+| Primary device | OnePlus Nord 5 (OxygenOS) |
 | Min / target SDK | 33 (Android 13) / 35 |
-| Language / UI | Kotlin · Jetpack Compose (Material 3) |
-| Repo | [github.com/JathinShyam/NordAIRemapper](https://github.com/JathinShyam/NordAIRemapper) |
+| Stack | Kotlin · Jetpack Compose · Hilt · Room + DataStore |
+| Latest APK | [latest-debug release](https://github.com/JathinShyam/NordAIRemapper/releases/tag/latest-debug) |
 
 ---
 
-## What it does
+## Why this exists
 
-| Feature | Description |
-|---------|-------------|
-| Gesture remapping | Single / double / long press → any supported action |
-| Action catalog | Launch apps, media controls, system shortcuts, URLs, overlay, or none |
-| Floating overlay | Optional radial or pill menu (up to 6 slots) via “Show overlay” |
-| Key learning | Runtime capture of keyCode + scanCode — no hard-coded device IDs |
-| Dual detection | Accessibility key filter **or** logcat watcher (for OnePlus) |
-| Onboarding | Guided Accessibility, overlay, notifications, and battery steps |
-| Backup | Export/import JSON via SAF; named local snapshots |
-| Settings | Theme, haptics, per-app exclusions, battery exemption, Developer tools |
+Stock Plus Key options are limited (flashlight, camera, Mind Space, and a few others). Power users want arbitrary apps, media, overlays, and system actions from that button.
+
+On Nothing Phone, the Essential Key often reaches apps as a normal key event. **On OnePlus, OxygenOS usually handles the Plus Key in system code** (`OplusKeyEventUtil` / `KEYCODE_ACTION_BUTTON_CLICK`) so it **never arrives** as a `KeyEvent` to Accessibility.
+
+That is the whole product problem:
+
+| What you expect | What OxygenOS does |
+|---|---|
+| Apps can “see” the Plus Key like volume | Plus Key is eaten by system code |
+| One permission dialog for remapping | `READ_LOGS` cannot be granted from a normal dialog |
+| Remap always swallows the stock action | Without root, stock Plus Key may still fire (**dual-fire**) |
+
+Nord AI Remapper is honest about that. It unlocks **logcat detection** once, keeps Accessibility for system actions, and lets you assign real remaps.
 
 ---
 
-## Why detection is special
+## What you get after setup
 
-On Nothing Phone, the Essential Key often reaches apps as a filterable key event (`keyCode=0`, stable `scanCode`). On OnePlus, the Plus Key is handled by system code (`OplusKeyEventUtil`) and **often never arrives** as a normal `KeyEvent`.
+| Feature | What it means |
+|---|---|
+| **Single / Double / Long** | Three independent remaps on Home |
+| **Action catalog** | Apps, media, system shortcuts, URL, floating overlay, or none |
+| **Floating overlay** | Up to 6 slots (pill or radial) when you assign **Show overlay** |
+| **Visual Overlay** | Brief on-screen popup when a remap fires (style, accent, glow, hold) |
+| **Haptics** | On/off + Light / Medium / Heavy intensity |
+| **Lock Screen** | Per-gesture allow/deny while locked |
+| **Exclusions** | Disable remapping in chosen apps |
+| **Backup & Restore** | Export/import JSON + local snapshots |
+| **Lab** | Strategy, gesture timings, logcat pattern, USB unlock tools |
 
-Nord AI Remapper therefore supports **two strategies** (Developer settings):
+---
 
-### Strategy A — Accessibility (try first)
+## Quick start (download)
 
-1. Enable the app’s Accessibility service.
-2. Open **Key setup**, press the Plus Key.
-3. Save the captured `keyCode` / `scanCode`.
+1. Open **[Latest Debug](https://github.com/JathinShyam/NordAIRemapper/releases/tag/latest-debug)**.
+2. Install `NordAIRemapper-debug-latest.apk` (allow Install unknown apps).
+3. Walk onboarding below — especially **Unlock detection**.
 
-Uses `AccessibilityService` with `FLAG_REQUEST_FILTER_KEY_EVENTS`. Matching prefers `scanCode` when configured (the key may report `KEYCODE_UNKNOWN` / `0`).
+Every push to `main` also publishes an immutable `debug-<sha>` release so older builds stay available: [all releases](https://github.com/JathinShyam/NordAIRemapper/releases).
 
-### Strategy B — Logcat watcher (often required on OnePlus)
+> **Signature tip:** GitHub APKs and local Android Studio builds use different debug keystores. You cannot overwrite one with the other (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`) without uninstalling — which clears `READ_LOGS` and settings. Prefer the GitHub APK for day-to-day use, or stick to one signing path.
 
-1. Grant `READ_LOGS` once via ADB (cannot be granted from a normal permission dialog):
+---
+
+## Onboarding — step by step (and *why*)
+
+First launch walks six screens. You can skip some, but skipping detection usually means the Plus Key never remaps on Nord 5.
+
+### 1. Welcome
+
+Introduces the product: remap single, double, and long press on the Plus Key.
+
+### 2. Accessibility — required
+
+**What you do:** Settings → Accessibility → enable **Nord AI Remapper**.
+
+**Why:**
+
+- On some devices / firmwares, hardware keys can be filtered here (Strategy A).
+- Even when Plus Key detection uses logcat, **system actions still need Accessibility**: screenshot, lock, recents, home, back, notification shade, quick settings.
+- The service observes hardware keys and foreground package for exclusions — **not** your screen content or passwords.
+
+If Key setup later shows volume keys but never the Plus Key, that is expected on Nord 5 — not a broken Accessibility toggle.
+
+### 3. Unlock Plus Key detection (`READ_LOGS`) — required on Nord 5
+
+**What you do:** Tap **Unlock detection** (same flow as Home banners / Lab).
+
+**Why:** Android will not show a normal “Allow logs?” dialog for `READ_LOGS`. OnePlus rarely delivers the Plus Key as a `KeyEvent`, so the app must watch system log lines (default pattern `KEYCODE_ACTION_BUTTON_CLICK`). That needs a one-time grant.
+
+**Preferred — USB (computer once):**
+
+1. Enable USB debugging; use **File transfer**, not tethering-only.
+2. On a computer:
 
    ```bash
    adb shell pm grant com.nordairemapper android.permission.READ_LOGS
    ```
 
-2. In **Developer**, select **Logcat watcher** and (if needed) edit the match pattern (default: `KEYCODE_ACTION_BUTTON_CLICK`).
+3. In Unlock → **Recheck**. When granted, you can unplug.
 
-A foreground service tails `logcat` and emits presses into the same gesture pipeline as Strategy A.
+If OxygenOS blocks the grant (`GRANT_RUNTIME_PERMISSIONS`), disable **permission monitoring** under USB debugging / developer security settings, then retry.
 
-### Important caveats
+**Advanced — no computer (Wireless debugging):**
 
-- **Without root, the stock Plus Key action may still fire** alongside your remap. Set the system Plus Key to a harmless default in OxygenOS settings when possible.
-- **System actions** (screenshot, lock, recents, home, back, notification shade, quick settings) need the Accessibility service connected even if you detect presses via logcat.
-- Gesture timings are configurable (double-press window 200–500 ms, default 300; long-press 300–1000 ms, default 500). Single press waits for the double window so it does not steal double taps.
+1. Developer options → **Wireless debugging** → turn on.
+2. If you see Network name / Wi‑Fi address with **Allow** — that is network approval, **not** pairing. Tap Allow, then open the Wireless debugging **detail page**.
+3. **Pair device with pairing code** → enter the 6-digit code (and pairing port if asked) in the app.
+4. If connect fails after pairing: enter the **Connection port** from the Wireless debugging main page (**IP address & port**) — that port is **different** from the pairing port.
+5. Grant succeeds → you may turn Wireless debugging **off**. `READ_LOGS` persists across reboots.
+
+**What “unlocked” means:** the logcat companion can see Plus Key presses. Accessibility stays on for system actions. Remapping still needs the master switch on Home.
+
+### 4. Display over other apps — optional
+
+**What you do:** Allow **Display over other apps** for Nord AI Remapper.
+
+**Why:** Required for:
+
+- Floating **Show overlay** menu
+- **Visual Overlay** action popup
+
+Skip if you only want single remaps that do not draw over other apps.
+
+### 5. Keep it alive — strongly recommended
+
+**What you do:**
+
+- Allow **notifications** (foreground detection / overlay services)
+- **Exempt from battery optimization** so OxygenOS does not kill the watcher overnight
+
+**Why:** Logcat detection runs as a foreground service. Aggressive battery policies are the usual reason remaps “stop working after a while.”
+
+### 6. You’re all set → Home
+
+Confirm detection, then assign actions.
+
+---
+
+## After onboarding — first remaps
+
+1. On **Home**, leave remapping **on** (master switch).
+2. Tap **Single**, **Double**, or **Long** → Remap studio → pick an action → **Try now** → **Done**.
+3. Optional floating menu:
+   - **Overlay settings** → Enable overlay → fill slots → layout/position
+   - Assign **Show overlay** to a press type
+4. Optional polish:
+   - **Visual Overlay** — popup chrome when actions fire
+   - **Feedback** — haptic intensity
+   - **Lock Screen** — which gestures work while locked
+5. Optional: set OxygenOS’s stock Plus Key action to something harmless to reduce dual-fire annoyance.
+
+### Confirming detection
+
+| Where | What good looks like |
+|---|---|
+| **Key setup** (Settings → Advanced) | Plus Key appears as a **logcat** row (volume keys via Accessibility are normal) |
+| **Home** | Status chip active; no Unlock banner |
+| Remap **Try now** | Action runs (bypasses some gates — hardware press is the real test) |
+
+Lab (advanced): Auto / Accessibility / Logcat strategy, double-press window, long-press threshold, log match pattern.
+
+---
+
+## How detection works (short)
+
+```
+Accessibility service  ─┐
+                        ├──▶ KeyEventBus ──▶ RemapEngine ──▶ GestureClassifier
+Logcat watcher         ─┘                      │
+                                               ├── strategy + identity
+                                               ├── exclusions / lock screen
+                                               └── ActionDispatcher
+```
+
+| Strategy | Mechanism | Nord 5 reality |
+|---|---|---|
+| **Auto** (default) | Accessibility when the OS delivers the key; logcat when it does not | Recommended |
+| **Accessibility** | Learn `keyCode` / `scanCode` in Key setup | Plus Key usually **missing**; volume may appear |
+| **Logcat** | Match log lines after `READ_LOGS` | Usual path for Plus Key on Nord 5 |
+
+Gestures are **wait-then-decide**: single press waits for the double-press window (default 300 ms) so it does not steal double taps. Long press fires at threshold (default 500 ms) from down.
 
 ---
 
 ## Remappable actions
 
 | Category | Actions |
-|----------|---------|
-| Apps | Launch any installed app · Open URL / deep link |
+|---|---|
+| Apps | Launch app · Open URL / deep link |
 | Media | Play/pause · Next · Previous · Volume up/down |
-| System | Assistant · Camera (front/rear) · Flashlight · Screenshot · DND · Ringer cycle · Notification shade · Quick settings · Recents · Home · Back · Lock · Auto-rotate |
-| Overlay | Show floating overlay menu |
+| System | Assistant · Camera (front/rear) · Flashlight · Screenshot · DND · Ringer cycle · Shade · Quick settings · Recents · Home · Back · Lock · Auto-rotate |
+| Overlay | Show floating overlay |
 | None | Disable that press type |
 
----
-
-## Screens
-
-| Screen | Role |
-|--------|------|
-| **Onboarding** | Welcome → Accessibility → Overlay → Notifications/battery → All set |
-| **Home** | Phone silhouette, master toggle, service status, Single/Double/Long cards, troubleshooting banner |
-| **Remap Config** | Categorized action list, app picker, “Try this action now” |
-| **Overlay** | Enable, slots, layout/position/opacity/size/animation, live preview |
-| **Backup & Restore** | SAF JSON export/import, named snapshots |
-| **Settings** | Theme, dynamic color, haptics, exclusions, battery, links to advanced screens |
-| **Developer / Key setup** | Detection strategy, timings, logcat pattern, raw key event log |
+Some actions need extra system access (e.g. **Do Not Disturb access** for ringer/DND, **Modify system settings** for auto-rotate). The app soft-fails with a toast and deep-link when possible.
 
 ---
 
-## How it works (architecture)
+## Permissions (what each one is for)
 
-```
-PlusKeyAccessibilityService  ──┐
-                               ├──▶ KeyEventBus ──▶ RemapEngine ──▶ GestureClassifier
-LogcatWatcherService         ──┘         │              │
-                                         │              ├── filter strategy + key identity
-                                         │              ├── honor per-app exclusions
-                                         │              └── ActionDispatcher (RemapActionExecutor)
-                                         │
-                              Key learning / debug UI
-```
+| Permission / access | Why we ask |
+|---|---|
+| Accessibility | Key filtering when available + system global actions |
+| `READ_LOGS` (ADB / Unlock) | See Plus Key in logcat on Nord 5 |
+| Display over other apps | Floating menu + visual action popup |
+| Notifications | Foreground service visibility |
+| Battery exemption | Keep detection alive |
+| Boot completed | Re-arm watcher after reboot |
+| Do Not Disturb access | DND / ring-vibrate-silent cycle |
+| Modify system settings | Auto-rotate toggle |
+| Camera (runtime) | Flashlight on stricter OEMs |
+| Vibrate | Haptic feedback |
 
-- **Clean Architecture + MVVM**: `domain` · `data` (Room + DataStore) · `presentation` · `service`
-- **DI**: Hilt
-- **Persistence**: Room for remap/overlay/snapshots; DataStore for preferences
-- **UI**: Jetpack Compose, Material 3, dark-first Nord palette (`#0A0A0A` / `#141414` / accent `#0AC6FF`)
+Backup uses the **Storage Access Framework** — no broad storage permission.
 
-Package layout (simplified):
-
-```
-com.nordairemapper/
-├── data/           # Room, DataStore, repository impls
-├── domain/         # models, repository interfaces
-├── presentation/   # Compose screens + ViewModels
-├── service/        # detection, overlay, boot, executors
-├── ui/             # theme + shared components
-└── di/             # Hilt modules
-```
-
-Deeper design notes: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+**Privacy:** No accounts, analytics, ads, or cloud sync. Accessibility is not used to scrape screen content. Logcat matching stays on-device.
 
 ---
 
-## Requirements
+## Known limitations
 
-### To build
-
-- **JDK 17**
-- **Android SDK** with platform **35** and Build-Tools 35.x
-- Linux / macOS / Windows with Gradle wrapper (`./gradlew`)
-
-### To run on device
-
-- Android **13+** (API 33+)
-- Primary target: **OnePlus Nord 5** (other OxygenOS “Plus Key” devices: best-effort)
-- USB debugging if you need Strategy B (`READ_LOGS`)
+- **No root** → stock Plus Key action may still run (**dual-fire**). Documented, not a silent bug.
+- **OS updates** can change logcat tags/patterns — editable in Lab if detection breaks after an update.
+- **Other OxygenOS “Plus Key” phones** — best-effort; Nord 5 is the primary target.
+- Debug APKs are for testing, not Play Store distribution.
 
 ---
 
-## Download (no PC build required)
-
-Every push to `main` builds a **debug APK** and publishes **two** GitHub releases:
-
-- **[Latest Debug](https://github.com/JathinShyam/NordAIRemapper/releases/tag/latest-debug)** — always the newest (`NordAIRemapper-debug-latest.apk`)
-- **`debug-<sha>`** — that commit’s APK, kept forever (e.g. `Debug · e92235f · 2026-08-14`)
-
-[All versions](https://github.com/JathinShyam/NordAIRemapper/releases)
-
-1. For the current build, download `NordAIRemapper-debug-latest.apk`.
-2. For an older build, open Releases and pick `Debug · <sha> · <date>`, then `NordAIRemapper-debug-<sha>.apk`.
-3. The same APK is also attached on the **Actions** run (Artifacts), kept for 14 days.
-4. Install on the phone (allow Install unknown apps).
-
-You can also trigger a rebuild manually: **Actions → Build Debug APK → Run workflow**.
-
----
-
-## Build
+## Build from source
 
 ```bash
 git clone https://github.com/JathinShyam/NordAIRemapper.git
 cd NordAIRemapper
 
-# Point Gradle at your SDK (or let Android Studio create this)
-echo "sdk.dir=/path/to/Android/Sdk" > local.properties
+# JDK 17
+export JAVA_HOME="$HOME/.jdks/jdk17"   # or your JDK 17 path
 
-./gradlew assembleDebug
+# Point Gradle at the Android SDK (Android Studio also creates this)
+echo "sdk.dir=$HOME/Android/Sdk" > local.properties
+
+./gradlew :app:assembleDebug
 ```
 
-Debug APK:
-
-```text
-app/build/outputs/apk/debug/app-debug.apk
-```
-
-Install:
+APK: `app/build/outputs/apk/debug/app-debug.apk`
 
 ```bash
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+"$HOME/Android/Sdk/platform-tools/adb" install -r app/build/outputs/apk/debug/app-debug.apk
 ```
-
-Open the project in **Android Studio** (Ladybug / recent) and use Run if you prefer.
-
-Release builds use minify/shrink (`./gradlew assembleRelease`); you must supply your own signing config for Play/distribution.
-
----
-
-## First-run setup (device)
-
-1. Install and open the app → complete **onboarding**.
-2. Enable **Accessibility** for Nord AI Remapper when prompted.
-3. (Optional) Grant **Display over other apps** for the floating overlay.
-4. Allow **notifications** and consider **battery optimization exemption** so detection is not killed.
-5. Open **Key setup** (Home banner or Developer):
-   - Press the Plus Key.
-   - If events appear → **Set as Plus Key** (Strategy A).
-   - If nothing appears → Developer → **Logcat watcher** → run the ADB grant command above → restart watcher → confirm events.
-6. On Home, tap **Single / Double / Long** and assign actions.
-7. (Optional) Overlay screen → fill slots → assign **Show overlay** to a press type.
-8. Toggle **Remapping enabled** on Home when you want it active.
-
----
-
-## Permissions
-
-| Permission | Why |
-|------------|-----|
-| Accessibility (`BIND_ACCESSIBILITY_SERVICE`) | Key filtering (Strategy A) + global actions |
-| `SYSTEM_ALERT_WINDOW` | Floating overlay |
-| `FOREGROUND_SERVICE` / `SPECIAL_USE` | Logcat watcher + overlay FGS |
-| `POST_NOTIFICATIONS` | Service / alert notifications |
-| `RECEIVE_BOOT_COMPLETED` | Re-arm detection after reboot |
-| `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | Reduce OEM kills |
-| `ACCESS_NOTIFICATION_POLICY` + **Do Not Disturb access** (Special app access) | Toggle DND and ring/vibrate/silent |
-| `MODIFY_AUDIO_SETTINGS` | Volume / ringer helpers |
-| `CAMERA` (runtime grant) | Flashlight torch on stricter OEMs |
-| `WRITE_SETTINGS` | Toggle auto-rotate |
-| `READ_LOGS` | Strategy B only (ADB `pm grant`) |
-| `VIBRATE` | Haptic feedback |
-
-Backup uses the **Storage Access Framework** — no legacy storage permissions.
-
-Privacy stance: Accessibility is for hardware keys (and window package for exclusions), not for reading passwords or screen content. Logcat lines stay on-device. No accounts or analytics in this project.
-
----
-
-## Configuration & design notes
-
-### Font
-
-UI targets **OnePlus Sans**, which is not freely redistributable. The app ships with the **system font** (Roboto on stock). To use OnePlus Sans locally, drop `.ttf` files under `res/font/` and switch `NordFontFamily` in [`Type.kt`](app/src/main/java/com/nordairemapper/ui/theme/Type.kt).
-
-### Theme
-
-Dark-first OxygenOS-inspired palette; Light / System / optional Material You dynamic color in Settings.
 
 ---
 
 ## Documentation
 
 | Doc | Contents |
-|-----|----------|
-| [docs/PRD.md](docs/PRD.md) | Product requirements, journeys, acceptance |
-| [docs/TRD.md](docs/TRD.md) | Technical requirements, APIs, permissions, build gates |
+|---|---|
+| [docs/PRD.md](docs/PRD.md) | Product requirements & journeys |
+| [docs/TRD.md](docs/TRD.md) | Technical contracts, permissions, detection rules |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Pipelines, packages, ADRs |
-| [docs/roadmap/README.md](docs/roadmap/README.md) | Phase-by-phase implementation status |
-
----
-
-## Project status
-
-All planned implementation phases (**1–12**) are in tree and compile. **On-device validation of Plus Key detection on a Nord 5** is still the critical gate before treating remapping as production-ready — confirm Strategy A and/or B on your firmware build and note any logcat pattern changes after OS updates.
+| [docs/changes/](docs/changes/) | Per-change debug notes (why / what / verify) |
+| [design/nord-edge-prototype.html](design/nord-edge-prototype.html) | Interactive Nord Edge UI prototype |
+| [AGENTS.md](AGENTS.md) | Contributor / agent constraints |
 
 ---
 
 ## Contributing
 
-1. Prefer small, phase-aligned changes; keep `./gradlew assembleDebug` green.
-2. Do not hard-code Nord 5 key identities — extend the learn flow / editable log pattern instead.
-3. Comment only non-obvious detection and gesture logic.
-4. Open a PR against `main` with a short summary and test notes (device + strategy used).
+1. Keep `./gradlew :app:assembleDebug` green.
+2. Never hard-code Plus Key identity as the only detection path — learn at runtime / editable log pattern.
+3. Do not pretend logcat events need `matchesPlusKey`; do not treat Accessibility as sufficient alone on Nord 5.
+4. No analytics, ads, or OnePlus Sans font binaries in the repo.
+5. Document non-trivial changes under `docs/changes/`.
+6. Open a PR against `main` with device + strategy notes when you touch detection.
 
 ---
 
 ## License
 
-Specify a license in this repository when you are ready to distribute (e.g. MIT / Apache-2.0). Until then, treat the code as source-available for personal use and review.
+Specify a license when you are ready to distribute (e.g. MIT / Apache-2.0). Until then, treat the code as source-available for personal use and review.
 
 ---
 
 ## Acknowledgements
 
-Inspired by community Essential Key remappers for Nothing Phone and OnePlus Plus Key workarounds (Accessibility filtering, logcat/`OplusKeyEventUtil`, Tasker/Shizuku patterns discussed publicly on XDA and elsewhere).
+Inspired by community Essential Key remappers for Nothing Phone and public OnePlus Plus Key workarounds (Accessibility filtering, logcat / `OplusKeyEventUtil`, Tasker / Shizuku discussions on XDA and elsewhere). This app’s preferred Nord 5 path is **in-app Unlock** (USB or Wireless) — not Shizuku.

@@ -1,14 +1,15 @@
 package com.nordairemapper.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -16,16 +17,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.nordairemapper.domain.model.OverlayConfig
-import com.nordairemapper.domain.model.OverlayIconSize
-import com.nordairemapper.domain.model.OverlayLayoutStyle
 import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.presentation.common.icon
-import androidx.compose.ui.graphics.Color
-import com.nordairemapper.ui.theme.SurfaceDark
 
 @Composable
 fun OverlayPreview(
@@ -33,42 +33,48 @@ fun OverlayPreview(
     modifier: Modifier = Modifier,
 ) {
     val slots = config.slots.filter { it !is RemapAction.None }.take(OverlayConfig.MAX_SLOTS)
-    val iconDp = when (config.iconSize) {
-        OverlayIconSize.SMALL -> 28.dp
-        OverlayIconSize.MEDIUM -> 36.dp
-        OverlayIconSize.LARGE -> 44.dp
-    }
+    val accent = Color(config.accentColorArgb)
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(SurfaceDark, RoundedCornerShape(16.dp))
-            .alpha(config.opacity.coerceIn(0.3f, 1f))
-            .padding(16.dp),
-        contentAlignment = Alignment.Center,
+            .background(Color(0xFF141414), RoundedCornerShape(22.dp))
+            .border(1.dp, Color(0xFF2C2C2C), RoundedCornerShape(22.dp))
+            .padding(horizontal = 14.dp, vertical = 16.dp),
     ) {
         if (slots.isEmpty()) {
             Text(
-                text = "No overlay slots yet",
-                style = MaterialTheme.typography.bodyMedium,
+                text = "No overlay slots configured",
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.Center),
             )
-        } else when (config.layoutStyle) {
-            OverlayLayoutStyle.PILL_BAR -> {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    slots.forEach { SlotChip(it, iconDp, Color(config.accentColorArgb)) }
-                }
-            }
-            OverlayLayoutStyle.RADIAL -> {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // Row 1 — slots 0..2
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        slots.take(3).forEach { SlotChip(it, iconDp, Color(config.accentColorArgb)) }
+                    slots.take(3).forEach { action ->
+                        PreviewTile(action = action, accent = accent, modifier = Modifier.weight(1f))
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        slots.drop(3).forEach { SlotChip(it, iconDp, Color(config.accentColorArgb)) }
+                    repeat((3 - slots.take(3).size).coerceAtLeast(0)) {
+                        Box(modifier = Modifier.weight(1f))
+                    }
+                }
+                // Row 2 — slots 3..5
+                if (slots.size > 3) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        slots.drop(3).forEach { action ->
+                            PreviewTile(action = action, accent = accent, modifier = Modifier.weight(1f))
+                        }
+                        repeat((3 - slots.drop(3).size).coerceAtLeast(0)) {
+                            Box(modifier = Modifier.weight(1f))
+                        }
                     }
                 }
             }
@@ -77,25 +83,40 @@ fun OverlayPreview(
 }
 
 @Composable
-private fun SlotChip(action: RemapAction, iconDp: androidx.compose.ui.unit.Dp, accent: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier
-                .size(iconDp + 12.dp)
-                .background(accent.copy(alpha = 0.2f), CircleShape),
-            contentAlignment = Alignment.Center,
+private fun PreviewTile(action: RemapAction, accent: Color, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .aspectRatio(1f)
+            .background(Color(0xFF171717), RoundedCornerShape(16.dp))
+            .border(1.dp, Color(0xFF2A2A2A), RoundedCornerShape(16.dp)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Icon(
-                imageVector = action.icon(),
-                contentDescription = action.displayName(),
-                tint = accent,
-                modifier = Modifier.size(iconDp * 0.6f),
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .background(accent.copy(alpha = 0.14f), RoundedCornerShape(8.dp))
+                    .border(1.dp, accent.copy(alpha = 0.22f), RoundedCornerShape(8.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = action.icon(),
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+            Text(
+                text = action.displayName(),
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
             )
         }
-        Text(
-            text = action.displayName(),
-            style = MaterialTheme.typography.labelSmall,
-            maxLines = 1,
-        )
     }
 }

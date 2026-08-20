@@ -64,7 +64,16 @@ fun KeyLearningScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { NordHeading("Key setup", style = MaterialTheme.typography.titleLarge) },
+                title = {
+                    Column {
+                        NordHeading("Key setup", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            text = "Listening for Plus Key",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

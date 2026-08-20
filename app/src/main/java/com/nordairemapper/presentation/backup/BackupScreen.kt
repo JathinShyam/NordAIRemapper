@@ -73,7 +73,16 @@ fun BackupScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { NordHeading("Backup & Restore", style = MaterialTheme.typography.titleLarge) },
+                title = {
+                    Column {
+                        NordHeading("Backup & Restore", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            text = "Export & import",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

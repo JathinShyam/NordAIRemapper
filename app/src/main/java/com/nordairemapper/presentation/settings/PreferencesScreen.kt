@@ -1,7 +1,9 @@
 package com.nordairemapper.presentation.settings
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,28 +12,33 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Visibility
-import androidx.compose.material.icons.outlined.Vibration
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.OverlayVisualStyle
 import com.nordairemapper.presentation.overlay.OverlaySettingsViewModel
 import com.nordairemapper.ui.components.NordGhostButton
 import com.nordairemapper.ui.components.NordHeading
-import com.nordairemapper.ui.components.NordPrimaryButton
-import com.nordairemapper.ui.theme.NordBlue
+import com.nordairemapper.ui.components.SectionLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,7 +55,16 @@ fun PreferencesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { },
+                title = {
+                    Column {
+                        NordHeading("Preferences")
+                        Text(
+                            text = "How you're notified",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -67,64 +83,122 @@ fun PreferencesScreen(
                 .padding(padding)
                 .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            ScreenIntro(
-                title = "Preferences",
-                body = "Choose how you're notified when an action triggers. You can change these later in settings.",
-                centered = true,
+            Text(
+                text = "Choose how you're notified when an action triggers. You can change these later in Settings.",
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            SettingsGroupCard {
-                SettingsToggleRow(
-                    title = "Haptic feedback",
-                    subtitle = "Vibrate on button press",
-                    checked = settings.hapticFeedback,
-                    onCheckedChange = settingsViewModel::setHapticFeedback,
-                    icon = Icons.Outlined.Vibration,
-                    showDivider = true,
-                )
-                SettingsToggleRow(
-                    title = "Visual overlay",
-                    subtitle = "Show action popup on screen",
-                    checked = settings.visualOverlayEnabled,
-                    onCheckedChange = settingsViewModel::setVisualOverlayEnabled,
-                    icon = Icons.Outlined.Visibility,
-                )
-            }
+            // Haptic feedback toggle card
+            PrefToggleCard(
+                title = "Haptic feedback",
+                hint = "Vibrate on button press",
+                checked = settings.hapticFeedback,
+                onCheckedChange = settingsViewModel::setHapticFeedback,
+            )
 
-            QuietSectionLabel("Overlay style")
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                StylePreviewCard(
-                    title = "OnePlus",
-                    selected = overlay.visualStyle == OverlayVisualStyle.ONEPLUS,
-                    accent = NordBlue,
-                    darkPreview = true,
+            // Visual overlay toggle card
+            PrefToggleCard(
+                title = "Visual overlay",
+                hint = "Show action popup on screen",
+                checked = settings.visualOverlayEnabled,
+                onCheckedChange = settingsViewModel::setVisualOverlayEnabled,
+            )
+
+            SectionLabel("Overlay style")
+
+            // Segmented style selector
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                OutlinedButton(
                     onClick = { overlayViewModel.setVisualStyle(OverlayVisualStyle.ONEPLUS) },
-                    modifier = Modifier.weight(1f),
-                )
-                StylePreviewCard(
-                    title = "Stock",
-                    selected = overlay.visualStyle == OverlayVisualStyle.STOCK,
-                    accent = Color(0xFF9E9E9E),
-                    darkPreview = false,
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = if (overlay.visualStyle == OverlayVisualStyle.ONEPLUS)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.surface,
+                        contentColor = if (overlay.visualStyle == OverlayVisualStyle.ONEPLUS)
+                            MaterialTheme.colorScheme.onPrimary
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                    border = BorderStroke(
+                        1.dp,
+                        if (overlay.visualStyle == OverlayVisualStyle.ONEPLUS)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.outline,
+                    ),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                ) {
+                    Text("OnePlus", style = MaterialTheme.typography.labelMedium)
+                }
+
+                OutlinedButton(
                     onClick = { overlayViewModel.setVisualStyle(OverlayVisualStyle.STOCK) },
-                    modifier = Modifier.weight(1f),
-                )
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = if (overlay.visualStyle == OverlayVisualStyle.STOCK)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.surface,
+                        contentColor = if (overlay.visualStyle == OverlayVisualStyle.STOCK)
+                            MaterialTheme.colorScheme.onPrimary
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                    border = BorderStroke(
+                        1.dp,
+                        if (overlay.visualStyle == OverlayVisualStyle.STOCK)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.outline,
+                    ),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                ) {
+                    Text("Stock", style = MaterialTheme.typography.labelMedium)
+                }
             }
 
             NordGhostButton(
                 text = "Customize visual overlay",
                 onClick = onOpenVisualOverlay,
-                modifier = Modifier.padding(top = 20.dp),
             )
-            NordPrimaryButton(
-                text = "Finish Setup",
-                onClick = onFinish,
-                modifier = Modifier.padding(top = 8.dp, bottom = 24.dp),
-            )
+        }
+    }
+}
+
+@Composable
+private fun PrefToggleCard(
+    title: String,
+    hint: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        elevation = CardDefaults.cardElevation(0.dp),
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                )
+                Text(
+                    hint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(checked = checked, onCheckedChange = onCheckedChange)
         }
     }
 }

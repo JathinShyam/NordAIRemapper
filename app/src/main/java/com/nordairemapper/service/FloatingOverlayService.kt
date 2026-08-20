@@ -63,11 +63,21 @@ import com.nordairemapper.presentation.MainActivity
 import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.presentation.common.icon
 import com.nordairemapper.ui.theme.NordAIRemapperTheme
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import com.nordairemapper.domain.model.OverlayAnimation
 import com.nordairemapper.domain.model.OverlayVisualStyle
+import com.nordairemapper.ui.components.NordHeading
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -322,117 +332,118 @@ private fun OverlayWindowContent(
     onAction: (RemapAction) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val iconDp = when (config.iconSize) {
-        OverlayIconSize.SMALL -> 28.dp
-        OverlayIconSize.MEDIUM -> 36.dp
-        OverlayIconSize.LARGE -> 48.dp
-    }
     val accent = Color(config.accentColorArgb)
-    val onePlus = config.visualStyle == OverlayVisualStyle.ONEPLUS
-    val surfaceColor = if (onePlus) {
-        MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)
-    } else {
-        Color(0xFFF2F2F2).copy(alpha = 0.96f)
-    }
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .clickable(
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() },
-                onClick = onDismiss,
-            ),
-        contentAlignment = when (config.position) {
-            OverlayPosition.LEFT_EDGE -> Alignment.CenterStart
-            OverlayPosition.RIGHT_EDGE -> Alignment.CenterEnd
-            OverlayPosition.BOTTOM_CENTER -> Alignment.BottomCenter
-        },
-    ) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = surfaceColor,
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        // ── Scrim / background ──────────────────────────────────────────
+        Box(
             modifier = Modifier
-                .padding(20.dp)
-                .alpha(config.opacity.coerceIn(0.3f, 1f))
-                .then(
-                    if (config.glowEffects) {
-                        Modifier.shadow(
-                            elevation = 14.dp,
-                            shape = RoundedCornerShape(24.dp),
-                            ambientColor = accent.copy(alpha = 0.4f),
-                            spotColor = accent.copy(alpha = 0.5f),
-                        )
-                    } else {
-                        Modifier
-                    },
+                .fillMaxSize()
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(accent.copy(alpha = 0.08f), Color.Transparent),
+                        center = Offset(0.3f * 1080f, 0.2f * 2400f),
+                        radius = 600f,
+                    )
                 )
-                .then(
-                    if (config.glowEffects && onePlus) {
-                        Modifier.border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
-                    } else {
-                        Modifier
-                    },
-                )
+                .background(Color(0xFF0B0B0B).copy(alpha = 0.85f))
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                    onClick = onDismiss,
+                ),
+        )
+
+        // ── Bottom panel ────────────────────────────────────────────────
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = 18.dp, vertical = 48.dp)
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() },
                     onClick = {},
-                ),
+                )
+                .shadow(
+                    elevation = 24.dp,
+                    shape = RoundedCornerShape(28.dp),
+                    ambientColor = accent.copy(alpha = 0.3f),
+                    spotColor = accent.copy(alpha = 0.4f),
+                )
+                .background(Color(0xFF141414).copy(alpha = 0.92f), RoundedCornerShape(28.dp))
+                .border(1.dp, Color(0xFF2C2C2C), RoundedCornerShape(28.dp))
+                .padding(horizontal = 16.dp, top = 22.dp, bottom = 18.dp),
         ) {
-            val slots = config.slots
-            when (config.layoutStyle) {
-                OverlayLayoutStyle.PILL_BAR -> {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                // Heading
+                NordHeading(
+                    text = "Overlay",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        letterSpacing = (-0.02).sp,
+                        textAlign = TextAlign.Center,
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                )
+
+                // 3×2 tile grid
+                val slots = config.slots
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
                     Row(
-                        modifier = Modifier.padding(14.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        slots.forEachIndexed { index, action ->
-                            OverlayActionButton(
+                        slots.take(3).forEachIndexed { i, action ->
+                            OverlayTile(
                                 action = action,
-                                iconDp = iconDp,
-                                index = index,
+                                index = i,
                                 accent = accent,
-                                animation = config.animation,
-                                position = config.position,
                                 onClick = { onAction(action) },
+                                modifier = Modifier.weight(1f),
                             )
+                        }
+                        repeat((3 - slots.take(3).size).coerceAtLeast(0)) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                    if (slots.size > 3) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            slots.drop(3).forEachIndexed { i, action ->
+                                OverlayTile(
+                                    action = action,
+                                    index = i + 3,
+                                    accent = accent,
+                                    onClick = { onAction(action) },
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                            repeat((3 - slots.drop(3).size).coerceAtLeast(0)) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
                         }
                     }
                 }
-                OverlayLayoutStyle.RADIAL -> {
-                    Column(
-                        modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            slots.take(3).forEachIndexed { index, action ->
-                                OverlayActionButton(
-                                    action = action,
-                                    iconDp = iconDp,
-                                    index = index,
-                                    accent = accent,
-                                    animation = config.animation,
-                                    position = config.position,
-                                    onClick = { onAction(action) },
-                                )
-                            }
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            slots.drop(3).forEachIndexed { index, action ->
-                                OverlayActionButton(
-                                    action = action,
-                                    iconDp = iconDp,
-                                    index = index + 3,
-                                    accent = accent,
-                                    animation = config.animation,
-                                    position = config.position,
-                                    onClick = { onAction(action) },
-                                )
-                            }
-                        }
-                    }
+
+                // Close button
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 14.dp),
+                ) {
+                    Text(
+                        text = "Close",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }
@@ -440,71 +451,63 @@ private fun OverlayWindowContent(
 }
 
 @androidx.compose.runtime.Composable
-private fun OverlayActionButton(
+private fun OverlayTile(
     action: RemapAction,
-    iconDp: androidx.compose.ui.unit.Dp,
     index: Int,
     accent: Color,
-    animation: OverlayAnimation,
-    position: OverlayPosition,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val appear = remember { Animatable(0f) }
-    LaunchedEffect(animation) {
+    LaunchedEffect(index) {
         delay(index * 50L)
         appear.animateTo(
             targetValue = 1f,
             animationSpec = spring(dampingRatio = 0.65f, stiffness = 380f),
         )
     }
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
+    Box(
+        modifier = modifier
+            .aspectRatio(1f)
             .graphicsLayer {
-                val t = appear.value
-                alpha = t
-                when (animation) {
-                    OverlayAnimation.FADE -> Unit
-                    OverlayAnimation.SCALE -> {
-                        scaleX = 0.86f + t * 0.14f
-                        scaleY = 0.86f + t * 0.14f
-                        translationY = (1f - t) * 18f
-                    }
-                    OverlayAnimation.SLIDE -> {
-                        val fromX = when (position) {
-                            OverlayPosition.LEFT_EDGE -> -24f
-                            OverlayPosition.RIGHT_EDGE -> 24f
-                            OverlayPosition.BOTTOM_CENTER -> 0f
-                        }
-                        translationX = (1f - t) * fromX
-                        translationY = if (position == OverlayPosition.BOTTOM_CENTER) {
-                            (1f - t) * 24f
-                        } else {
-                            0f
-                        }
-                    }
-                }
+                alpha = appear.value
+                scaleX = 0.86f + appear.value * 0.14f
+                scaleY = 0.86f + appear.value * 0.14f
+                translationY = (1f - appear.value) * 18.dp.toPx()
             }
+            .background(Color(0xFF171717), RoundedCornerShape(22.dp))
+            .border(1.dp, Color(0xFF2A2A2A), RoundedCornerShape(22.dp))
             .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier = Modifier
-                .size(iconDp + 16.dp)
-                .background(accent.copy(alpha = 0.2f), RoundedCornerShape(12.dp)),
-            contentAlignment = Alignment.Center,
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Icon(
-                imageVector = action.icon(),
-                contentDescription = action.displayName(),
-                tint = accent,
-                modifier = Modifier.size(iconDp * 0.55f),
+            // Ring / icon box
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(accent.copy(alpha = 0.14f), RoundedCornerShape(12.dp))
+                    .border(1.dp, accent.copy(alpha = 0.22f), RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = action.icon(),
+                    contentDescription = action.displayName(),
+                    tint = accent,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+            // Label
+            Text(
+                text = action.displayName(),
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
             )
         }
-        Text(
-            text = action.displayName(),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-        )
     }
 }

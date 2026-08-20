@@ -63,7 +63,7 @@ fun DeveloperScreen(
                     Column {
                         NordHeading("Lab", style = MaterialTheme.typography.titleLarge)
                         Text(
-                            text = "Advanced controls",
+                            text = "Advanced controls · Developer",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

@@ -71,7 +71,16 @@ fun VisualOverlayScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { NordHeading("Visual Overlay", style = MaterialTheme.typography.titleLarge) },
+                title = {
+                    Column {
+                        NordHeading("Visual Overlay", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            text = "Action popup when a remap fires",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
