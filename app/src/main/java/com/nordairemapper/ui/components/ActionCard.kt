@@ -1,5 +1,6 @@
 package com.nordairemapper.ui.components
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -40,12 +43,24 @@ fun ActionCard(
     modifier: Modifier = Modifier,
     badge: String? = null,
     icon: ImageVector? = null,
+    iconContainer: Color? = null,
+    iconTint: Color? = null,
     showConflict: Boolean = false,
     /** Empty / unassigned press type — dashed border + assign cue. */
     empty: Boolean = false,
 ) {
     val outline = MaterialTheme.colorScheme.outline
     val shape = MaterialTheme.shapes.medium
+    val resolvedContainer = iconContainer ?: if (empty) {
+        MaterialTheme.colorScheme.surfaceVariant
+    } else {
+        MaterialTheme.colorScheme.primaryContainer
+    }
+    val resolvedTint = iconTint ?: if (empty) {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
     Card(
         onClick = onClick,
         modifier = modifier
@@ -84,29 +99,50 @@ fun ActionCard(
         ) {
             when {
                 icon != null -> {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(
-                                color = if (empty) {
-                                    MaterialTheme.colorScheme.surfaceVariant
-                                } else {
-                                    MaterialTheme.colorScheme.primaryContainer
-                                },
-                                shape = RoundedCornerShape(10.dp),
-                            ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = if (empty) {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            } else {
-                                MaterialTheme.colorScheme.primary
-                            },
-                            modifier = Modifier.size(20.dp),
-                        )
+                    Box {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(
+                                    color = resolvedContainer,
+                                    shape = RoundedCornerShape(10.dp),
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                tint = resolvedTint,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                        if (badge != null) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = 4.dp, y = (-4).dp)
+                                    .size(20.dp)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.surface,
+                                        shape = RoundedCornerShape(6.dp),
+                                    )
+                                    .border(
+                                        1.dp,
+                                        resolvedTint.copy(alpha = 0.45f),
+                                        RoundedCornerShape(6.dp),
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = badge,
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = MaterialTheme.typography.labelSmall.fontSize * 0.85f,
+                                    ),
+                                    color = resolvedTint,
+                                )
+                            }
+                        }
                     }
                 }
                 badge != null -> {
@@ -114,7 +150,7 @@ fun ActionCard(
                         modifier = Modifier
                             .size(36.dp)
                             .background(
-                                color = MaterialTheme.colorScheme.primaryContainer,
+                                color = resolvedContainer,
                                 shape = RoundedCornerShape(10.dp),
                             ),
                         contentAlignment = Alignment.Center,
@@ -122,7 +158,7 @@ fun ActionCard(
                         Text(
                             text = badge,
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.primary,
+                            color = resolvedTint,
                         )
                     }
                 }
@@ -147,15 +183,20 @@ fun ActionCard(
                     text = title,
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                 )
-                Text(
-                    text = if (empty) "+ Assign an action" else subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (empty) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                )
+                Crossfade(
+                    targetState = empty,
+                    label = "actionCardSubtitle",
+                ) { isEmpty ->
+                    Text(
+                        text = if (isEmpty) "+ Assign an action" else subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isEmpty) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                }
             }
             if (showConflict) {
                 Icon(

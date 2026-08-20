@@ -20,7 +20,13 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalView
+import android.view.HapticFeedbackConstants
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
@@ -39,8 +45,12 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.PressType
 import com.nordairemapper.domain.model.RemapAction
+import com.nordairemapper.presentation.common.categoryAccent
+import com.nordairemapper.presentation.common.categoryFor
 import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.presentation.common.icon
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import com.nordairemapper.ui.components.ActionCard
 import com.nordairemapper.ui.components.NordHeading
 import com.nordairemapper.ui.components.NordPrimaryButton
@@ -78,6 +88,9 @@ fun HomeScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
+    val view = LocalView.current
+    val scope = rememberCoroutineScope()
+    var demoPulse by remember { mutableStateOf(false) }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -143,14 +156,21 @@ fun HomeScreen(
         ) {
             PhoneDiagram(
                 // Remapping master on → Plus Key cyan; off → neutral side key
-                highlightKey = state.serviceEnabled,
-                edgeRipple = state.serviceEnabled,
+                highlightKey = state.serviceEnabled || demoPulse,
+                edgeRipple = state.serviceEnabled || demoPulse,
                 modifier = Modifier
                     // Exact GSMArena body ratio 77/163.4; ~56% width so it reads as a phone
                     .fillMaxWidth(0.56f)
                     .aspectRatio(77f / 163.4f)
                     .align(Alignment.CenterHorizontally)
-                    .padding(vertical = 8.dp),
+                    .padding(vertical = 8.dp)
+                    .clickable {
+                        demoPulse = true
+                        scope.launch {
+                            delay(700)
+                            demoPulse = false
+                        }
+                    },
             )
 
             val statusLabel = when {
@@ -167,9 +187,18 @@ fun HomeScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                border = BorderStroke(
+                    1.dp,
+                    if (state.serviceEnabled) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.outline
+                    },
+                ),
                 shape = MaterialTheme.shapes.medium,
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = if (state.serviceEnabled) 2.dp else 0.dp,
+                ),
             ) {
                 Column {
                     StatusRibbon(
@@ -191,7 +220,7 @@ fun HomeScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 "Remapping",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                             )
                             Text(
                                 text = "Master switch for Plus Key actions",
@@ -201,7 +230,10 @@ fun HomeScreen(
                         }
                         Switch(
                             checked = state.serviceEnabled,
-                            onCheckedChange = viewModel::setServiceEnabled,
+                            onCheckedChange = { enabled ->
+                                view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                                viewModel.setServiceEnabled(enabled)
+                            },
                         )
                     }
                 }
@@ -225,6 +257,7 @@ fun HomeScreen(
             PressType.entries.forEach { pressType ->
                 val action = state.actions[pressType] ?: RemapAction.None
                 val empty = action is RemapAction.None
+                val accent = categoryAccent(categoryFor(action))
                 ActionCard(
                     title = when (pressType) {
                         PressType.SINGLE -> "Single"
@@ -233,6 +266,13 @@ fun HomeScreen(
                     },
                     subtitle = action.displayName(),
                     icon = action.icon(),
+                    iconContainer = accent.container,
+                    iconTint = accent.tint,
+                    badge = when (pressType) {
+                        PressType.SINGLE -> "1×"
+                        PressType.DOUBLE -> "2×"
+                        PressType.LONG -> "⏳"
+                    },
                     empty = empty,
                     showConflict = pressType in state.conflictPressTypes,
                     onClick = { onOpenRemap(pressType) },

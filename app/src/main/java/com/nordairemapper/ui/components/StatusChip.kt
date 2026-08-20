@@ -89,10 +89,10 @@ fun SectionLabel(
         text = text.uppercase(),
         style = MaterialTheme.typography.labelMedium.copy(
             fontWeight = FontWeight.Medium,
-            letterSpacing = 0.6.sp,
-            fontSize = 11.sp,
+            letterSpacing = 0.4.sp,
+            fontSize = 12.sp,
         ),
-        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
         modifier = modifier.padding(top = 10.dp, bottom = 8.dp),
     )
 }

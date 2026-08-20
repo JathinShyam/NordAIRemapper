@@ -19,7 +19,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Backup
+import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.RestartAlt
@@ -51,9 +53,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalView
+import android.view.HapticFeedbackConstants
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -67,6 +72,8 @@ import com.nordairemapper.presentation.remap.InstalledAppInfo
 import com.nordairemapper.ui.components.NordHeading
 import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.SectionLabel
+import com.nordairemapper.ui.theme.Destructive
+import com.nordairemapper.ui.theme.NordBlue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -160,24 +167,32 @@ fun SettingsScreen(
                 icon = Icons.Outlined.Vibration,
                 title = "Feedback",
                 subtitle = "Haptic feedback & vibration intensity",
+                accentContainer = Color(0xFF14321F),
+                accentTint = Color(0xFF3DDC84),
                 onClick = onOpenFeedback,
             )
             HubRow(
                 icon = Icons.Outlined.Tune,
                 title = "Preferences",
                 subtitle = "How you're notified when an action triggers",
+                accentContainer = MaterialTheme.colorScheme.primaryContainer,
+                accentTint = NordBlue,
                 onClick = onOpenPreferences,
             )
             HubRow(
                 icon = Icons.Outlined.Visibility,
                 title = "Visual overlay",
                 subtitle = "Action popup style when a remap fires",
+                accentContainer = Color(0xFF2A2A2A),
+                accentTint = Color(0xFFB0B0B0),
                 onClick = onOpenVisualOverlay,
             )
             HubRow(
                 icon = Icons.Outlined.Widgets,
                 title = "Overlay settings",
                 subtitle = "Floating menu slots & layout",
+                accentContainer = Color(0xFF2A1F3D),
+                accentTint = Color(0xFFB388FF),
                 onClick = onOpenOverlay,
             )
 
@@ -187,12 +202,16 @@ fun SettingsScreen(
                 icon = Icons.Outlined.Lock,
                 title = "Lock Screen",
                 subtitle = "Gestures while the screen is locked",
+                accentContainer = Color(0xFF3D2E14),
+                accentTint = Color(0xFFFFB020),
                 onClick = onOpenLockScreen,
             )
             HubRow(
                 icon = Icons.Outlined.Backup,
                 title = "Backup & Restore",
                 subtitle = "Export and import remaps",
+                accentContainer = MaterialTheme.colorScheme.primaryContainer,
+                accentTint = NordBlue,
                 onClick = onOpenBackup,
             )
 
@@ -202,18 +221,24 @@ fun SettingsScreen(
                 icon = Icons.Outlined.TouchApp,
                 title = "Key setup",
                 subtitle = "Learn / verify Plus Key",
+                accentContainer = MaterialTheme.colorScheme.primaryContainer,
+                accentTint = NordBlue,
                 onClick = onOpenKeyLearning,
             )
             HubRow(
                 icon = Icons.Outlined.Science,
                 title = "Lab",
                 subtitle = "Strategy, timing, USB unlock (Developer)",
+                accentContainer = Color(0xFF3D2E14),
+                accentTint = Color(0xFFFFB020),
                 onClick = onOpenDeveloper,
             )
             HubRow(
                 icon = Icons.Outlined.RestartAlt,
                 title = "Restart onboarding",
                 subtitle = "Walk through setup again",
+                accentContainer = Color(0xFF3A1818),
+                accentTint = Destructive,
                 onClick = {
                     viewModel.resetOnboarding()
                     onRestartOnboarding()
@@ -228,14 +253,29 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (settings.excludedApps.isEmpty()) {
-                Text(
-                    text = "No apps excluded — remapping is active in all apps",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 4.dp),
-                )
+                Row(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Icon(
+                        Icons.Outlined.Apps,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Text(
+                        text = "No apps excluded — remapping is active in all apps",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
+            val pm = context.packageManager
             settings.excludedApps.forEach { pkg ->
+                val label = runCatching {
+                    pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
+                }.getOrDefault(pkg)
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
@@ -248,7 +288,14 @@ fun SettingsScreen(
                             .padding(horizontal = 14.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(pkg, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(label, style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                text = pkg,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                         IconButton(onClick = { viewModel.removeExclusion(pkg) }) {
                             Icon(Icons.Outlined.Delete, contentDescription = "Remove")
                         }
@@ -313,7 +360,14 @@ fun SettingsScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HubRow(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
+private fun HubRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    accentContainer: Color,
+    accentTint: Color,
+    onClick: () -> Unit,
+) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -332,13 +386,13 @@ private fun HubRow(icon: ImageVector, title: String, subtitle: String, onClick: 
             Box(
                 modifier = Modifier
                     .size(36.dp)
-                    .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(11.dp)),
+                    .background(accentContainer, RoundedCornerShape(11.dp)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = accentTint,
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -353,7 +407,11 @@ private fun HubRow(icon: ImageVector, title: String, subtitle: String, onClick: 
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text("›", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.outline)
+            Icon(
+                imageVector = Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.outline,
+            )
         }
     }
 }
@@ -379,7 +437,7 @@ private fun ThemePrefCard(selectedMode: ThemeMode, onSelect: (ThemeMode) -> Unit
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
             )
             Text(
-                text = "Prototype stays dark; chips mirror the app control.",
+                text = "Choose light, dark, or follow the system.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -422,6 +480,7 @@ private fun SettingsToggleCard(
     onCheckedChange: (Boolean) -> Unit,
     subtitle: String? = null,
 ) {
+    val view = LocalView.current
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
@@ -447,7 +506,13 @@ private fun SettingsToggleCard(
                     )
                 }
             }
-            Switch(checked = checked, onCheckedChange = onCheckedChange)
+            Switch(
+                checked = checked,
+                onCheckedChange = { value ->
+                    view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                    onCheckedChange(value)
+                },
+            )
         }
     }
 }

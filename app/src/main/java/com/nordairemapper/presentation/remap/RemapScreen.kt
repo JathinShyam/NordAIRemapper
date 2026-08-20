@@ -108,6 +108,7 @@ fun RemapScreen(
             snackbar.showSnackbar(
                 when {
                     message.startsWith("Saved:") -> "Action saved"
+                    message == "Tried current action" -> "Trying action…"
                     else -> message
                 },
             )
@@ -300,19 +301,20 @@ private fun CategoryChips(
     ) {
         RemapActionCategory.entries.forEach { category ->
             val on = selected == category
+            val accent = categoryAccent(category)
             val shape = RoundedCornerShape(999.dp)
             Text(
                 text = category.label,
                 modifier = Modifier
                     .clip(shape)
                     .background(
-                        if (on) MaterialTheme.colorScheme.primaryContainer
+                        if (on) accent.container.copy(alpha = 0.65f)
                         else MaterialTheme.colorScheme.surface,
                     )
                     .border(
                         BorderStroke(
                             1.dp,
-                            if (on) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                            if (on) accent.tint.copy(alpha = 0.55f)
                             else MaterialTheme.colorScheme.outline,
                         ),
                         shape,
@@ -324,7 +326,7 @@ private fun CategoryChips(
                 style = MaterialTheme.typography.labelMedium,
                 color = when {
                     dimmed -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
-                    on -> MaterialTheme.colorScheme.primary
+                    on -> accent.tint
                     else -> MaterialTheme.colorScheme.onSurface
                 },
                 fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium,
