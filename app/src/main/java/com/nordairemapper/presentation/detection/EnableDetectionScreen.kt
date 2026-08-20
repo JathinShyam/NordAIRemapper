@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -50,6 +51,10 @@ import com.nordairemapper.ui.components.SectionLabel
 import com.nordairemapper.ui.components.StatusChip
 import com.nordairemapper.ui.components.StatusTone
 
+/**
+ * Unlock Plus Key detection (READ_LOGS).
+ * Nord Edge happy path: one USB ADB grant. Wireless debugging is advanced.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EnableDetectionScreen(
@@ -97,7 +102,14 @@ fun EnableDetectionScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    NordHeading("Enable detection", style = MaterialTheme.typography.titleLarge)
+                    Column {
+                        NordHeading("Unlock", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            text = "One-time detection setup",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -120,7 +132,7 @@ fun EnableDetectionScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                text = "OnePlus doesn’t send the Plus Key to apps. One quick Wireless debugging pair unlocks detection. No computer needed.",
+                text = "OnePlus doesn’t send the Plus Key to apps. Unlock logcat detection once — then you’re done.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -137,13 +149,13 @@ fun EnableDetectionScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text(
-                            text = "Detection is ready. You can turn Wireless debugging off — the grant persists across reboots.",
+                            text = "Detection unlocked. Open Home to assign Single, Double, and Long press.",
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         if (onContinue != null) {
-                            NordPrimaryButton(text = "Continue", onClick = onContinue)
+                            NordPrimaryButton(text = "Open Home", onClick = onContinue)
                         } else {
-                            NordPrimaryButton(text = "Done", onClick = onBack)
+                            NordPrimaryButton(text = "Open Home", onClick = onBack)
                         }
                     }
                 }
@@ -151,103 +163,144 @@ fun EnableDetectionScreen(
                 return@Column
             }
 
-            SectionLabel("1 · Turn on Wireless debugging")
+            SectionLabel("1 · Preferred: USB")
             NordSurfaceCard {
                 Column(
                     modifier = Modifier.padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
-                        text = "If you see a screen with your Wi‑Fi name (SSID) and Cancel / Allow — that is not the pairing code. Tap Allow.",
+                        text = "From a computer with USB debugging enabled, run:",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        text = "Then: open the Wireless debugging page (tap the row, not only the toggle) → Pair device with pairing code. Leave that dialog open — it shows the 6-digit code and IP:port.",
+                        text = LogcatWatcherService.ADB_GRANT_COMMAND,
+                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                    )
+                    NordGhostButton(
+                        text = "Copy command",
+                        onClick = viewModel::copyUsbAdbCommand,
+                    )
+                    NordPrimaryButton(
+                        text = "I've run it — Recheck",
+                        onClick = viewModel::refresh,
+                    )
+                    Text(
+                        text = "We only grant READ_LOGS. Nothing else.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    NordPrimaryButton(
-                        text = "Open Wireless debugging",
-                        onClick = {
-                            viewModel.openWirelessDebugging()
-                            requestNearbyWifiThenDiscover()
-                        },
-                    )
-                    NordGhostButton(
-                        text = "Open Developer options instead",
-                        onClick = viewModel::openDeveloperOptions,
-                    )
-                    NordGhostButton(
-                        text = if (state.isDiscovering) "Searching for port…" else "Find pairing port",
-                        onClick = { requestNearbyWifiThenDiscover() },
-                        enabled = !state.isDiscovering && !state.isGranting,
-                    )
-                    if (state.discoveredPort != null) {
-                        Text(
-                            text = "Discovered port ${state.discoveredPort}" +
-                                (state.discoveredHost?.let { " @ $it" } ?: ""),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
                 }
             }
 
-            SectionLabel("2 · Pair, then connect")
-            NordSurfaceCard {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        text = "Pairing port and Connection port are different. Pairing uses the port under the 6-digit code. Connection uses “IP address & port” on the main Wireless debugging page after you close the pairing dialog.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    OutlinedTextField(
-                        value = state.pairingCode,
-                        onValueChange = viewModel::onPairingCodeChange,
-                        label = { Text("6-digit pairing code") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !state.isGranting,
-                    )
-                    OutlinedTextField(
-                        value = state.pairingPort,
-                        onValueChange = viewModel::onPairingPortChange,
-                        label = { Text("Pairing port") },
-                        supportingText = {
-                            Text("Under the code: 192.168.x.x:PAIRING_PORT — paste IP:port or just the port.")
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !state.isGranting,
-                    )
-                    OutlinedTextField(
-                        value = state.connectPort,
-                        onValueChange = viewModel::onConnectPortChange,
-                        label = { Text("Connection port (required if connect fails)") },
-                        supportingText = {
-                            Text("Wireless debugging page → IP address & port (not the pairing dialog). Paste IP:port or just the port.")
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !state.isGranting,
-                    )
-                    NordPrimaryButton(
-                        text = if (state.isGranting) "Granting…" else "Pair and grant READ_LOGS",
-                        onClick = viewModel::pairAndGrant,
-                        enabled = !state.isGranting && state.pairingCode.length == 6,
-                    )
-                    Text(
-                        text = "We only run pm grant for READ_LOGS. Nothing else.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            TextButton(
+                onClick = { viewModel.setShowAdvanced(!state.showAdvanced) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    if (state.showAdvanced) {
+                        "Hide Wireless path"
+                    } else {
+                        "No computer — Wireless debugging (advanced)"
+                    },
+                )
+            }
+
+            if (state.showAdvanced) {
+                SectionLabel("2 · Wireless debugging")
+                NordSurfaceCard {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "If you see a screen with your Wi‑Fi name (SSID) and Cancel / Allow — that is not the pairing code. Tap Allow.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = "Then open Wireless debugging → Pair device with pairing code. Leave that dialog open.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        NordPrimaryButton(
+                            text = "Open Wireless debugging",
+                            onClick = {
+                                viewModel.openWirelessDebugging()
+                                requestNearbyWifiThenDiscover()
+                            },
+                        )
+                        NordGhostButton(
+                            text = "Open Developer options instead",
+                            onClick = viewModel::openDeveloperOptions,
+                        )
+                        NordGhostButton(
+                            text = if (state.isDiscovering) "Searching for port…" else "Find pairing port",
+                            onClick = { requestNearbyWifiThenDiscover() },
+                            enabled = !state.isDiscovering && !state.isGranting,
+                        )
+                        if (state.discoveredPort != null) {
+                            Text(
+                                text = "Discovered port ${state.discoveredPort}" +
+                                    (state.discoveredHost?.let { " @ $it" } ?: ""),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+
+                SectionLabel("3 · Pair, then connect")
+                NordSurfaceCard {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "Pairing port and Connection port are different. Pairing uses the port under the 6-digit code. Connection uses “IP address & port” on the main Wireless debugging page.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        OutlinedTextField(
+                            value = state.pairingCode,
+                            onValueChange = viewModel::onPairingCodeChange,
+                            label = { Text("6-digit pairing code") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !state.isGranting,
+                        )
+                        OutlinedTextField(
+                            value = state.pairingPort,
+                            onValueChange = viewModel::onPairingPortChange,
+                            label = { Text("Pairing port") },
+                            supportingText = {
+                                Text("Under the code: 192.168.x.x:PAIRING_PORT")
+                            },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !state.isGranting,
+                        )
+                        OutlinedTextField(
+                            value = state.connectPort,
+                            onValueChange = viewModel::onConnectPortChange,
+                            label = { Text("Connection port (if connect fails)") },
+                            supportingText = {
+                                Text("Wireless debugging page → IP address & port")
+                            },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !state.isGranting,
+                        )
+                        NordPrimaryButton(
+                            text = if (state.isGranting) "Granting…" else "Pair and grant READ_LOGS",
+                            onClick = viewModel::pairAndGrant,
+                            enabled = !state.isGranting && state.pairingCode.length == 6,
+                        )
+                    }
                 }
             }
 
@@ -264,40 +317,6 @@ fun EnableDetectionScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )
-            }
-
-            TextButton(
-                onClick = { viewModel.setShowAdvanced(!state.showAdvanced) },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(if (state.showAdvanced) "Hide advanced" else "Advanced: USB ADB fallback")
-            }
-
-            if (state.showAdvanced) {
-                NordSurfaceCard {
-                    Column(
-                        modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text(
-                            text = "From a computer with USB debugging:",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = LogcatWatcherService.ADB_GRANT_COMMAND,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TextButton(onClick = viewModel::copyUsbAdbCommand) {
-                                Text("Copy")
-                            }
-                            TextButton(onClick = viewModel::refresh) {
-                                Text("I've granted it — Recheck")
-                            }
-                        }
-                    }
-                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))

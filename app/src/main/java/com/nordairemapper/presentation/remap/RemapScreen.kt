@@ -1,15 +1,23 @@
 package com.nordairemapper.presentation.remap
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Check
@@ -32,16 +40,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nordairemapper.domain.model.PressType
 import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.presentation.common.RemapActionCatalog
+import com.nordairemapper.presentation.common.RemapActionCategory
 import com.nordairemapper.presentation.common.RemapActionItem
 import com.nordairemapper.presentation.common.conflictKey
 import com.nordairemapper.presentation.common.displayDescription
 import com.nordairemapper.presentation.common.displayName
+import com.nordairemapper.presentation.common.icon
 import com.nordairemapper.ui.components.NordGhostButton
 import com.nordairemapper.ui.components.NordHeading
 import com.nordairemapper.ui.components.NordPrimaryButton
@@ -61,17 +73,21 @@ fun RemapScreen(
     val snackbar = remember { SnackbarHostState() }
     var sheet by remember { mutableStateOf(RemapSheet.None) }
     var query by remember { mutableStateOf("") }
+    var categoryFilter by remember { mutableStateOf<RemapActionCategory?>(null) }
     val grouped = remember { RemapActionCatalog.grouped().toList() }
-    val filtered = remember(query, grouped) {
-        if (query.isBlank()) {
+    val filtered = remember(query, grouped, categoryFilter) {
+        val base = if (categoryFilter == null || query.isNotBlank()) {
             grouped
         } else {
+            grouped.filter { it.first == categoryFilter }
+        }
+        if (query.isBlank()) {
+            base
+        } else {
             val q = query.trim().lowercase()
-            grouped.mapNotNull { (category, actionItems) ->
-                val match = actionItems.filter {
-                    it.action.displayName().lowercase().contains(q) ||
-                        it.action.displayDescription().lowercase().contains(q) ||
-                        category.label.lowercase().contains(q)
+            base.mapNotNull { (category, actionItems) ->
+                val match = actionItems.filter { item ->
+                    matchesQuery(item, category, q)
                 }
                 if (match.isEmpty()) null else category to match
             }
@@ -89,14 +105,26 @@ fun RemapScreen(
         }
     }
 
+    // Searching across all categories — clear chip filter visually
+    LaunchedEffect(query) {
+        if (query.isNotBlank()) categoryFilter = null
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    NordHeading(
-                        text = state.pressType.label,
-                        style = MaterialTheme.typography.titleLarge,
-                    )
+                    Column {
+                        NordHeading(
+                            text = pressTitle(state.pressType),
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                        Text(
+                            text = "Assign an action",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -150,6 +178,14 @@ fun RemapScreen(
                 )
             }
 
+            item {
+                CategoryChips(
+                    selected = if (query.isNotBlank()) null else categoryFilter,
+                    dimmed = query.isNotBlank(),
+                    onSelect = { categoryFilter = it },
+                )
+            }
+
             if (state.hasConflict) {
                 item {
                     NordSurfaceCard {
@@ -179,6 +215,7 @@ fun RemapScreen(
                     ActionPickRow(
                         item = catalogItem,
                         selected = isSelected(state.currentAction, catalogItem.action),
+                        showCategory = query.isNotBlank(),
                         onClick = {
                             when {
                                 catalogItem.action is RemapAction.LaunchApp ->
@@ -217,29 +254,118 @@ fun RemapScreen(
 }
 
 @Composable
-private fun ActionPickRow(
-    item: RemapActionItem,
-    selected: Boolean,
-    onClick: () -> Unit,
+private fun CategoryChips(
+    selected: RemapActionCategory?,
+    dimmed: Boolean,
+    onSelect: (RemapActionCategory?) -> Unit,
 ) {
-    val action = item.action
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp, horizontal = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .horizontalScroll(rememberScrollState())
+            .padding(bottom = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+        RemapActionCategory.entries.forEach { category ->
+            val on = selected == category
+            val shape = RoundedCornerShape(999.dp)
             Text(
-                text = when {
-                    action is RemapAction.LaunchApp -> "Launch app…"
-                    action is RemapAction.OpenUrl -> "Open URL / deep link…"
-                    else -> action.displayName()
+                text = category.label,
+                modifier = Modifier
+                    .clip(shape)
+                    .background(
+                        if (on) MaterialTheme.colorScheme.primaryContainer
+                        else MaterialTheme.colorScheme.surface,
+                    )
+                    .border(
+                        BorderStroke(
+                            1.dp,
+                            if (on) MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                            else MaterialTheme.colorScheme.outline,
+                        ),
+                        shape,
+                    )
+                    .clickable(enabled = !dimmed) {
+                        onSelect(if (on) null else category)
+                    }
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                style = MaterialTheme.typography.labelMedium,
+                color = when {
+                    dimmed -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                    on -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.onSurface
                 },
+                fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActionPickRow(
+    item: RemapActionItem,
+    selected: Boolean,
+    showCategory: Boolean,
+    onClick: () -> Unit,
+) {
+    val action = item.action
+    val title = when {
+        action is RemapAction.LaunchApp -> "Launch app…"
+        action is RemapAction.OpenUrl -> "Open URL / deep link…"
+        else -> action.displayName()
+    }
+    val hint = when {
+        action is RemapAction.LaunchApp -> "Pick any installed app"
+        action is RemapAction.OpenUrl -> "Open a URL or deep link"
+        else -> action.displayDescription()
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(onClick = onClick)
+            .then(
+                if (selected) {
+                    Modifier.border(
+                        BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)),
+                        MaterialTheme.shapes.medium,
+                    )
+                } else {
+                    Modifier
+                },
+            )
+            .padding(vertical = 10.dp, horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(42.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = MaterialTheme.shapes.small,
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = action.icon(),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(22.dp),
+            )
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            if (showCategory) {
+                Text(
+                    text = item.category.label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Text(
+                text = title,
                 style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
                 ),
                 color = if (selected) {
                     MaterialTheme.colorScheme.primary
@@ -248,11 +374,7 @@ private fun ActionPickRow(
                 },
             )
             Text(
-                text = when {
-                    action is RemapAction.LaunchApp -> "Pick any installed app"
-                    action is RemapAction.OpenUrl -> "Open a URL or deep link"
-                    else -> action.displayDescription()
-                },
+                text = hint,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -265,6 +387,60 @@ private fun ActionPickRow(
             )
         }
     }
+}
+
+private fun pressTitle(pressType: PressType): String = when (pressType) {
+    PressType.SINGLE -> "Single"
+    PressType.DOUBLE -> "Double"
+    PressType.LONG -> "Long"
+}
+
+private fun matchesQuery(
+    item: RemapActionItem,
+    category: RemapActionCategory,
+    q: String,
+): Boolean {
+    val name = when {
+        item.action is RemapAction.LaunchApp -> "launch app"
+        item.action is RemapAction.OpenUrl -> "open url deep link"
+        else -> item.action.displayName()
+    }.lowercase()
+    val hint = when {
+        item.action is RemapAction.LaunchApp -> "pick any installed app"
+        item.action is RemapAction.OpenUrl -> "open a url or deep link"
+        else -> item.action.displayDescription()
+    }.lowercase()
+    val aliases = actionAliases(item.action)
+    return name.contains(q) ||
+        hint.contains(q) ||
+        category.label.lowercase().contains(q) ||
+        aliases.any { it.contains(q) } ||
+        fuzzySubseq(q.replace(" ", ""), name.replace(" ", ""))
+}
+
+private fun actionAliases(action: RemapAction): List<String> = when (action) {
+    RemapAction.ToggleFlashlight -> listOf("torch", "light", "led")
+    RemapAction.ToggleDoNotDisturb -> listOf("dnd", "focus", "quiet")
+    RemapAction.CycleRingerMode -> listOf("mute", "silent", "vibrate", "ringer")
+    RemapAction.OpenNotificationShade -> listOf("notifications", "shade", "dropdown")
+    RemapAction.OpenQuickSettings -> listOf("qs", "tiles", "panel")
+    RemapAction.ShowOverlay -> listOf("chord", "floating", "menu")
+    RemapAction.None -> listOf("disable", "off", "nothing")
+    RemapAction.TakeScreenshot -> listOf("capture", "snap")
+    RemapAction.OpenAssistant -> listOf("voice", "gemini", "google")
+    is RemapAction.OpenCamera -> listOf("photo", "picture", "selfie")
+    else -> emptyList()
+}
+
+/** Subsequence fuzzy: "flsh" matches "flashlight". */
+private fun fuzzySubseq(query: String, text: String): Boolean {
+    if (query.isEmpty()) return true
+    var i = 0
+    for (ch in text) {
+        if (ch == query[i]) i += 1
+        if (i == query.length) return true
+    }
+    return false
 }
 
 private fun catalogKey(item: RemapActionItem): String =

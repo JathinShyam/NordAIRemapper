@@ -16,6 +16,8 @@ import android.view.Gravity
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.Toast
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -26,18 +28,20 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.ViewModelStore
@@ -347,8 +351,8 @@ private fun OverlayWindowContent(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        slots.forEach { action ->
-                            OverlayActionButton(action, iconDp) { onAction(action) }
+                        slots.forEachIndexed { index, action ->
+                            OverlayActionButton(action, iconDp, index) { onAction(action) }
                         }
                     }
                 }
@@ -359,13 +363,13 @@ private fun OverlayWindowContent(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            slots.take(3).forEach { action ->
-                                OverlayActionButton(action, iconDp) { onAction(action) }
+                            slots.take(3).forEachIndexed { index, action ->
+                                OverlayActionButton(action, iconDp, index) { onAction(action) }
                             }
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            slots.drop(3).forEach { action ->
-                                OverlayActionButton(action, iconDp) { onAction(action) }
+                            slots.drop(3).forEachIndexed { index, action ->
+                                OverlayActionButton(action, iconDp, index + 3) { onAction(action) }
                             }
                         }
                     }
@@ -379,16 +383,32 @@ private fun OverlayWindowContent(
 private fun OverlayActionButton(
     action: RemapAction,
     iconDp: androidx.compose.ui.unit.Dp,
+    index: Int,
     onClick: () -> Unit,
 ) {
+    val appear = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        delay(index * 50L)
+        appear.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(dampingRatio = 0.65f, stiffness = 380f),
+        )
+    }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable(onClick = onClick),
+        modifier = Modifier
+            .graphicsLayer {
+                alpha = appear.value
+                translationY = (1f - appear.value) * 18f
+                scaleX = 0.86f + appear.value * 0.14f
+                scaleY = 0.86f + appear.value * 0.14f
+            }
+            .clickable(onClick = onClick),
     ) {
         Box(
             modifier = Modifier
                 .size(iconDp + 16.dp)
-                .background(NordBlue.copy(alpha = 0.2f), CircleShape),
+                .background(NordBlue.copy(alpha = 0.2f), RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center,
         ) {
             Icon(

@@ -120,19 +120,48 @@ fun SettingsScreen(
                 title = "Dynamic color",
                 checked = settings.dynamicColor,
                 onCheckedChange = viewModel::setDynamicColor,
+                subtitle = "Follow system Material You",
             )
 
-            SectionLabel("Feedback & overlay")
-            SettingsLinkRow("Preferences", onOpenPreferences)
-            SettingsLinkRow("Feedback", onOpenFeedback)
-            SettingsLinkRow("Visual overlay", onOpenVisualOverlay)
-            SettingsLinkRow("Lock screen", onOpenLockScreen)
-
-            SectionLabel("Behavior")
             SettingsToggleCard(
                 title = "Service notification",
                 checked = settings.showServiceNotification,
                 onCheckedChange = viewModel::setShowServiceNotification,
+                subtitle = "Ongoing status while remapping",
+            )
+
+            SectionLabel("Feedback & overlay")
+            SettingsLinkRow(
+                title = "Preferences",
+                subtitle = "How you’re notified when an action triggers",
+                onClick = onOpenPreferences,
+            )
+            SettingsLinkRow(
+                title = "Feedback",
+                subtitle = "Haptic feedback & vibration intensity",
+                onClick = onOpenFeedback,
+            )
+            SettingsLinkRow(
+                title = "Visual Overlay",
+                subtitle = "Action popup style when a remap fires",
+                onClick = onOpenVisualOverlay,
+            )
+            SettingsLinkRow(
+                title = "Overlay settings",
+                subtitle = "Floating menu slots & layout",
+                onClick = onOpenOverlay,
+            )
+
+            SectionLabel("Behavior")
+            SettingsLinkRow(
+                title = "Lock Screen",
+                subtitle = "Gestures while the screen is locked",
+                onClick = onOpenLockScreen,
+            )
+            SettingsLinkRow(
+                title = "Backup & Restore",
+                subtitle = "Export and import remaps",
+                onClick = onOpenBackup,
             )
 
             SectionLabel("Per-app exclusions")
@@ -194,16 +223,22 @@ fun SettingsScreen(
             }
 
             SectionLabel("Advanced")
-            SettingsLinkRow("Key setup", onOpenKeyLearning)
-            SettingsLinkRow("Developer", onOpenDeveloper)
-            SettingsLinkRow("Backup & Restore", onOpenBackup)
-            SettingsLinkRow("Overlay settings", onOpenOverlay)
+            SettingsLinkRow(
+                title = "Key setup",
+                subtitle = "Learn / verify Plus Key",
+                onClick = onOpenKeyLearning,
+            )
+            SettingsLinkRow(
+                title = "Lab",
+                subtitle = "Strategy, timing, USB unlock",
+                onClick = onOpenDeveloper,
+            )
             TextButton(
                 onClick = {
                     viewModel.resetOnboarding()
                     onRestartOnboarding()
                 },
-            ) { Text("Show onboarding again") }
+            ) { Text("Restart onboarding") }
 
             SectionLabel("About")
             Text("Version ${viewModel.versionName()}", style = MaterialTheme.typography.bodyMedium)
@@ -230,6 +265,7 @@ private fun SettingsToggleCard(
     title: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    subtitle: String? = null,
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -243,11 +279,19 @@ private fun SettingsToggleCard(
                 .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                title,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
             Switch(checked = checked, onCheckedChange = onCheckedChange)
         }
     }

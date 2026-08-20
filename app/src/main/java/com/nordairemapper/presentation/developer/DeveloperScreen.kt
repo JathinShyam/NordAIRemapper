@@ -59,7 +59,16 @@ fun DeveloperScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { NordHeading("Developer", style = MaterialTheme.typography.titleLarge) },
+                title = {
+                    Column {
+                        NordHeading("Lab", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            text = "Advanced controls",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -141,16 +150,7 @@ fun DeveloperScreen(
                     )
                     if (!readLogsGranted) {
                         Text(
-                            text = "On Nord 5, grant READ_LOGS once with in-app Wireless debugging (no laptop, no Shizuku).",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        NordPrimaryButton(
-                            text = "Enable Plus Key detection",
-                            onClick = onOpenEnableDetection,
-                        )
-                        Text(
-                            text = "Advanced — USB from a computer:",
+                            text = "On Nord 5, grant READ_LOGS once. Preferred: USB from a computer. Wireless is advanced.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -163,8 +163,12 @@ fun DeveloperScreen(
                             Text("Copy USB ADB command")
                         }
                         TextButton(onClick = viewModel::refreshPermissions) {
-                            Text("I've granted it — Recheck")
+                            Text("I've run it — Recheck")
                         }
+                        NordPrimaryButton(
+                            text = "Open Unlock",
+                            onClick = onOpenEnableDetection,
+                        )
                     }
 
                     var pattern by rememberSaveable(settings.logcatPattern) {

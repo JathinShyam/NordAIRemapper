@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -81,7 +82,7 @@ fun HomeScreen(
                     Column {
                         NordHeading("Plus Key", style = MaterialTheme.typography.titleLarge)
                         Text(
-                            text = "Nord AI Remapper",
+                            text = "Nord AI Remapper · Home",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -95,7 +96,7 @@ fun HomeScreen(
                         Icon(Icons.Outlined.Layers, contentDescription = "Overlay")
                     }
                     IconButton(onClick = onOpenDeveloper) {
-                        Icon(Icons.Outlined.BugReport, contentDescription = "Developer")
+                        Icon(Icons.Outlined.BugReport, contentDescription = "Lab")
                     }
                     IconButton(onClick = onOpenSettings) {
                         Icon(Icons.Outlined.Settings, contentDescription = "Settings")
@@ -117,11 +118,14 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             PhoneDiagram(
-                highlightKey = state.serviceEnabled && state.accessibilityEnabled,
+                // Remapping master on → Plus Key cyan; off → neutral side key
+                highlightKey = state.serviceEnabled,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(300.dp)
-                    .padding(vertical = 4.dp),
+                    // Exact GSMArena body ratio 77/163.4; ~56% width so it reads as a phone
+                    .fillMaxWidth(0.56f)
+                    .aspectRatio(77f / 163.4f)
+                    .align(Alignment.CenterHorizontally)
+                    .padding(vertical = 8.dp),
             )
 
             StatusChip(

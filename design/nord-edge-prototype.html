@@ -1,0 +1,2477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nord Edge — End-to-end prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --heading: "Space Grotesk", system-ui, sans-serif;
+      --body: Inter, system-ui, sans-serif;
+      --red: #EB0028;
+      --accent: #0AC6FF;
+      --accent-dim: rgba(10, 198, 255, 0.14);
+      --bg: #0A0A0A;
+      --surface: #141414;
+      --surface2: #1A1A1A;
+      --outline: #2A2A2A;
+      --muted: #8A8A8A;
+      --text: #F5F5F5;
+      --ok: #2ECC71;
+      --warn: #FFB020;
+      --phone-w: 380px;
+      --phone-h: 780px;
+      --spring: cubic-bezier(0.22, 1.2, 0.36, 1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--body);
+      background: #050505;
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .shell {
+      display: grid;
+      grid-template-columns: minmax(280px, 360px) 1fr;
+      gap: 40px;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 28px 80px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; justify-items: center; }
+      .panel { width: 100%; max-width: 420px; }
+    }
+
+    .panel {
+      position: sticky;
+      top: 24px;
+      max-height: calc(100vh - 48px);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .panel h1 {
+      font-family: var(--heading);
+      font-size: 28px;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+      flex-shrink: 0;
+    }
+    .panel h1::first-letter { color: var(--red); }
+    .panel .lede {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      margin-bottom: 18px;
+      flex-shrink: 0;
+    }
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      border: 1px solid var(--outline);
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      line-height: 1.45;
+      flex-shrink: 0;
+    }
+    .nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+      overflow: auto;
+      flex: 1;
+      min-height: 0;
+      padding-right: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: #333 transparent;
+    }
+    .nav-section {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #555;
+      padding: 12px 4px 4px;
+    }
+    .nav-section:first-child { padding-top: 0; }
+    .nav button {
+      appearance: none;
+      border: 1px solid var(--outline);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      transition: border-color .2s, background .2s, transform .25s var(--spring);
+      flex-shrink: 0;
+    }
+    .nav button:hover { border-color: #3a3a3a; }
+    .nav button.active {
+      border-color: rgba(10, 198, 255, 0.45);
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+    .nav button small {
+      display: block;
+      color: var(--muted);
+      font-weight: 400;
+      margin-top: 2px;
+      font-size: 11px;
+    }
+    .playbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      flex-shrink: 0;
+      padding-top: 4px;
+    }
+    .playbar button {
+      appearance: none;
+      border: 0;
+      background: var(--accent);
+      color: #001018;
+      font-weight: 600;
+      font-size: 12px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .playbar button.ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--outline);
+    }
+
+    .device-wrap {
+      position: relative;
+      width: var(--phone-w);
+      filter: drop-shadow(0 30px 60px rgba(0,0,0,.55));
+    }
+    .device {
+      width: var(--phone-w);
+      height: var(--phone-h);
+      border-radius: 40px;
+      border: 1px solid #222;
+      background: var(--bg);
+      overflow: hidden;
+      position: relative;
+    }
+    .notch {
+      position: absolute;
+      top: 10px; left: 50%; transform: translateX(-50%);
+      width: 92px; height: 22px; border-radius: 20px;
+      background: #050505; z-index: 5;
+    }
+    .screen {
+      position: absolute; inset: 0;
+      padding: 42px 18px 22px;
+      display: none;
+      flex-direction: column;
+      opacity: 0;
+      transform: translateY(10px);
+      min-height: 0;
+    }
+    .screen.on {
+      display: flex;
+      animation: screenIn .45s var(--spring) forwards;
+    }
+    @keyframes screenIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .scroll {
+      flex: 1;
+      overflow: auto;
+      min-height: 0;
+      padding-right: 2px;
+      scrollbar-width: thin;
+      scrollbar-color: #333 transparent;
+    }
+
+    .top {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 12px; gap: 8px; flex-shrink: 0;
+    }
+    .topbar {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 14px; flex-shrink: 0;
+    }
+    .topbar .h { font-size: 22px; }
+    .h {
+      font-family: var(--heading);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      font-size: 26px;
+      line-height: 1.1;
+    }
+    .h::first-letter { color: var(--red); }
+    .sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+    .ico {
+      width: 36px; height: 36px; border-radius: 10px;
+      border: 1px solid var(--outline); display: grid; place-items: center;
+      color: var(--muted); font-size: 16px; cursor: pointer; background: var(--surface);
+      flex-shrink: 0; transition: border-color .2s, color .2s;
+      font: inherit; padding: 0;
+    }
+    .ico:hover { border-color: #3a3a3a; color: var(--text); }
+    .sec-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 2px 2px 8px;
+      flex-shrink: 0;
+    }
+    .master .hint-t {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+    .remap-footer {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-shrink: 0;
+    }
+    .remap-footer .btn { flex: 1; }
+
+    .ribbon {
+      display: inline-flex; align-items: center; gap: 8px;
+      align-self: flex-start;
+      padding: 7px 11px; border-radius: 999px;
+      border: 1px solid var(--outline); background: var(--surface);
+      font-size: 11px; font-weight: 500; margin-bottom: 14px;
+    }
+    .ribbon .dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--ok);
+      box-shadow: 0 0 0 0 rgba(46,204,113,.5);
+      animation: pulseDot 1.8s infinite;
+    }
+    .ribbon.warn .dot { background: var(--warn); animation: none; }
+    @keyframes pulseDot {
+      0% { box-shadow: 0 0 0 0 rgba(46,204,113,.45); }
+      70% { box-shadow: 0 0 0 8px rgba(46,204,113,0); }
+      100% { box-shadow: 0 0 0 0 rgba(46,204,113,0); }
+    }
+
+    /* Stage — Nord 5 silhouette at exact GSMArena ratio 77 × 163.4 mm */
+    .stage-hero {
+      position: relative;
+      height: 236px;
+      display: grid;
+      place-items: center;
+      margin: 2px 0 10px;
+    }
+    .nord5 {
+      /* Height drives size; width = height × (80 / 163.4) including 1.5mm key gutters each side */
+      height: 220px;
+      width: calc(220px * 80 / 163.4);
+      display: block;
+      overflow: visible;
+    }
+    .nord5 .body {
+      fill: url(#nord5BodyGrad);
+      stroke: #3a3a3a;
+      stroke-width: 0.35;
+    }
+    .nord5 .glass {
+      fill: #050505;
+      stroke: #0e0e0e;
+      stroke-width: 0.2;
+    }
+    .nord5 .ear { fill: #121212; }
+    .nord5 .hole-outer { fill: #030303; }
+    .nord5 .hole-inner { fill: #1a1a1a; }
+    .nord5 .side {
+      fill: #2a2a2a;
+      stroke: #3a3a3a;
+      stroke-width: 0.2;
+    }
+    .nord5 .plus {
+      fill: #2a2a2a;
+      stroke: #3a3a3a;
+      stroke-width: 0.2;
+      transition: fill .25s, stroke .25s, filter .3s;
+    }
+    .device:not(.paused) .nord5 .plus {
+      fill: var(--accent);
+      stroke: #5ad8ff;
+      filter: drop-shadow(0 0 2.5px rgba(10, 198, 255, 0.95));
+      animation: plusGlowSvg 1.8s ease-in-out infinite alternate;
+    }
+    @keyframes plusGlowSvg {
+      from { filter: drop-shadow(0 0 1.5px rgba(10, 198, 255, 0.55)); }
+      to { filter: drop-shadow(0 0 4px rgba(10, 198, 255, 1)); }
+    }
+    .device.paused .nord5 .plus {
+      fill: #2a2a2a;
+      stroke: #3a3a3a;
+      filter: none;
+      animation: none;
+    }
+    .device.live:not(.paused) .nord5 .plus {
+      animation: none;
+      filter: drop-shadow(0 0 5px rgba(10, 198, 255, 1));
+    }
+    .edge-ripple {
+      position: absolute;
+      left: calc(50% - (220px * 80 / 163.4) / 2 + 2px);
+      top: 18px;
+      height: 184px;
+      width: 3px;
+      border-radius: 4px;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .edge-ripple::after {
+      content: "";
+      position: absolute; left: 0; right: 0; top: -20%;
+      height: 30%;
+      background: linear-gradient(180deg, transparent, var(--accent), transparent);
+      opacity: 0;
+    }
+    .device.live:not(.paused) .edge-ripple::after {
+      animation: edgeRun .7s var(--spring);
+    }
+    @keyframes edgeRun {
+      0% { top: -20%; opacity: 0; }
+      20% { opacity: 1; }
+      100% { top: 100%; opacity: 0; }
+    }
+
+    .master {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface); border: 1px solid var(--outline);
+      border-radius: 14px; padding: 10px 12px; margin-bottom: 12px;
+    }
+    .master span { font-size: 13px; font-weight: 600; }
+    .sw {
+      width: 44px; height: 26px; border-radius: 999px; background: var(--accent);
+      position: relative; cursor: pointer; transition: background .25s;
+      flex-shrink: 0;
+    }
+    .sw::after {
+      content: ""; position: absolute; top: 3px; left: 21px;
+      width: 20px; height: 20px; border-radius: 50%; background: #fff;
+      transition: left .28s var(--spring);
+    }
+    .sw.off { background: #333; }
+    .sw.off::after { left: 3px; }
+
+    .pads { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+    .pad {
+      background: var(--surface);
+      border: 1px solid var(--outline);
+      border-radius: 18px;
+      padding: 14px 14px;
+      display: flex; align-items: center; gap: 12px;
+      cursor: pointer;
+      transition: transform .35s var(--spring), border-color .2s, background .2s, border-radius .4s var(--spring);
+      user-select: none;
+    }
+    .pad:hover { border-color: #3a3a3a; }
+    .pad.hit {
+      transform: translateY(-3px) scale(1.02);
+      border-radius: 28px;
+      border-color: rgba(10,198,255,.55);
+      background: linear-gradient(90deg, rgba(10,198,255,.12), var(--surface));
+    }
+    .badge {
+      width: 38px; height: 38px; border-radius: 12px;
+      background: var(--accent-dim); color: var(--accent);
+      display: grid; place-items: center; font-weight: 700; font-size: 13px;
+      transition: border-radius .4s var(--spring);
+    }
+    .pad.hit .badge { border-radius: 50%; }
+    .pad .t { font-size: 14px; font-weight: 600; }
+    .pad .d { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .chev { margin-left: auto; color: #3a3a3a; }
+
+    /* Unlock */
+    .timeline { display: flex; flex-direction: column; gap: 0; margin-top: 8px; flex: 1; }
+    .beat {
+      display: grid; grid-template-columns: 28px 1fr; gap: 12px;
+      padding-bottom: 18px; position: relative;
+    }
+    .beat:not(:last-child)::before {
+      content: ""; position: absolute; left: 13px; top: 28px; bottom: 0;
+      width: 2px; background: #222;
+    }
+    .node {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid #333; background: var(--bg);
+      display: grid; place-items: center; font-size: 11px; color: var(--muted);
+      z-index: 1; transition: transform .4s var(--spring), border-color .3s, background .3s;
+    }
+    .beat.done .node {
+      border-color: var(--ok); background: rgba(46,204,113,.15); color: var(--ok);
+      transform: scale(1.08);
+    }
+    .beat.active .node {
+      border-color: var(--accent); color: var(--accent);
+      box-shadow: 0 0 0 6px rgba(10,198,255,.12);
+      animation: nodeBloom .6s var(--spring);
+    }
+    @keyframes nodeBloom {
+      from { transform: scale(.7); opacity: .4; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .beat .card {
+      background: var(--surface); border: 1px solid var(--outline);
+      border-radius: 16px; padding: 14px;
+    }
+    .beat .card h3 { font-size: 14px; margin-bottom: 4px; }
+    .beat .card p { font-size: 12px; color: var(--muted); line-height: 1.45; margin-bottom: 12px; }
+    .btn {
+      appearance: none; border: 0; width: 100%;
+      background: var(--accent); color: #001018;
+      font-weight: 700; font-size: 13px; padding: 12px;
+      border-radius: 999px; cursor: pointer; font-family: inherit;
+      transition: transform .25s var(--spring);
+    }
+    .btn:active { transform: scale(.97); }
+    .btn.ghost {
+      background: transparent; color: var(--text);
+      border: 1px solid var(--outline); margin-top: 8px;
+    }
+    .btn:disabled { opacity: .4; cursor: default; }
+    .code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 10px; background: #0d0d0d; border: 1px solid #222;
+      border-radius: 10px; padding: 10px; color: #b8ecff; margin-bottom: 10px;
+      word-break: break-all;
+    }
+
+    /* Remap */
+    .search-wrap {
+      position: relative;
+      flex-shrink: 0;
+      margin-bottom: 10px;
+    }
+    .search-wrap .si {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+    .search-wrap .si svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .search-wrap input {
+      width: 100%;
+      height: 44px;
+      padding: 0 40px 0 40px;
+      border-radius: 14px;
+      border: 1px solid var(--outline);
+      background: var(--surface);
+      color: var(--text);
+      font: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .search-wrap input::-webkit-search-decoration,
+    .search-wrap input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+    .search-wrap input::placeholder { color: #666; }
+    .search-wrap input:focus {
+      border-color: rgba(10, 198, 255, 0.5);
+      box-shadow: 0 0 0 3px rgba(10, 198, 255, 0.12);
+    }
+    .search-wrap .clear {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 16px;
+      display: none;
+      place-items: center;
+    }
+    .search-wrap .clear.on { display: grid; }
+    .search-wrap .clear:hover { color: var(--text); background: rgba(255,255,255,.06); }
+    .groups {
+      display: flex; gap: 6px; flex-wrap: nowrap; margin-bottom: 12px;
+      overflow-x: auto; padding-bottom: 2px; flex-shrink: 0;
+      scrollbar-width: none;
+    }
+    .groups::-webkit-scrollbar { display: none; }
+    .groups.searching { opacity: 0.45; pointer-events: none; }
+    .chip {
+      padding: 8px 12px; border-radius: 999px; border: 1px solid var(--outline);
+      font-size: 11px; font-weight: 500; cursor: pointer; background: var(--surface);
+      transition: background .2s, border-color .2s, color .2s;
+      white-space: nowrap; flex-shrink: 0;
+      color: var(--text);
+    }
+    .chip.on { background: var(--accent-dim); border-color: rgba(10,198,255,.4); color: var(--accent); }
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: auto;
+      flex: 1;
+      padding-bottom: 8px;
+      min-height: 0;
+    }
+    .actions-empty {
+      text-align: center;
+      padding: 28px 16px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .actions-empty strong { color: var(--text); font-weight: 600; }
+    .action .cat-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      color: var(--accent);
+      opacity: 0.85;
+      margin-bottom: 2px;
+    }
+    .action {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--outline);
+      border-radius: 16px;
+      padding: 12px 14px;
+      cursor: pointer;
+      font: inherit;
+      text-align: left;
+      color: var(--text);
+      transition: transform .3s var(--spring), border-color .2s, background .2s, box-shadow .25s;
+    }
+    .action:hover {
+      transform: translateY(-1px);
+      border-color: #3a3a3a;
+    }
+    .action.sel {
+      border-color: rgba(10, 198, 255, 0.55);
+      background: linear-gradient(90deg, rgba(10, 198, 255, 0.14), var(--surface) 55%);
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+    .action .ic {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      border: 1px solid rgba(10, 198, 255, 0.18);
+    }
+    .action .ic svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .action.sel .ic {
+      background: rgba(10, 198, 255, 0.22);
+      border-color: rgba(10, 198, 255, 0.4);
+    }
+    .action .ic.tone-muted {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--muted);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+    .action.sel .ic.tone-muted {
+      background: rgba(235, 0, 40, 0.12);
+      color: #ff6b81;
+      border-color: rgba(235, 0, 40, 0.35);
+    }
+    .action .ic.tone-overlay {
+      background: rgba(10, 198, 255, 0.1);
+    }
+    .action .meta { flex: 1; min-width: 0; }
+    .action .n {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+    .action.sel .n { color: var(--accent); }
+    .action .hint-t {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 3px;
+      line-height: 1.35;
+    }
+    .action .check {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1.5px solid #333;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      color: transparent;
+      font-size: 11px;
+      transition: background .2s, border-color .2s, color .2s;
+    }
+    .action.sel .check {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #001018;
+      font-weight: 700;
+    }
+
+    /* Overlay */
+    .overlay-bg {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(10,198,255,.08), transparent 40%),
+        #0b0b0b;
+    }
+    .overlay-panel {
+      position: absolute; left: 18px; right: 18px; bottom: 48px;
+      background: rgba(20,20,20,.92);
+      border: 1px solid #2c2c2c;
+      border-radius: 28px;
+      padding: 22px 16px 18px;
+      backdrop-filter: blur(16px);
+    }
+    .overlay-panel h2 {
+      font-family: var(--heading); font-size: 18px; text-align: center;
+      margin-bottom: 16px; letter-spacing: -0.02em;
+    }
+    .overlay-panel h2::first-letter { color: var(--red); }
+    .overlay-dismiss {
+      display: block;
+      width: 100%;
+      margin-top: 14px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 8px;
+    }
+    .overlay-dismiss:hover { color: var(--accent); }
+    .overlay-bg { cursor: pointer; }
+    .tiles {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    }
+    .tile {
+      aspect-ratio: 1;
+      border-radius: 22px;
+      background: #171717;
+      border: 1px solid #2a2a2a;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 8px; cursor: pointer;
+      font: inherit; color: var(--text);
+      opacity: 0; transform: translateY(18px) scale(.86);
+      transition: border-color .2s, background .2s;
+    }
+    .screen.on .tile {
+      animation: tileIn .55s var(--spring) forwards;
+    }
+    .tile:nth-child(1) { animation-delay: .05s; }
+    .tile:nth-child(2) { animation-delay: .1s; }
+    .tile:nth-child(3) { animation-delay: .15s; }
+    .tile:nth-child(4) { animation-delay: .2s; }
+    .tile:nth-child(5) { animation-delay: .25s; }
+    .tile:nth-child(6) { animation-delay: .3s; }
+    @keyframes tileIn {
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .tile:hover, .tile.sel {
+      border-color: rgba(10,198,255,.55);
+      background: rgba(10,198,255,.1);
+    }
+    .tile .ring {
+      width: 40px; height: 40px; border-radius: 12px;
+      border: 1px solid rgba(10,198,255,.22);
+      background: var(--accent-dim);
+      color: var(--accent);
+      display: grid; place-items: center;
+    }
+    .tile .ring svg {
+      width: 22px; height: 22px;
+      stroke: currentColor; fill: none;
+      stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .tile.sel .ring {
+      background: rgba(10, 198, 255, 0.22);
+      border-color: rgba(10, 198, 255, 0.45);
+    }
+    .tile span {
+      font-size: 10px; color: var(--muted);
+      text-align: center; padding: 0 4px;
+      max-width: 100%;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .tile.sel span { color: var(--text); }
+
+    /* Onboarding — mirrors app PageCount = 6 */
+    .onboard {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 18px 4px 8px;
+      min-height: 0;
+    }
+    .onboard-icon {
+      width: 72px; height: 72px; border-radius: 22px;
+      background: linear-gradient(145deg, rgba(10,198,255,.18), rgba(235,0,40,.08));
+      border: 1px solid rgba(10,198,255,.25);
+      display: grid; place-items: center;
+      color: var(--accent);
+      margin-bottom: 20px;
+      flex-shrink: 0;
+      animation: onboardBloom .7s var(--spring);
+    }
+    .onboard-icon svg {
+      width: 30px; height: 30px;
+      stroke: currentColor; fill: none;
+      stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+    }
+    @keyframes onboardBloom {
+      from { transform: scale(.7); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .onboard .h {
+      font-size: 22px;
+      margin-bottom: 8px;
+      flex-shrink: 0;
+    }
+    .onboard p {
+      font-size: 13px; color: var(--muted); line-height: 1.5;
+      max-width: 300px; margin-bottom: 14px;
+      flex-shrink: 0;
+    }
+    .onboard-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(10,198,255,.28);
+      background: var(--accent-dim);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 500;
+      margin-bottom: 16px;
+      flex-shrink: 0;
+    }
+    .onboard-status.warn {
+      border-color: rgba(255,176,32,.35);
+      background: rgba(255,176,32,.12);
+      color: var(--warn);
+    }
+    .onboard-status.ok {
+      border-color: rgba(46,204,113,.35);
+      background: rgba(46,204,113,.12);
+      color: var(--ok);
+    }
+    .onboard-status:empty { display: none; }
+    .dots {
+      display: flex; gap: 6px; margin: auto 0 16px;
+      flex-shrink: 0;
+    }
+    .dots span {
+      width: 6px; height: 6px; border-radius: 50%; background: #333;
+      transition: width .3s var(--spring), background .2s;
+    }
+    .dots span.on { width: 18px; border-radius: 4px; background: var(--accent); }
+    .onboard-actions {
+      width: 100%;
+      max-width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .onboard-actions .btn.ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--outline);
+    }
+    .onboard-actions .btn.link {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 6px;
+      box-shadow: none;
+    }
+    .onboard-actions .btn.link:hover { color: var(--accent); }
+
+    /* Settings hub */
+    .hub-row {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--surface); border: 1px solid var(--outline);
+      border-radius: 16px; padding: 12px 14px; cursor: pointer;
+      margin-bottom: 8px;
+      opacity: 0; transform: translateY(10px);
+      transition: border-color .2s, background .2s;
+    }
+    .screen.on .hub-row {
+      animation: rowIn .45s var(--spring) forwards;
+    }
+    .hub-row:nth-child(1) { animation-delay: .02s; }
+    .hub-row:nth-child(2) { animation-delay: .06s; }
+    .hub-row:nth-child(3) { animation-delay: .1s; }
+    .hub-row:nth-child(4) { animation-delay: .14s; }
+    .hub-row:nth-child(5) { animation-delay: .18s; }
+    .hub-row:nth-child(6) { animation-delay: .22s; }
+    .hub-row:nth-child(7) { animation-delay: .26s; }
+    .hub-row:nth-child(8) { animation-delay: .3s; }
+    .hub-row:nth-child(9) { animation-delay: .34s; }
+    @keyframes rowIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .hub-row:hover { border-color: #3a3a3a; }
+    .hub-ico {
+      width: 36px; height: 36px; border-radius: 11px;
+      background: var(--accent-dim); color: var(--accent);
+      display: grid; place-items: center; font-size: 15px; flex-shrink: 0;
+    }
+    .hub-row .t { font-size: 13px; font-weight: 600; }
+    .hub-row .d { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .hub-row .chev { margin-left: auto; color: #3a3a3a; font-size: 16px; }
+
+    /* Pref cards / toggles */
+    .pref-card {
+      background: var(--surface); border: 1px solid var(--outline);
+      border-radius: 16px; padding: 14px; margin-bottom: 10px;
+    }
+    .pref-card .label { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .pref-card .hint-t { font-size: 11px; color: var(--muted); line-height: 1.4; margin-bottom: 12px; }
+    .pref-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .pref-row .meta { flex: 1; min-width: 0; }
+    .seg {
+      display: flex; gap: 6px; flex-wrap: wrap;
+    }
+    .seg button {
+      appearance: none; border: 1px solid var(--outline); background: #121212;
+      color: var(--muted); font: inherit; font-size: 11px; font-weight: 500;
+      padding: 8px 12px; border-radius: 999px; cursor: pointer;
+      transition: background .2s, border-color .2s, color .2s;
+    }
+    .seg button.on {
+      background: var(--accent-dim); border-color: rgba(10,198,255,.4); color: var(--accent);
+    }
+
+    /* Haptic preview */
+    .pulse-ring {
+      width: 64px; height: 64px; margin: 8px auto 4px;
+      border-radius: 50%; border: 2px solid rgba(10,198,255,.35);
+      display: grid; place-items: center; position: relative;
+    }
+    .pulse-ring::before {
+      content: ""; position: absolute; inset: -8px; border-radius: 50%;
+      border: 1px solid rgba(10,198,255,.25); opacity: 0;
+    }
+    .pulse-ring.fire::before { animation: hapticPulse .7s var(--spring); }
+    .pulse-ring .core {
+      width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+      transition: transform .3s var(--spring);
+    }
+    .pulse-ring.fire .core { animation: hapticCore .7s var(--spring); }
+    @keyframes hapticPulse {
+      0% { transform: scale(.6); opacity: 0; }
+      40% { opacity: 1; }
+      100% { transform: scale(1.35); opacity: 0; }
+    }
+    @keyframes hapticCore {
+      0%, 100% { transform: scale(1); }
+      40% { transform: scale(1.2); }
+    }
+
+    /* Visual overlay preview */
+    .viz-bar {
+      height: 6px; border-radius: 4px; background: #222; overflow: hidden;
+      margin-top: 8px; position: relative;
+    }
+    .viz-bar::after {
+      content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 28%;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      border-radius: 4px; opacity: .35;
+      transition: width .5s var(--spring), opacity .3s, border-radius .4s var(--spring);
+    }
+    .viz-bar.on::after {
+      width: 100%; opacity: 1; border-radius: 999px;
+      animation: vizMorph 1.2s var(--spring) infinite alternate;
+    }
+    @keyframes vizMorph {
+      from { width: 40%; }
+      to { width: 100%; }
+    }
+
+    /* Overlay slot editor */
+    .slots {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+      margin-bottom: 14px;
+    }
+    .slot {
+      position: relative;
+      aspect-ratio: 1; border-radius: 16px; background: var(--surface);
+      border: 1px solid var(--outline); display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+      font: inherit; color: var(--muted); padding: 8px 6px;
+      transition: border-color .25s, background .25s, transform .3s var(--spring);
+    }
+    .slot .num {
+      position: absolute; top: 8px; left: 8px;
+      width: 18px; height: 18px; border-radius: 50%; background: #1c1c1c;
+      display: grid; place-items: center; font-size: 9px; font-weight: 700; color: var(--accent);
+      border: 1px solid rgba(10,198,255,.2);
+    }
+    .slot .ic {
+      width: 36px; height: 36px; border-radius: 11px;
+      background: var(--accent-dim); color: var(--accent);
+      border: 1px solid rgba(10,198,255,.18);
+      display: grid; place-items: center;
+    }
+    .slot .ic svg {
+      width: 20px; height: 20px;
+      stroke: currentColor; fill: none;
+      stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .slot .lab {
+      font-size: 10px; font-weight: 500; text-align: center;
+      max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      color: var(--muted);
+    }
+    .slot.on {
+      border-color: rgba(10,198,255,.55); background: var(--accent-dim);
+      transform: scale(1.04); color: var(--text);
+    }
+    .slot.on .lab { color: var(--text); }
+    .slot.on .ic {
+      background: rgba(10, 198, 255, 0.22);
+      border-color: rgba(10, 198, 255, 0.4);
+    }
+
+    /* Key setup */
+    .listen {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px 0 16px;
+    }
+    .listen-orb {
+      width: 72px; height: 72px; border-radius: 50%;
+      border: 2px solid rgba(10,198,255,.4);
+      display: grid; place-items: center; position: relative;
+      margin-bottom: 12px;
+    }
+    .listen-orb::before, .listen-orb::after {
+      content: ""; position: absolute; inset: -6px; border-radius: 50%;
+      border: 1px solid rgba(10,198,255,.2);
+      animation: listenPulse 2s ease-out infinite;
+    }
+    .listen-orb::after { animation-delay: 1s; inset: -14px; }
+    @keyframes listenPulse {
+      0% { transform: scale(.85); opacity: .8; }
+      100% { transform: scale(1.25); opacity: 0; }
+    }
+    .log-row {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 10px; background: #0d0d0d; border: 1px solid #222;
+      border-radius: 10px; padding: 10px 12px; color: #9ad8ea;
+      margin-top: 10px; opacity: 0; transform: translateY(8px);
+    }
+    .log-row.show {
+      animation: logIn .5s var(--spring) forwards;
+    }
+    @keyframes logIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .tip {
+      font-size: 11px; color: var(--muted); line-height: 1.45;
+      border-left: 2px solid var(--accent); padding-left: 10px; margin-top: 14px;
+    }
+
+    /* Lab sliders */
+    .slider-row { margin-bottom: 14px; }
+    .slider-row .meta {
+      display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;
+    }
+    .slider-row .meta span:last-child { color: var(--accent); font-weight: 600; }
+    input[type="range"] {
+      width: 100%; appearance: none; height: 4px; border-radius: 4px;
+      background: #2a2a2a; outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none; width: 16px; height: 16px; border-radius: 50%;
+      background: var(--accent); cursor: pointer;
+      box-shadow: 0 0 0 4px rgba(10,198,255,.15);
+    }
+
+    .toast {
+      position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%) translateY(20px);
+      background: #111; border: 1px solid #333; color: var(--text);
+      padding: 8px 12px; border-radius: 999px; font-size: 11px;
+      opacity: 0; pointer-events: none; z-index: 20;
+      transition: opacity .25s, transform .35s var(--spring);
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .caption {
+      margin-top: 16px; text-align: center; color: #555; font-size: 12px;
+    }
+    .eyebrow {
+      font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 10px; flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="panel">
+      <div class="eyebrow">Interactive prototype</div>
+      <h1>Nord Edge</h1>
+      <p class="lede">
+        Full end-to-end review set for Direction A — every app screen, clickable,
+        so you can approve motion and structure before any Compose is written.
+      </p>
+      <div class="hint">
+        Browser prototype (HTML/CSS/JS), not Figma and not the Android app.
+        Existing Stage / Unlock / Remap / Overlay behaviors still work via play controls.
+      </div>
+      <nav class="nav" id="nav">
+        <div class="nav-section">Flow</div>
+        <button data-screen="onboarding">
+          Onboarding
+          <small>6 setup steps</small>
+        </button>
+        <button data-screen="unlock">
+          Unlock
+          <small>USB-first detection ritual</small>
+        </button>
+
+        <div class="nav-section">Home</div>
+        <button class="active" data-screen="stage">
+          Home
+          <small>Plus Key · remaps</small>
+        </button>
+        <button data-screen="remap">
+          Remap
+          <small>Assign action for a press</small>
+        </button>
+        <button data-screen="overlay">
+          Overlay
+          <small>Floating quick menu</small>
+        </button>
+
+        <div class="nav-section">Settings</div>
+        <button data-screen="settings">
+          Settings hub
+          <small>Appearance, feedback &amp; tools</small>
+        </button>
+        <button data-screen="feedback">
+          Feedback
+          <small>Haptic + vibration intensity</small>
+        </button>
+        <button data-screen="preferences">
+          Preferences
+          <small>Notify when an action triggers</small>
+        </button>
+        <button data-screen="visual">
+          Visual Overlay
+          <small>Action popup preview</small>
+        </button>
+        <button data-screen="lock">
+          Lock Screen
+          <small>Gestures while locked</small>
+        </button>
+        <button data-screen="backup">
+          Backup &amp; Restore
+          <small>Export / import</small>
+        </button>
+        <button data-screen="overlay-settings">
+          Overlay settings
+          <small>Six chord slots</small>
+        </button>
+        <button data-screen="keysetup">
+          Key setup
+          <small>Listening + fake logcat</small>
+        </button>
+
+        <div class="nav-section">Lab</div>
+        <button data-screen="lab">
+          Lab
+          <small>Strategy, timing, USB copy</small>
+        </button>
+      </nav>
+      <div class="playbar">
+        <button type="button" id="simPress">Simulate Plus Key</button>
+        <button type="button" class="ghost" id="simDouble">Double</button>
+        <button type="button" class="ghost" id="simLong">Long</button>
+        <button type="button" class="ghost" id="resetUnlock">Reset Unlock</button>
+      </div>
+    </aside>
+
+    <div class="device-wrap">
+      <div class="device" id="device">
+        <div class="notch"></div>
+
+        <!-- ONBOARDING (6 steps = app OnboardingScreen) -->
+        <section class="screen" id="onboarding">
+          <div class="onboard" id="onboardBody">
+            <div class="onboard-icon" id="onboardIcon" aria-hidden="true"></div>
+            <div class="h" id="onboardTitle">Nord AI Remapper</div>
+            <p id="onboardCopy">Remap the Nord 5 Plus Key to single, double, and long-press actions.</p>
+            <div class="onboard-status" id="onboardStatus"></div>
+            <div class="dots" id="onboardDots"></div>
+            <div class="onboard-actions">
+              <button class="btn" id="onboardNext" type="button">Get started</button>
+              <button class="btn ghost" id="onboardSecondary" type="button" hidden>I've enabled it</button>
+              <button class="btn link" id="onboardTertiary" type="button" hidden>Skip for now</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- STAGE -->
+        <section class="screen on" id="stage">
+          <div class="top">
+            <div>
+              <div class="h brand">Plus Key</div>
+              <div class="sub">Nord AI Remapper · Home</div>
+            </div>
+            <button class="ico" id="openSettings" type="button" title="Settings">⚙</button>
+          </div>
+          <div class="ribbon" id="ribbon"><span class="dot"></span> Service active</div>
+          <div class="stage-hero">
+            <div class="edge-ripple"></div>
+            <!--
+              OnePlus Nord 5 — GSMArena 163.4 × 77 × 8.1 mm
+              viewBox units = millimetres. Body is exactly 77 × 163.4;
+              1.5 mm gutters each side for Plus Key / volume / power.
+            -->
+            <svg class="nord5" viewBox="0 0 80 163.4" role="img" aria-label="OnePlus Nord 5 silhouette">
+              <defs>
+                <linearGradient id="nord5BodyGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#2a2a2a"/>
+                  <stop offset="55%" stop-color="#1a1a1a"/>
+                  <stop offset="100%" stop-color="#121212"/>
+                </linearGradient>
+              </defs>
+              <!-- Left Plus Key: short, high (~20% from top) -->
+              <rect class="plus" x="0.15" y="31.5" width="1.7" height="8.5" rx="0.55"/>
+              <!-- Body 77 × 163.4 -->
+              <rect class="body" x="1.5" y="0" width="77" height="163.4" rx="9.2" ry="9.2"/>
+              <!-- Display ~90% STB, thin flat bezels -->
+              <rect class="glass" x="3.4" y="2.2" width="73.2" height="158.6" rx="7.4" ry="7.4"/>
+              <!-- Earpiece + centered punch-hole -->
+              <rect class="ear" x="33.5" y="5.2" width="13" height="1.15" rx="0.55"/>
+              <circle class="hole-outer" cx="40" cy="10.4" r="1.55"/>
+              <circle class="hole-inner" cx="40" cy="10.4" r="0.75"/>
+              <!-- Right: volume rocker + power -->
+              <rect class="side" x="78.15" y="34.5" width="1.7" height="19.2" rx="0.55"/>
+              <rect class="side" x="78.15" y="56.5" width="1.7" height="10.2" rx="0.55"/>
+            </svg>
+          </div>
+          <div class="master">
+            <div>
+              <span>Remapping</span>
+              <div class="hint-t" style="margin:2px 0 0">Master switch for Plus Key actions</div>
+            </div>
+            <div class="sw" id="master" role="switch" tabindex="0" aria-checked="true"></div>
+          </div>
+          <div class="sec-label">Actions</div>
+          <div class="pads">
+            <div class="pad" data-pad="single">
+              <div class="badge">1</div>
+              <div>
+                <div class="t">Single</div>
+                <div class="d">Flashlight</div>
+              </div>
+              <div class="chev">›</div>
+            </div>
+            <div class="pad" data-pad="double">
+              <div class="badge">2</div>
+              <div>
+                <div class="t">Double</div>
+                <div class="d">Rear camera</div>
+              </div>
+              <div class="chev">›</div>
+            </div>
+            <div class="pad" data-pad="long">
+              <div class="badge">—</div>
+              <div>
+                <div class="t">Long</div>
+                <div class="d">Show overlay</div>
+              </div>
+              <div class="chev">›</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- UNLOCK -->
+        <section class="screen" id="unlock">
+          <div class="top">
+            <div>
+              <div class="h">Unlock</div>
+              <div class="sub">One-time detection setup</div>
+            </div>
+          </div>
+          <p style="font-size:12px;color:var(--muted);line-height:1.45;margin-bottom:14px;flex-shrink:0;">
+            OnePlus doesn’t send the Plus Key to apps. Unlock logcat detection once — then you’re done.
+          </p>
+          <div class="scroll">
+            <div class="timeline">
+              <div class="beat done" id="beat1">
+                <div class="node">✓</div>
+                <div class="card">
+                  <h3>Accessibility</h3>
+                  <p>Required for system actions. Already enabled in this demo.</p>
+                </div>
+              </div>
+              <div class="beat active" id="beat2">
+                <div class="node">2</div>
+                <div class="card">
+                  <h3>Detection unlock</h3>
+                  <p>Preferred: one USB command from a computer. No Wireless drama on the happy path.</p>
+                  <div class="code">adb shell pm grant com.nordairemapper android.permission.READ_LOGS</div>
+                  <button class="btn" id="usbDone" type="button">I've run it — Recheck</button>
+                  <button class="btn ghost" id="noComputer" type="button">No computer</button>
+                </div>
+              </div>
+              <div class="beat" id="beat3">
+                <div class="node">3</div>
+                <div class="card">
+                  <h3>Ready for Home</h3>
+                  <p>Detection unlocked. Open Home to assign Single, Double, and Long press.</p>
+                  <button class="btn" id="goStage" type="button" disabled>Open Home</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- REMAP -->
+        <section class="screen" id="remap">
+          <div class="topbar">
+            <button class="ico" id="backStage" type="button" title="Back">‹</button>
+            <div>
+              <div class="h" id="remapTitle">Single</div>
+              <div class="sub">Assign an action</div>
+            </div>
+          </div>
+          <div class="search-wrap">
+            <div class="si" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            </div>
+            <input id="remapSearch" type="search" placeholder="Search actions or apps" autocomplete="off" spellcheck="false" />
+            <button class="clear" id="remapSearchClear" type="button" aria-label="Clear search">×</button>
+          </div>
+          <div class="groups" id="groups">
+            <div class="chip" data-g="apps">Apps</div>
+            <div class="chip" data-g="media">Media</div>
+            <div class="chip on" data-g="system">System</div>
+            <div class="chip" data-g="overlay">Overlay</div>
+            <div class="chip" data-g="none">None</div>
+          </div>
+          <div class="actions" id="actions"></div>
+          <div class="remap-footer">
+            <button class="btn ghost" id="tryAction" type="button">Try now</button>
+            <button class="btn" id="confirmAction" type="button">Done</button>
+          </div>
+        </section>
+
+        <!-- OVERLAY -->
+        <section class="screen" id="overlay">
+          <div class="overlay-bg" id="overlayBg" title="Dismiss"></div>
+          <div class="overlay-panel">
+            <h2 class="brand">Overlay</h2>
+            <div class="tiles" id="overlayTiles"></div>
+            <button class="overlay-dismiss" id="overlayDismiss" type="button">Close</button>
+          </div>
+        </section>
+
+        <!-- SETTINGS HUB -->
+        <section class="screen" id="settings">
+          <div class="topbar">
+            <button class="ico" data-back="stage" type="button" title="Back">‹</button>
+            <div>
+              <div class="h">Settings</div>
+              <div class="sub">Appearance, feedback &amp; tools</div>
+            </div>
+          </div>
+          <div class="scroll" id="settingsHub">
+            <div class="sec-label">Appearance</div>
+            <div class="pref-card" style="margin-bottom:10px">
+              <div class="label">Theme</div>
+              <div class="hint-t">Prototype stays dark; chips mirror the app control.</div>
+              <div class="seg" id="themeSeg">
+                <button type="button" class="on" data-v="dark">Dark</button>
+                <button type="button" data-v="light">Light</button>
+                <button type="button" data-v="system">System</button>
+              </div>
+            </div>
+            <div class="pref-card" style="margin-bottom:10px">
+              <div class="pref-row">
+                <div class="meta">
+                  <div class="label" style="margin:0">Dynamic color</div>
+                  <div class="hint-t" style="margin:4px 0 0">Follow system Material You</div>
+                </div>
+                <div class="sw off" id="dynColor" role="switch" tabindex="0" aria-checked="false"></div>
+              </div>
+            </div>
+            <div class="pref-card" style="margin-bottom:14px">
+              <div class="pref-row">
+                <div class="meta">
+                  <div class="label" style="margin:0">Service notification</div>
+                  <div class="hint-t" style="margin:4px 0 0">Ongoing status while remapping</div>
+                </div>
+                <div class="sw" id="svcNotif" role="switch" tabindex="0" aria-checked="true"></div>
+              </div>
+            </div>
+            <div class="sec-label">Feedback &amp; overlay</div>
+            <div class="hub-row" data-go="feedback">
+              <div class="hub-ico">∿</div>
+              <div><div class="t">Feedback</div><div class="d">Haptic feedback &amp; vibration intensity</div></div>
+              <div class="chev">›</div>
+            </div>
+            <div class="hub-row" data-go="preferences">
+              <div class="hub-ico">◐</div>
+              <div><div class="t">Preferences</div><div class="d">How you’re notified when an action triggers</div></div>
+              <div class="chev">›</div>
+            </div>
+            <div class="hub-row" data-go="visual">
+              <div class="hub-ico">▬</div>
+              <div><div class="t">Visual overlay</div><div class="d">Action popup style when a remap fires</div></div>
+              <div class="chev">›</div>
+            </div>
+            <div class="hub-row" data-go="overlay-settings">
+              <div class="hub-ico">▦</div>
+              <div><div class="t">Overlay settings</div><div class="d">Floating menu slots &amp; layout</div></div>
+              <div class="chev">›</div>
+            </div>
+            <div class="sec-label">Behavior</div>
+            <div class="hub-row" data-go="lock">
+              <div class="hub-ico">⊡</div>
+              <div><div class="t">Lock Screen</div><div class="d">Gestures while the screen is locked</div></div>
+              <div class="chev">›</div>
+            </div>
+            <div class="hub-row" data-go="backup">
+              <div class="hub-ico">⇄</div>
+              <div><div class="t">Backup &amp; Restore</div><div class="d">Export and import remaps</div></div>
+              <div class="chev">›</div>
+            </div>
+            <div class="sec-label">Advanced</div>
+            <div class="hub-row" data-go="keysetup">
+              <div class="hub-ico">◉</div>
+              <div><div class="t">Key setup</div><div class="d">Learn / verify Plus Key</div></div>
+              <div class="chev">›</div>
+            </div>
+            <div class="hub-row" data-go="lab">
+              <div class="hub-ico">⚗</div>
+              <div><div class="t">Lab</div><div class="d">Strategy, timing, USB unlock (Developer)</div></div>
+              <div class="chev">›</div>
+            </div>
+            <div class="hub-row" data-go="onboarding" id="restartOnboarding">
+              <div class="hub-ico">↻</div>
+              <div><div class="t">Restart onboarding</div><div class="d">Walk through setup again</div></div>
+              <div class="chev">›</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- FEEDBACK -->
+        <section class="screen" id="feedback">
+          <div class="topbar">
+            <button class="ico" data-back="settings" type="button" title="Back">‹</button>
+            <div>
+              <div class="h">Feedback</div>
+              <div class="sub">Haptic confirmation</div>
+            </div>
+          </div>
+          <div class="scroll">
+            <div class="pref-card">
+              <div class="pref-row">
+                <div class="meta">
+                  <div class="label" style="margin:0">Haptic feedback</div>
+                  <div class="hint-t" style="margin:4px 0 0">Vibrate when button action triggers</div>
+                </div>
+                <div class="sw" id="hapticToggle" role="switch" tabindex="0" aria-checked="true"></div>
+              </div>
+            </div>
+            <div class="pref-card">
+              <div class="label">Vibration intensity</div>
+              <div class="hint-t">How strong the Plus Key confirmation feels.</div>
+              <div class="seg" id="hapticSeg">
+                <button type="button" data-v="light">Light</button>
+                <button type="button" class="on" data-v="medium">Medium</button>
+                <button type="button" data-v="heavy">Heavy</button>
+              </div>
+            </div>
+            <div class="pref-card" style="text-align:center">
+              <div class="label">Preview</div>
+              <div class="pulse-ring" id="hapticPulse"><div class="core"></div></div>
+              <button class="btn ghost" id="previewHaptic" type="button" style="margin-top:8px">Pulse preview</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- PREFERENCES -->
+        <section class="screen" id="preferences">
+          <div class="topbar">
+            <button class="ico" data-back="settings" type="button" title="Back">‹</button>
+            <div>
+              <div class="h">Preferences</div>
+              <div class="sub">How you’re notified</div>
+            </div>
+          </div>
+          <div class="scroll">
+            <p style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:14px;">
+              Choose how you’re notified when an action triggers. You can change these later in Settings.
+            </p>
+            <div class="pref-card">
+              <div class="pref-row">
+                <div class="meta">
+                  <div class="label" style="margin:0">Haptic feedback</div>
+                  <div class="hint-t" style="margin:4px 0 0">Vibrate on button press</div>
+                </div>
+                <div class="sw" id="prefHaptic" role="switch" tabindex="0" aria-checked="true"></div>
+              </div>
+            </div>
+            <div class="pref-card">
+              <div class="pref-row">
+                <div class="meta">
+                  <div class="label" style="margin:0">Visual overlay</div>
+                  <div class="hint-t" style="margin:4px 0 0">Show action popup on screen</div>
+                </div>
+                <div class="sw" id="prefVisual" role="switch" tabindex="0" aria-checked="true"></div>
+              </div>
+            </div>
+            <div class="sec-label">Overlay style</div>
+            <div class="seg" id="overlayStyleSeg" style="margin-bottom:12px">
+              <button type="button" class="on" data-v="oneplus">OnePlus</button>
+              <button type="button" data-v="stock">Stock</button>
+            </div>
+            <button class="btn ghost" id="openVisualFromPrefs" type="button">Customize visual overlay</button>
+          </div>
+        </section>
+
+        <!-- VISUAL OVERLAY -->
+        <section class="screen" id="visual">
+          <div class="topbar">
+            <button class="ico" data-back="settings" type="button" title="Back">‹</button>
+            <div>
+              <div class="h">Visual Overlay</div>
+              <div class="sub">Action popup when a remap fires</div>
+            </div>
+          </div>
+          <div class="scroll">
+            <div class="pref-card">
+              <div class="pref-row">
+                <div class="meta">
+                  <div class="label" style="margin:0">Enable visual overlay</div>
+                  <div class="hint-t" style="margin:4px 0 0">Show a brief popup when an action triggers</div>
+                </div>
+                <div class="sw" id="vizToggle" role="switch" tabindex="0" aria-checked="true"></div>
+              </div>
+              <div class="viz-bar on" id="vizBar"></div>
+            </div>
+            <p style="font-size:11px;color:var(--muted);line-height:1.45;padding:0 4px">
+              Preview of the edge signal. Full style, accent, and glow controls live in the app’s Visual Overlay screen.
+            </p>
+          </div>
+        </section>
+
+        <!-- LOCK SCREEN -->
+        <section class="screen" id="lock">
+          <div class="topbar">
+            <button class="ico" data-back="settings" type="button" title="Back">‹</button>
+            <div>
+              <div class="h">Lock Screen</div>
+              <div class="sub">Gestures while locked</div>
+            </div>
+          </div>
+          <div class="scroll">
+            <div class="pref-card">
+              <div class="pref-row">
+                <div class="meta">
+                  <div class="label" style="margin:0">Single Press</div>
+                  <div class="hint-t lock-hint" style="margin:4px 0 0" data-for="lockSingle">Enabled when locked</div>
+                </div>
+                <div class="sw" id="lockSingle" role="switch" tabindex="0" aria-checked="true"></div>
+              </div>
+            </div>
+            <div class="pref-card">
+              <div class="pref-row">
+                <div class="meta">
+                  <div class="label" style="margin:0">Double Press</div>
+                  <div class="hint-t lock-hint" style="margin:4px 0 0" data-for="lockDouble">Enabled when locked</div>
+                </div>
+                <div class="sw" id="lockDouble" role="switch" tabindex="0" aria-checked="true"></div>
+              </div>
+            </div>
+            <div class="pref-card">
+              <div class="pref-row">
+                <div class="meta">
+                  <div class="label" style="margin:0">Long Press</div>
+                  <div class="hint-t lock-hint" style="margin:4px 0 0" data-for="lockLong">Disabled when locked</div>
+                </div>
+                <div class="sw off" id="lockLong" role="switch" tabindex="0" aria-checked="false"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- BACKUP -->
+        <section class="screen" id="backup">
+          <div class="topbar">
+            <button class="ico" data-back="settings" type="button" title="Back">‹</button>
+            <div>
+              <div class="h">Backup &amp; Restore</div>
+              <div class="sub">Export &amp; import</div>
+            </div>
+          </div>
+          <div class="scroll">
+            <div class="pref-card">
+              <div class="label">Export</div>
+              <div class="hint-t">Save remaps, overlay slots, and prefs as a file.</div>
+              <button class="btn" id="exportBtn" type="button">Export backup</button>
+            </div>
+            <div class="pref-card">
+              <div class="label">Import</div>
+              <div class="hint-t">Replace current config from a backup file.</div>
+              <button class="btn ghost" id="importBtn" type="button">Import backup</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- OVERLAY SETTINGS -->
+        <section class="screen" id="overlay-settings">
+          <div class="topbar">
+            <button class="ico" data-back="settings" type="button" title="Back">‹</button>
+            <div>
+              <div class="h">Overlay</div>
+              <div class="sub">Floating menu slots</div>
+            </div>
+          </div>
+          <div class="scroll">
+            <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.45">
+              Tap a slot to select it. Preview opens the live overlay. Full layout controls are in the app.
+            </p>
+            <div class="slots" id="slots"></div>
+            <button class="btn" id="previewOverlay" type="button">Preview overlay</button>
+          </div>
+        </section>
+
+        <!-- KEY SETUP -->
+        <section class="screen" id="keysetup">
+          <div class="topbar">
+            <button class="ico" data-back="settings" type="button" title="Back">‹</button>
+            <div>
+              <div class="h">Key setup</div>
+              <div class="sub">Listening for Plus Key</div>
+            </div>
+          </div>
+          <div class="scroll">
+            <div class="listen">
+              <div class="listen-orb"><span style="color:var(--accent);font-size:22px">◉</span></div>
+              <div style="font-size:13px;font-weight:600">Listening…</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:4px">Press the Plus Key once</div>
+            </div>
+            <div class="log-row" id="fakeLog">KEYLOG  KEYCODE_ACTION_BUTTON_CLICK  action=DOWN</div>
+            <div class="tip">
+              On Nord 5 the Plus Key usually never reaches Accessibility as a KeyEvent.
+              Logcat matching is first-class — volume keys in learning are expected.
+            </div>
+            <button class="btn ghost" id="simKeyLog" type="button" style="margin-top:16px">Simulate logcat hit</button>
+          </div>
+        </section>
+
+        <!-- LAB -->
+        <section class="screen" id="lab">
+          <div class="topbar">
+            <button class="ico" data-back="settings" type="button" title="Back">‹</button>
+            <div>
+              <div class="h">Lab</div>
+              <div class="sub">Advanced controls · Developer</div>
+            </div>
+          </div>
+          <div class="scroll">
+            <div class="pref-card">
+              <div class="label">Detection strategy</div>
+              <div class="hint-t">Auto prefers logcat on Nord 5.</div>
+              <div class="seg" id="strategySeg">
+                <button type="button" class="on" data-v="auto">Auto</button>
+                <button type="button" data-v="accessibility">Accessibility</button>
+                <button type="button" data-v="logcat">Logcat</button>
+              </div>
+            </div>
+            <div class="pref-card">
+              <div class="label">Timing</div>
+              <div class="hint-t">Visual only in this prototype.</div>
+              <div class="slider-row">
+                <div class="meta"><span>Double-press window</span><span id="dblVal">300 ms</span></div>
+                <input type="range" id="dblSlider" min="150" max="600" value="300" step="10" />
+              </div>
+              <div class="slider-row" style="margin-bottom:0">
+                <div class="meta"><span>Long-press threshold</span><span id="longVal">500 ms</span></div>
+                <input type="range" id="longSlider" min="300" max="1200" value="500" step="10" />
+              </div>
+            </div>
+            <div class="pref-card">
+              <div class="label">USB unlock command</div>
+              <div class="code" id="labUsbCmd">adb shell pm grant com.nordairemapper android.permission.READ_LOGS</div>
+              <button class="btn ghost" id="copyUsb" type="button" style="margin-top:0">Copy command</button>
+              <button class="btn" id="labToUnlock" type="button" style="margin-top:8px">Open Unlock</button>
+            </div>
+          </div>
+        </section>
+
+        <div class="toast" id="toast"></div>
+      </div>
+      <p class="caption">Nord Edge · Direction A · end-to-end prototype</p>
+    </div>
+  </div>
+
+  <script>
+    const device = document.getElementById("device");
+    const toast = document.getElementById("toast");
+    const screens = [
+      "onboarding", "unlock", "stage", "remap", "overlay",
+      "settings", "feedback", "preferences", "visual", "lock",
+      "backup", "overlay-settings", "keysetup", "lab",
+    ];
+    /* Mirrors RemapActionCatalog + RemapActionUi display strings */
+    const groupLabels = {
+      apps: "Apps",
+      media: "Media",
+      system: "System",
+      overlay: "Overlay",
+      none: "None",
+    };
+    const actionCatalog = {
+      apps: [
+        { name: "Launch app…", hint: "Pick any installed app", icon: "apps", picker: true, aliases: ["application", "open app", "package"] },
+        { name: "Open URL / deep link…", hint: "Open a URL or deep link", icon: "link", picker: true, aliases: ["url", "link", "website", "browser", "http"] },
+      ],
+      media: [
+        { name: "Play / pause", hint: "Toggle media playback", icon: "playpause", aliases: ["music", "audio", "resume", "stop"] },
+        { name: "Next track", hint: "Skip to the next track", icon: "next", aliases: ["skip", "forward", "song"] },
+        { name: "Previous track", hint: "Go to the previous track", icon: "prev", aliases: ["back track", "rewind", "song"] },
+        { name: "Volume up", hint: "Adjust media stream volume", icon: "volup", aliases: ["louder", "sound", "audio"] },
+        { name: "Volume down", hint: "Adjust media stream volume", icon: "voldown", aliases: ["quieter", "softer", "sound", "audio"] },
+      ],
+      system: [
+        { name: "Assistant", hint: "Open the default voice assistant", icon: "mic", aliases: ["voice", "google", "gemini", "siri", "ok google"] },
+        { name: "Rear camera", hint: "Open the camera app", icon: "camera", aliases: ["photo", "picture", "back camera"] },
+        { name: "Front camera", hint: "Open the camera app", icon: "frontcam", aliases: ["selfie", "photo", "picture"] },
+        { name: "Flashlight", hint: "Toggle the LED torch", icon: "flash", aliases: ["torch", "light", "led"] },
+        { name: "Screenshot", hint: "Capture the screen", icon: "crop", aliases: ["capture", "snap", "screen shot"] },
+        { name: "Do Not Disturb", hint: "Toggle DND (needs Do Not Disturb access)", icon: "dnd", aliases: ["dnd", "focus", "quiet", "mute notifications"] },
+        { name: "Ring / vibrate / silent", hint: "Cycle ring → vibrate → silent", icon: "ringer", aliases: ["mute", "silent", "vibrate", "ringer", "sound mode"] },
+        { name: "Notification shade", hint: "Expand the notification shade", icon: "bell", aliases: ["notifications", "dropdown", "status bar", "pull down"] },
+        { name: "Quick settings", hint: "Expand quick settings", icon: "qs", aliases: ["tiles", "qs", "control center", "panel"] },
+        { name: "Recents", hint: "Open recent apps", icon: "recents", aliases: ["overview", "multitask", "app switcher", "recent apps"] },
+        { name: "Home", hint: "Go to the home screen", icon: "home", aliases: ["launcher", "homescreen"] },
+        { name: "Back", hint: "Perform back", icon: "back", aliases: ["navigate back", "return"] },
+        { name: "Lock screen", hint: "Lock the device", icon: "lock", aliases: ["lock", "sleep", "screen off"] },
+        { name: "Auto-rotate", hint: "Toggle accelerometer rotation", icon: "rotate", aliases: ["rotation", "orientation", "portrait", "landscape"] },
+      ],
+      overlay: [
+        { name: "Show overlay", hint: "Open the floating action menu", icon: "overlay", tone: "overlay", aliases: ["chord", "floating", "quick menu", "radial"] },
+      ],
+      none: [
+        { name: "No action", hint: "This press type does nothing", icon: "block", tone: "muted", aliases: ["disable", "off", "empty", "nothing", "ignore"] },
+      ],
+    };
+
+    const actionIcons = {
+      apps: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+      link: '<path d="M10 13a5 5 0 0 0 7.54.54l1.92-1.92a5 5 0 0 0-7.07-7.07L10.5 6.5"/><path d="M14 11a5 5 0 0 0-7.54-.54L4.54 12.4a5 5 0 0 0 7.07 7.07L13.5 17.5"/>',
+      playpause: '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>',
+      next: '<path d="M5 5v14l9-7-9-7z"/><path d="M19 5v14"/>',
+      prev: '<path d="M19 5v14l-9-7 9-7z"/><path d="M5 5v14"/>',
+      volup: '<path d="M4 10v4h3.5L12 18V6L7.5 10H4z"/><path d="M15.5 9.5a3.5 3.5 0 0 1 0 5"/><path d="M17.8 7.2a6.5 6.5 0 0 1 0 9.6"/>',
+      voldown: '<path d="M4 10v4h3.5L12 18V6L7.5 10H4z"/><path d="M15.5 10.5a2.5 2.5 0 0 1 0 3"/>',
+      mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/>',
+      camera: '<path d="M4 8h3.2l1.6-2h6.4l1.6 2H20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.2"/>',
+      frontcam: '<circle cx="12" cy="9" r="2.4"/><path d="M7.5 18c1.2-2.4 2.9-3.5 4.5-3.5s3.3 1.1 4.5 3.5"/><rect x="3.5" y="4" width="17" height="16" rx="3"/>',
+      flash: '<path d="M10 2 7.5 12.5h4.2L10.2 22 18 10.2h-4.5L16 2z"/>',
+      crop: '<path d="M6 3v13a2 2 0 0 0 2 2h13"/><path d="M18 21V8a2 2 0 0 0-2-2H3"/><path d="M6 8h8v8"/>',
+      dnd: '<circle cx="12" cy="12" r="9"/><path d="M8 12h8"/>',
+      ringer: '<path d="M3 11v2a1 1 0 0 0 1 1h2l4 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 8.5c1.5 1.2 1.5 5.8 0 7"/><path d="M17.5 6c2.8 2.2 2.8 9.8 0 12"/>',
+      bell: '<path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10"/><path d="M10 19a2 2 0 0 0 4 0"/>',
+      qs: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.2M12 18.8V21M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M3 12h2.2M18.8 12H21M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"/>',
+      recents: '<rect x="5" y="4" width="10" height="14" rx="2"/><path d="M17 7h1.5A1.5 1.5 0 0 1 20 8.5v11A1.5 1.5 0 0 1 18.5 21H9"/>',
+      home: '<path d="m4 11 8-7 8 7"/><path d="M6 10.5V20h4.5v-5.5h3V20H18v-9.5"/>',
+      back: '<path d="M15 6 9 12l6 6"/><path d="M9 12h11"/>',
+      lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+      rotate: '<path d="M4 12a8 8 0 0 1 13.5-5.8L20 8"/><path d="M20 4v4h-4"/><path d="M20 12a8 8 0 0 1-13.5 5.8L4 16"/><path d="M4 20v-4h4"/>',
+      overlay: '<rect x="7" y="3" width="10" height="18" rx="2.5"/><circle cx="12" cy="9" r="1.2"/><circle cx="9.5" cy="13" r="1.2"/><circle cx="14.5" cy="13" r="1.2"/><circle cx="12" cy="17" r="1.2"/>',
+      block: '<circle cx="12" cy="12" r="9"/><path d="m7.5 7.5 9 9"/>',
+    };
+
+    function iconSvg(key) {
+      return `<svg viewBox="0 0 24 24" aria-hidden="true">${actionIcons[key] || actionIcons.flash}</svg>`;
+    }
+
+    /* Shared chord slots — same icons/labels as Remap studio actions */
+    const overlaySlots = [
+      { name: "Flashlight", short: "Flashlight", icon: "flash" },
+      { name: "Rear camera", short: "Camera", icon: "camera" },
+      { name: "Ring / vibrate / silent", short: "Ringer", icon: "ringer" },
+      { name: "Lock screen", short: "Lock", icon: "lock" },
+      { name: "Screenshot", short: "Screenshot", icon: "crop" },
+      { name: "Recents", short: "Recents", icon: "recents" },
+    ];
+    let selectedSlot = 0;
+
+    function renderOverlayChord() {
+      const root = document.getElementById("overlayTiles");
+      if (!root) return;
+      root.innerHTML = "";
+      overlaySlots.forEach((slot, i) => {
+        const el = document.createElement("button");
+        el.type = "button";
+        el.className = "tile" + (i === selectedSlot ? " sel" : "");
+        el.innerHTML =
+          `<div class="ring">${iconSvg(slot.icon)}</div>` +
+          `<span>${slot.short}</span>`;
+        el.addEventListener("click", () => {
+          selectedSlot = i;
+          document.querySelectorAll("#overlayTiles .tile").forEach((t, j) => {
+            t.classList.toggle("sel", j === i);
+          });
+          document.querySelectorAll("#slots .slot").forEach((s, j) => {
+            s.classList.toggle("on", j === i);
+          });
+          showToast(slot.name);
+        });
+        root.appendChild(el);
+      });
+    }
+
+    function renderOverlayEditor() {
+      const root = document.getElementById("slots");
+      if (!root) return;
+      root.innerHTML = "";
+      overlaySlots.forEach((slot, i) => {
+        const el = document.createElement("button");
+        el.type = "button";
+        el.className = "slot" + (i === selectedSlot ? " on" : "");
+        el.dataset.i = String(i);
+        el.innerHTML =
+          `<div class="num">${i + 1}</div>` +
+          `<div class="ic">${iconSvg(slot.icon)}</div>` +
+          `<div class="lab">${slot.short}</div>`;
+        el.addEventListener("click", () => {
+          selectedSlot = i;
+          document.querySelectorAll("#slots .slot").forEach((s, j) => {
+            s.classList.toggle("on", j === i);
+          });
+          document.querySelectorAll("#overlayTiles .tile").forEach((t, j) => {
+            t.classList.toggle("sel", j === i);
+          });
+          showToast("Slot " + (i + 1) + " · " + slot.name);
+        });
+        root.appendChild(el);
+      });
+    }
+
+    renderOverlayChord();
+    renderOverlayEditor();
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add("show");
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.classList.remove("show"), 1400);
+    }
+
+    function retriggerRows(root) {
+      if (!root) return;
+      const rows = root.querySelectorAll(".hub-row");
+      rows.forEach((r) => {
+        r.style.animation = "none";
+        void r.offsetWidth;
+        r.style.animation = "";
+      });
+    }
+
+    function go(name) {
+      screens.forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.toggle("on", id === name);
+      });
+      document.querySelectorAll(".nav button").forEach((b) => {
+        b.classList.toggle("active", b.dataset.screen === name);
+      });
+      if (name === "overlay") {
+        const tiles = document.querySelectorAll("#overlayTiles .tile");
+        tiles.forEach((t) => {
+          t.style.animation = "none";
+          void t.offsetWidth;
+          t.style.animation = "";
+        });
+      }
+      if (name === "settings") {
+        retriggerRows(document.getElementById("settingsHub"));
+      }
+      if (name === "keysetup") {
+        const log = document.getElementById("fakeLog");
+        log.classList.remove("show");
+      }
+      if (name === "onboarding") {
+        onboardPerm.readLogs = false;
+        onboardPerm.overlay = false;
+        onboardPerm.notifications = false;
+        onboardPerm.battery = false;
+        setOnboardStep(0);
+      }
+      if (name === "remap") {
+        setTimeout(() => {
+          const input = document.getElementById("remapSearch");
+          if (input) input.focus({ preventScroll: true });
+        }, 180);
+      }
+    }
+
+    document.getElementById("nav").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-screen]");
+      if (!btn) return;
+      go(btn.dataset.screen);
+    });
+
+    document.querySelectorAll("[data-back]").forEach((el) => {
+      el.addEventListener("click", () => go(el.dataset.back));
+    });
+
+    const pressLabels = { single: "Single", double: "Double", long: "Long" };
+    let activePress = "single";
+
+    function padActionLabel(kind) {
+      const el = document.querySelector(`.pad[data-pad="${kind}"] .d`);
+      return el ? el.textContent.trim() : "";
+    }
+
+    function hitPad(kind) {
+      go("stage");
+      device.classList.add("live");
+      document.querySelectorAll(".pad").forEach((p) => p.classList.remove("hit"));
+      const pad = document.querySelector(`.pad[data-pad="${kind}"]`);
+      if (pad) pad.classList.add("hit");
+      const action = padActionLabel(kind) || kind;
+      showToast(pressLabels[kind] + " → " + action);
+      clearTimeout(hitPad._t);
+      hitPad._t = setTimeout(() => {
+        device.classList.remove("live");
+        document.querySelectorAll(".pad").forEach((p) => p.classList.remove("hit"));
+      }, 900);
+    }
+
+    function openRemapFor(kind) {
+      activePress = kind;
+      const title = document.getElementById("remapTitle");
+      if (title) title.textContent = pressLabels[kind] || "Single";
+      selected = padActionLabel(kind) || selected;
+      const done = document.getElementById("confirmAction");
+      if (done) done.textContent = "Done";
+      go("remap");
+      renderActions(activeGroup);
+    }
+
+    document.getElementById("simPress").onclick = () => hitPad("single");
+    document.getElementById("simDouble").onclick = () => hitPad("double");
+    document.getElementById("simLong").onclick = () => {
+      hitPad("long");
+      setTimeout(() => go("overlay"), 500);
+    };
+
+    document.querySelectorAll(".pad").forEach((p) => {
+      p.addEventListener("click", () => {
+        const kind = p.dataset.pad;
+        hitPad(kind);
+        setTimeout(() => openRemapFor(kind), 350);
+      });
+    });
+
+    document.getElementById("openSettings").onclick = () => go("settings");
+
+    const master = document.getElementById("master");
+    master.addEventListener("click", () => {
+      const off = master.classList.toggle("off");
+      master.setAttribute("aria-checked", String(!off));
+      device.classList.toggle("paused", off);
+      const ribbon = document.getElementById("ribbon");
+      if (off) {
+        ribbon.classList.add("warn");
+        ribbon.innerHTML = '<span class="dot"></span> Remapping paused';
+      } else {
+        ribbon.classList.remove("warn");
+        ribbon.innerHTML = '<span class="dot"></span> Service active';
+      }
+    });
+
+    document.getElementById("usbDone").onclick = () => {
+      document.getElementById("beat2").classList.remove("active");
+      document.getElementById("beat2").classList.add("done");
+      document.getElementById("beat2").querySelector(".node").textContent = "✓";
+      const b3 = document.getElementById("beat3");
+      b3.classList.add("active");
+      const goBtn = document.getElementById("goStage");
+      goBtn.disabled = false;
+      showToast("READ_LOGS unlocked");
+      onboardPerm.readLogs = true;
+    };
+    document.getElementById("noComputer").onclick = () => {
+      showToast("Wireless debugging is the advanced path — USB is preferred");
+      document.getElementById("beat2").querySelector(".card p").textContent =
+        "Advanced: Wireless debugging pairing can also grant READ_LOGS. Prefer USB when you have a computer.";
+    };
+    document.getElementById("goStage").onclick = () => go("stage");
+    document.getElementById("resetUnlock").onclick = () => {
+      go("unlock");
+      const b2 = document.getElementById("beat2");
+      const b3 = document.getElementById("beat3");
+      b2.classList.add("active");
+      b2.classList.remove("done");
+      b2.querySelector(".node").textContent = "2";
+      b3.classList.remove("active", "done");
+      b3.querySelector(".node").textContent = "3";
+      const goBtn = document.getElementById("goStage");
+      goBtn.disabled = true;
+      if (typeof onboardPerm !== "undefined") onboardPerm.readLogs = false;
+    };
+
+    const actionsEl = document.getElementById("actions");
+    const groupsEl = document.getElementById("groups");
+    const remapSearch = document.getElementById("remapSearch");
+    const remapSearchClear = document.getElementById("remapSearchClear");
+    let selected = "Flashlight";
+    let activeGroup = "system";
+
+    function confirmLabel(name) {
+      return "Done";
+    }
+
+    function normalize(s) {
+      return String(s || "")
+        .toLowerCase()
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[…·/→—–_-]+/g, " ")
+        .replace(/[^a-z0-9\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    /** Subsequence fuzzy: "flsh" matches "flashlight" */
+    function fuzzySubseq(query, text) {
+      if (!query) return true;
+      let i = 0;
+      for (const ch of text) {
+        if (ch === query[i]) i += 1;
+        if (i === query.length) return true;
+      }
+      return false;
+    }
+
+    function scoreMatch(query, item, groupKey) {
+      const q = normalize(query);
+      if (!q) return 1;
+      const name = normalize(item.name);
+      const hint = normalize(item.hint);
+      const cat = normalize(groupLabels[groupKey] || groupKey);
+      const aliases = (item.aliases || []).map(normalize);
+      const hay = [name, hint, cat, ...aliases].join(" ");
+
+      if (name === q) return 100;
+      if (name.startsWith(q)) return 90;
+      if (name.includes(q)) return 80;
+      if (aliases.some((a) => a === q || a.startsWith(q) || a.includes(q))) return 72;
+      if (cat === q || cat.startsWith(q) || cat.includes(q)) return 65;
+      if (hint.includes(q)) return 55;
+      if (hay.includes(q)) return 45;
+      // token-wise: every query word must appear somewhere
+      const tokens = q.split(" ").filter(Boolean);
+      if (tokens.length > 1 && tokens.every((t) => hay.includes(t) || fuzzySubseq(t, hay))) {
+        return 40;
+      }
+      if (fuzzySubseq(q.replace(/\s/g, ""), name.replace(/\s/g, ""))) return 28;
+      if (fuzzySubseq(q.replace(/\s/g, ""), hay.replace(/\s/g, ""))) return 18;
+      return 0;
+    }
+
+    function collectItems(group, query) {
+      const q = normalize(query);
+      const groups = q
+        ? Object.keys(actionCatalog)
+        : [group];
+      const out = [];
+      groups.forEach((g) => {
+        (actionCatalog[g] || []).forEach((item) => {
+          const score = scoreMatch(query, item, g);
+          if (score > 0) out.push({ ...item, group: g, score });
+        });
+      });
+      if (q) out.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+      return out;
+    }
+
+    function renderActions(group) {
+      activeGroup = group || activeGroup;
+      const query = remapSearch.value;
+      const searching = !!normalize(query);
+      groupsEl.classList.toggle("searching", searching);
+      remapSearchClear.classList.toggle("on", searching);
+
+      const items = collectItems(activeGroup, query);
+      actionsEl.innerHTML = "";
+
+      if (!items.length) {
+        const empty = document.createElement("div");
+        empty.className = "actions-empty";
+        empty.innerHTML =
+          `No actions for <strong>${query.trim()}</strong>.<br/>Try “torch”, “dnd”, or “volume”.`;
+        actionsEl.appendChild(empty);
+        return;
+      }
+
+      items.forEach((item) => {
+        const el = document.createElement("button");
+        el.type = "button";
+        el.className = "action" + (item.name === selected ? " sel" : "");
+        const tone = item.tone ? ` tone-${item.tone}` : "";
+        const catLine = searching
+          ? `<div class="cat-tag">${groupLabels[item.group]}</div>`
+          : "";
+        el.innerHTML =
+          `<div class="ic${tone}">${iconSvg(item.icon)}</div>` +
+          `<div class="meta">${catLine}<div class="n">${item.name}</div><div class="hint-t">${item.hint}</div></div>` +
+          `<div class="check">✓</div>`;
+        el.onclick = () => {
+          selected = item.name;
+          document.getElementById("confirmAction").textContent = "Done";
+          renderActions(activeGroup);
+          if (item.picker) showToast("Would open app / URL picker");
+        };
+        actionsEl.appendChild(el);
+      });
+    }
+
+    renderActions("system");
+    document.getElementById("confirmAction").textContent = "Done";
+    groupsEl.addEventListener("click", (e) => {
+      const chip = e.target.closest(".chip");
+      if (!chip || groupsEl.classList.contains("searching")) return;
+      document.querySelectorAll("#groups .chip").forEach((c) => c.classList.remove("on"));
+      chip.classList.add("on");
+      renderActions(chip.dataset.g);
+    });
+    remapSearch.addEventListener("input", () => renderActions(activeGroup));
+    remapSearchClear.addEventListener("click", () => {
+      remapSearch.value = "";
+      remapSearch.focus();
+      renderActions(activeGroup);
+    });
+    document.getElementById("confirmAction").onclick = () => {
+      const short = selected.replace(/…$/, "");
+      const pad = document.querySelector(`.pad[data-pad="${activePress}"] .d`);
+      if (pad) pad.textContent = short;
+      showToast(pressLabels[activePress] + " · " + short);
+      go("stage");
+    };
+    document.getElementById("tryAction").onclick = () => {
+      showToast("Try now · " + selected.replace(/…$/, ""));
+      device.classList.add("live");
+      setTimeout(() => device.classList.remove("live"), 700);
+    };
+    document.getElementById("backStage").onclick = () => go("stage");
+
+    document.getElementById("overlayDismiss").onclick = () => go("stage");
+    document.getElementById("overlayBg").onclick = () => go("stage");
+
+    /* Onboarding — mirrors app OnboardingScreen (PageCount = 6) */
+    const onboardIcons = {
+      phone: '<rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 17h2"/>',
+      settings: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.2M12 18.8V21M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M3 12h2.2M18.8 12H21M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6"/>',
+      sensors: '<path d="M12 4v2"/><circle cx="12" cy="12" r="3"/><path d="M5 8.5a8 8 0 0 1 14 0M3 6a11 11 0 0 1 18 0M7 19h10"/>',
+      layers: '<path d="m12 3 8 4.5v.5L12 12 4 8v-.5L12 3z"/><path d="m4 12 8 4 8-4"/><path d="m4 16 8 4 8-4"/>',
+      bell: '<path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10"/><path d="M10 19a2 2 0 0 0 4 0"/>',
+      check: '<circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.5 2.5L16 9.5"/>',
+    };
+
+    const onboardSteps = [
+      {
+        icon: "phone",
+        title: "Nord AI Remapper",
+        copy: "Remap the Nord 5 Plus Key to single, double, and long-press actions.",
+        cta: "Get started",
+        next: "advance",
+      },
+      {
+        icon: "settings",
+        title: "Accessibility",
+        copy: "Required to detect the Plus Key and run system actions like screenshot, lock, and recents. We only observe hardware keys — never your screen.",
+        status: "Enabled",
+        statusTone: "ok",
+        cta: "Continue",
+        secondary: "I've enabled it",
+        next: "advance",
+        secondaryAction: "advance",
+      },
+      {
+        icon: "sensors",
+        title: "Enable Plus Key detection",
+        copy: "OnePlus doesn’t send the Plus Key to apps. Unlock logcat detection once (USB preferred) to grant READ_LOGS.",
+        status: "READ_LOGS needed",
+        statusTone: "warn",
+        cta: "Enable detection",
+        secondary: "I've done this — Recheck",
+        tertiary: "Skip for now",
+        next: "unlock",
+        secondaryAction: "grant-logs",
+        tertiaryAction: "advance",
+      },
+      {
+        icon: "layers",
+        title: "Display over apps",
+        copy: "Needed for the floating overlay menu. Skip if you only want single actions. You can still use single-action remaps without it.",
+        status: "Not granted yet",
+        statusTone: "warn",
+        cta: "Open overlay settings",
+        secondary: "I've enabled it",
+        tertiary: "Skip for now",
+        next: "grant-overlay",
+        secondaryAction: "grant-overlay-done",
+        tertiaryAction: "advance",
+      },
+      {
+        icon: "bell",
+        title: "Keep it alive",
+        copy: "Notifications and battery exemption help OxygenOS keep detection running in the background.",
+        status: "Notifications needed · Battery not exempt",
+        statusTone: "warn",
+        cta: "Allow notifications",
+        secondary: "I've done this — Recheck",
+        tertiary: "Continue anyway",
+        next: "keep-alive",
+        secondaryAction: "grant-keepalive",
+        tertiaryAction: "advance",
+      },
+      {
+        icon: "check",
+        title: "You're all set",
+        copy: "Confirm Plus Key detection, then assign actions from Home.",
+        cta: "Go to Home",
+        next: "stage",
+      },
+    ];
+
+    let onboardStep = 0;
+    const onboardPerm = {
+      readLogs: false,
+      overlay: false,
+      notifications: false,
+      battery: false,
+    };
+
+    function renderOnboardDots() {
+      const root = document.getElementById("onboardDots");
+      root.innerHTML = onboardSteps
+        .map((_, idx) => `<span class="${idx === onboardStep ? "on" : ""}"></span>`)
+        .join("");
+    }
+
+    function resolveOnboardStep(raw) {
+      const s = { ...raw };
+      if (raw.icon === "sensors") {
+        if (onboardPerm.readLogs) {
+          s.status = "READ_LOGS granted";
+          s.statusTone = "ok";
+          s.cta = "Continue";
+          s.next = "advance";
+          s.secondary = null;
+          s.tertiary = null;
+        }
+      }
+      if (raw.icon === "layers") {
+        if (onboardPerm.overlay) {
+          s.status = "Granted";
+          s.statusTone = "ok";
+          s.cta = "Continue";
+          s.next = "advance";
+          s.secondary = null;
+          s.tertiary = null;
+        }
+      }
+      if (raw.icon === "bell") {
+        const nOk = onboardPerm.notifications;
+        const bOk = onboardPerm.battery;
+        s.status =
+          (nOk ? "Notifications OK" : "Notifications needed") +
+          " · " +
+          (bOk ? "Battery exempt" : "Battery not exempt");
+        s.statusTone = nOk && bOk ? "ok" : "warn";
+        if (!nOk) {
+          s.cta = "Allow notifications";
+          s.next = "grant-notif";
+        } else if (!bOk) {
+          s.cta = "Exempt from battery optimization";
+          s.next = "grant-battery";
+        } else {
+          s.cta = "Continue";
+          s.next = "advance";
+          s.secondary = null;
+          s.tertiary = null;
+        }
+      }
+      return s;
+    }
+
+    function setOnboardStep(i) {
+      onboardStep = Math.max(0, Math.min(i, onboardSteps.length - 1));
+      const s = resolveOnboardStep(onboardSteps[onboardStep]);
+      const iconHtml = onboardIcons[s.icon] || onboardIcons.phone;
+      document.getElementById("onboardIcon").innerHTML =
+        `<svg viewBox="0 0 24 24" aria-hidden="true">${iconHtml}</svg>`;
+      document.getElementById("onboardTitle").textContent = s.title;
+      document.getElementById("onboardCopy").textContent = s.copy;
+
+      const statusEl = document.getElementById("onboardStatus");
+      statusEl.textContent = s.status || "";
+      statusEl.className = "onboard-status" + (s.statusTone ? " " + s.statusTone : "");
+
+      const nextBtn = document.getElementById("onboardNext");
+      const secBtn = document.getElementById("onboardSecondary");
+      const terBtn = document.getElementById("onboardTertiary");
+      nextBtn.textContent = s.cta;
+      if (s.secondary) {
+        secBtn.hidden = false;
+        secBtn.textContent = s.secondary;
+      } else {
+        secBtn.hidden = true;
+      }
+      if (s.tertiary) {
+        terBtn.hidden = false;
+        terBtn.textContent = s.tertiary;
+      } else {
+        terBtn.hidden = true;
+      }
+
+      renderOnboardDots();
+      const icon = document.getElementById("onboardIcon");
+      icon.style.animation = "none";
+      void icon.offsetWidth;
+      icon.style.animation = "";
+    }
+
+    function onboardAdvance() {
+      if (onboardStep < onboardSteps.length - 1) setOnboardStep(onboardStep + 1);
+      else go("stage");
+    }
+
+    function handleOnboardAction(action) {
+      switch (action) {
+        case "advance":
+          onboardAdvance();
+          break;
+        case "unlock":
+          go("unlock");
+          break;
+        case "stage":
+          go("stage");
+          break;
+        case "toast-settings":
+          showToast("Would open Accessibility settings");
+          break;
+        case "grant-logs":
+          onboardPerm.readLogs = true;
+          showToast("READ_LOGS rechecked");
+          setOnboardStep(onboardStep);
+          break;
+        case "grant-overlay":
+          showToast("Would open Display over apps");
+          onboardPerm.overlay = true;
+          setOnboardStep(onboardStep);
+          break;
+        case "grant-overlay-done":
+          onboardPerm.overlay = true;
+          showToast("Overlay permission OK");
+          setOnboardStep(onboardStep);
+          break;
+        case "keep-alive":
+        case "grant-notif":
+          onboardPerm.notifications = true;
+          showToast("Notifications allowed");
+          setOnboardStep(onboardStep);
+          break;
+        case "grant-battery":
+          onboardPerm.battery = true;
+          showToast("Battery exemption OK");
+          setOnboardStep(onboardStep);
+          break;
+        case "grant-keepalive":
+          onboardPerm.notifications = true;
+          onboardPerm.battery = true;
+          showToast("Keep-alive rechecked");
+          setOnboardStep(onboardStep);
+          break;
+        default:
+          onboardAdvance();
+      }
+    }
+
+    document.getElementById("onboardNext").onclick = () => {
+      const s = resolveOnboardStep(onboardSteps[onboardStep]);
+      handleOnboardAction(s.next);
+    };
+    document.getElementById("onboardSecondary").onclick = () => {
+      const s = resolveOnboardStep(onboardSteps[onboardStep]);
+      handleOnboardAction(s.secondaryAction || "advance");
+    };
+    document.getElementById("onboardTertiary").onclick = () => {
+      const s = resolveOnboardStep(onboardSteps[onboardStep]);
+      handleOnboardAction(s.tertiaryAction || "advance");
+    };
+    setOnboardStep(0);
+
+    /* Settings hub rows */
+    document.getElementById("settingsHub").addEventListener("click", (e) => {
+      const row = e.target.closest(".hub-row[data-go]");
+      if (!row) return;
+      go(row.dataset.go);
+    });
+
+    /* Segmented controls helper */
+    function wireSeg(id, onPick) {
+      const root = document.getElementById(id);
+      root.addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-v]");
+        if (!btn) return;
+        root.querySelectorAll("button").forEach((b) => b.classList.remove("on"));
+        btn.classList.add("on");
+        if (onPick) onPick(btn.dataset.v);
+      });
+    }
+    wireSeg("hapticSeg", (v) => showToast("Haptics · " + v));
+    wireSeg("themeSeg", (v) => showToast("Theme · " + v));
+    wireSeg("strategySeg", (v) => showToast("Strategy · " + v));
+
+    function wireSwitch(id, label) {
+      const el = document.getElementById(id);
+      el.addEventListener("click", () => {
+        const off = el.classList.toggle("off");
+        el.setAttribute("aria-checked", String(!off));
+        if (label) showToast(label + (off ? " off" : " on"));
+        return !off;
+      });
+      return el;
+    }
+
+    wireSwitch("hapticToggle", "Haptics");
+    wireSwitch("prefHaptic", "Haptics");
+    wireSwitch("prefVisual", "Visual overlay");
+    wireSwitch("dynColor", "Dynamic color");
+    wireSwitch("svcNotif", "Notification");
+
+    function syncLockHint(id) {
+      const sw = document.getElementById(id);
+      const hint = document.querySelector(`.lock-hint[data-for="${id}"]`);
+      if (!sw || !hint) return;
+      const on = !sw.classList.contains("off");
+      hint.textContent = on ? "Enabled when locked" : "Disabled when locked";
+    }
+    ["lockSingle", "lockDouble", "lockLong"].forEach((id) => {
+      wireSwitch(id, null);
+      document.getElementById(id).addEventListener("click", () => syncLockHint(id));
+      syncLockHint(id);
+    });
+
+    wireSeg("overlayStyleSeg", (v) => showToast("Overlay style · " + v));
+    const openVisualFromPrefs = document.getElementById("openVisualFromPrefs");
+    if (openVisualFromPrefs) openVisualFromPrefs.onclick = () => go("visual");
+
+    const vizToggle = document.getElementById("vizToggle");
+    const vizBar = document.getElementById("vizBar");
+    vizToggle.addEventListener("click", () => {
+      const off = vizToggle.classList.toggle("off");
+      vizToggle.setAttribute("aria-checked", String(!off));
+      vizBar.classList.toggle("on", !off);
+      showToast(off ? "Visual overlay off" : "Visual overlay on");
+    });
+
+    document.getElementById("previewHaptic").onclick = () => {
+      const ring = document.getElementById("hapticPulse");
+      ring.classList.remove("fire");
+      void ring.offsetWidth;
+      ring.classList.add("fire");
+      showToast("Haptic pulse");
+    };
+
+    document.getElementById("exportBtn").onclick = () => showToast("Backup exported");
+    document.getElementById("importBtn").onclick = () => showToast("Backup imported");
+
+    document.getElementById("previewOverlay").onclick = () => go("overlay");
+
+    document.getElementById("simKeyLog").onclick = () => {
+      const log = document.getElementById("fakeLog");
+      log.classList.remove("show");
+      void log.offsetWidth;
+      log.classList.add("show");
+      showToast("Plus Key matched");
+    };
+
+    document.getElementById("dblSlider").oninput = (e) => {
+      document.getElementById("dblVal").textContent = e.target.value + " ms";
+    };
+    document.getElementById("longSlider").oninput = (e) => {
+      document.getElementById("longVal").textContent = e.target.value + " ms";
+    };
+    document.getElementById("copyUsb").onclick = async () => {
+      const cmd = document.getElementById("labUsbCmd").textContent;
+      try {
+        await navigator.clipboard.writeText(cmd);
+        showToast("Command copied");
+      } catch {
+        showToast("Copy unavailable — select text");
+      }
+    };
+    document.getElementById("labToUnlock").onclick = () => go("unlock");
+  </script>
+</body>
+</html>

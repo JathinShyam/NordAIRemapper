@@ -47,6 +47,7 @@ import com.nordairemapper.domain.model.OverlayPosition
 import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.presentation.common.RemapActionCatalog
 import com.nordairemapper.presentation.common.displayName
+import com.nordairemapper.presentation.common.icon
 import com.nordairemapper.ui.components.ActionCard
 import com.nordairemapper.ui.components.NordHeading
 import com.nordairemapper.ui.components.OverlayPreview
@@ -123,6 +124,7 @@ fun OverlaySettingsScreen(
                 ActionCard(
                     title = "Slot ${index + 1}",
                     subtitle = action.displayName(),
+                    icon = action.icon(),
                     onClick = { editingSlot = index },
                 )
             }

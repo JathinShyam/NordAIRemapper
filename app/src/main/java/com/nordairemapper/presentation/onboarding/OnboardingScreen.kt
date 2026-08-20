@@ -107,9 +107,9 @@ fun OnboardingScreen(
                 2 -> StepContent(
                     icon = Icons.Outlined.Sensors,
                     title = "Enable Plus Key detection",
-                    body = "OnePlus doesn’t send the Plus Key to apps. Pair once with Wireless debugging in this app to grant READ_LOGS — no computer or Shizuku.",
+                    body = "OnePlus doesn’t send the Plus Key to apps. Unlock logcat detection once (USB preferred) to grant READ_LOGS.",
                     status = if (permissions.readLogsGranted) "READ_LOGS granted" else "READ_LOGS needed",
-                    primaryLabel = if (permissions.readLogsGranted) "Continue" else "Enable detection",
+                    primaryLabel = if (permissions.readLogsGranted) "Continue" else "Unlock detection",
                     onPrimary = {
                         if (permissions.readLogsGranted) page = 3
                         else onOpenEnableDetection()

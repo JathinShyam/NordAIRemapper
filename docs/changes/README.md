@@ -55,3 +55,7 @@ Going forward: write/update these notes in the **same turn** as the code.
 |------|--------|---------|
 | 2026-08-16 | [in-app-read-logs-grant](./2026-08-16-in-app-read-logs-grant/) | Phone-only Wireless ADB path to grant `READ_LOGS` (no Shizuku / no laptop) |
 | 2026-08-16 | [change-log-convention](./2026-08-16-change-log-convention/) | Introduced `docs/changes/` per-change notes + AGENTS/project rule hooks |
+| 2026-08-20 | [home-silhouette-size](./2026-08-20-home-silhouette-size/) | Shrink Home Nord 5 silhouette to fit the frame |
+| 2026-08-20 | [nord-edge-proposal](../design/2026-08-20-nord-edge-proposal.md) | Nord Edge Direction A — approved; Compose implementing |
+| 2026-08-20 | [nord-edge-prototype](./2026-08-20-nord-edge-prototype/) | Interactive HTML prototype for Nord Edge Direction A (+ Nord 5 silhouette / Plus Key glow) |
+| 2026-08-20 | [nord-edge-impl](./2026-08-20-nord-edge-impl/) | Nord Edge Compose: Unlock USB-first, Home/Settings/Lab, Remap studio, overlay chord |

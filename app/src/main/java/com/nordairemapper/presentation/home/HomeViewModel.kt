@@ -119,8 +119,8 @@ class HomeViewModel @Inject constructor(
                     if (!readLogsGranted && !keyConfigured) {
                         return HomeBanner(
                             title = "Plus Key needs logcat on Nord 5",
-                            body = "Accessibility sees volume keys, but OxygenOS handles the Plus Key in system code so it never reaches Key setup. Pair once with Wireless debugging in-app (no laptop, no Shizuku) so logcat can detect it. Accessibility stays on for system actions.",
-                            primaryLabel = "Enable detection",
+                            body = "Accessibility sees volume keys, but OxygenOS handles the Plus Key in system code so it never reaches Key setup. Unlock detection once (USB preferred; Wireless is advanced) so logcat can detect it. Accessibility stays on for system actions.",
+                            primaryLabel = "Unlock detection",
                             primaryAction = HomeBannerAction.OPEN_ENABLE_DETECTION,
                         )
                     }
@@ -137,8 +137,8 @@ class HomeViewModel @Inject constructor(
                     if (!readLogsGranted) {
                         return HomeBanner(
                             title = "READ_LOGS required on Nord 5",
-                            body = "Auto mode uses Accessibility when the OS delivers the key, and logcat when it does not (Nord 5). Pair once with Wireless debugging in-app — no laptop or Shizuku.",
-                            primaryLabel = "Enable detection",
+                            body = "Auto mode uses Accessibility when the OS delivers the key, and logcat when it does not (Nord 5). Unlock once with USB (preferred) or Wireless (advanced).",
+                            primaryLabel = "Unlock detection",
                             primaryAction = HomeBannerAction.OPEN_ENABLE_DETECTION,
                         )
                     }
@@ -146,8 +146,8 @@ class HomeViewModel @Inject constructor(
                 DetectionStrategy.LOGCAT -> if (!readLogsGranted) {
                     return HomeBanner(
                         title = "READ_LOGS required",
-                        body = "Logcat detection needs a one-time in-app Wireless debugging pair. USB ADB remains an advanced fallback.",
-                        primaryLabel = "Enable detection",
+                        body = "Logcat detection needs a one-time READ_LOGS grant. Preferred: USB from a computer. Wireless debugging is the advanced path.",
+                        primaryLabel = "Unlock detection",
                         primaryAction = HomeBannerAction.OPEN_ENABLE_DETECTION,
                     )
                 }
