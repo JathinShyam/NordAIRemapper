@@ -372,7 +372,7 @@ private fun OverlayWindowContent(
                 )
                 .background(Color(0xFF141414).copy(alpha = 0.92f), RoundedCornerShape(28.dp))
                 .border(1.dp, Color(0xFF2C2C2C), RoundedCornerShape(28.dp))
-                .padding(horizontal = 16.dp, top = 22.dp, bottom = 18.dp),
+                .padding(start = 16.dp, top = 22.dp, end = 16.dp, bottom = 18.dp),
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,

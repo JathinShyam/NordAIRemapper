@@ -61,3 +61,4 @@ Going forward: write/update these notes in the **same turn** as the code.
 | 2026-08-20 | [nord-edge-impl](./2026-08-20-nord-edge-impl/) | Nord Edge Compose: Unlock USB-first, Home/Settings/Lab, Remap studio, overlay chord |
 | 2026-08-20 | [feature-wiring](./2026-08-20-feature-wiring/) | Wire Visual Overlay popup, floating overlay config, haptics preview, service notif |
 | 2026-08-20 | [readme](./2026-08-20-readme/) | Full README: onboarding, Unlock why, permissions, limits |
+| 2026-08-20 | [overlay-padding-compile-fix](./2026-08-20-overlay-padding-compile-fix/) | Fix invalid `Modifier.padding(horizontal, top, bottom)` breaking CI assembleDebug |
