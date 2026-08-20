@@ -17,7 +17,8 @@ val OutlineDark = Color(0xFF2A2A2A)
 val Destructive = Color(0xFFFF4D4D)
 
 /** OnePlus / OxygenOS marketing red — used for the first letter of headings. */
-val HeadingRed = Color(0xFFEB0028)
+/** OnePlus Torch Red (brand / classic lockup). */
+val HeadingRed = Color(0xFFEB0029)
 
 val BackgroundLight = Color(0xFFF5F5F5)
 val SurfaceLight = Color(0xFFEBEBEB)

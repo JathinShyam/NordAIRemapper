@@ -11,12 +11,17 @@ import com.nordairemapper.domain.repository.SettingsRepository
 import com.nordairemapper.presentation.common.conflictKey
 import com.nordairemapper.service.AccessibilityUtils
 import com.nordairemapper.service.DetectionCoordinator
+import com.nordairemapper.service.KeyAction
+import com.nordairemapper.service.KeyEventBus
 import com.nordairemapper.service.LogcatWatcherService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -28,6 +33,7 @@ class HomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val settingsRepository: SettingsRepository,
     private val remapConfigRepository: RemapConfigRepository,
+    private val keyEventBus: KeyEventBus,
 ) : ViewModel() {
 
     private val runtimeFlags = MutableStateFlow(
@@ -36,6 +42,20 @@ class HomeViewModel @Inject constructor(
             readLogsGranted = LogcatWatcherService.hasReadLogsPermission(context),
         )
     )
+
+    private val _plusKeyPulse = MutableSharedFlow<Unit>(extraBufferCapacity = 8)
+    /** Fires when a Plus Key DOWN/PULSE arrives so Home can flash the silhouette. */
+    val plusKeyPulse: SharedFlow<Unit> = _plusKeyPulse.asSharedFlow()
+
+    init {
+        viewModelScope.launch {
+            keyEventBus.rawEvents.collect { event ->
+                if (event.action == KeyAction.DOWN || event.action == KeyAction.PULSE) {
+                    _plusKeyPulse.tryEmit(Unit)
+                }
+            }
+        }
+    }
 
     val uiState: StateFlow<HomeUiState> = combine(
         settingsRepository.settings,

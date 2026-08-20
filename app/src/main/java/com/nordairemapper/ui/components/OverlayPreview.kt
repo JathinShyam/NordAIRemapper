@@ -101,7 +101,7 @@ fun OverlayPreview(
                 )
             } else {
                 when (layoutStyle) {
-                    OverlayLayoutStyle.RADIAL -> {
+                    OverlayLayoutStyle.GRID -> {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),

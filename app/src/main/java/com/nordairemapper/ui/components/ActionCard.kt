@@ -1,6 +1,11 @@
 package com.nordairemapper.ui.components
 
-import androidx.compose.animation.Crossfade
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -33,6 +38,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.nordairemapper.ui.theme.Destructive
 
 @Composable
@@ -60,6 +66,16 @@ fun ActionCard(
         MaterialTheme.colorScheme.onSurfaceVariant
     } else {
         MaterialTheme.colorScheme.primary
+    }
+    val badgeBorder = if (empty) {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
+    } else {
+        resolvedTint.copy(alpha = 0.45f)
+    }
+    val badgeColor = if (empty) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        resolvedTint
     }
     Card(
         onClick = onClick,
@@ -97,83 +113,85 @@ fun ActionCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            when {
-                icon != null -> {
-                    Box {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .background(
-                                    color = resolvedContainer,
-                                    shape = RoundedCornerShape(10.dp),
-                                ),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = null,
-                                tint = resolvedTint,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
-                        if (badge != null) {
+            Box {
+                AnimatedContent(
+                    targetState = empty to icon,
+                    transitionSpec = {
+                        (fadeIn() + scaleIn(initialScale = 0.92f)) togetherWith
+                            (fadeOut() + scaleOut(targetScale = 0.92f))
+                    },
+                    label = "actionCardIcon",
+                ) { (isEmpty, currentIcon) ->
+                    when {
+                        currentIcon != null -> {
                             Box(
                                 modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .offset(x = 4.dp, y = (-4).dp)
-                                    .size(20.dp)
+                                    .size(36.dp)
                                     .background(
-                                        color = MaterialTheme.colorScheme.surface,
-                                        shape = RoundedCornerShape(6.dp),
-                                    )
-                                    .border(
-                                        1.dp,
-                                        resolvedTint.copy(alpha = 0.45f),
-                                        RoundedCornerShape(6.dp),
+                                        color = resolvedContainer,
+                                        shape = RoundedCornerShape(10.dp),
                                     ),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Text(
-                                    text = badge,
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = MaterialTheme.typography.labelSmall.fontSize * 0.85f,
-                                    ),
-                                    color = resolvedTint,
+                                Icon(
+                                    imageVector = currentIcon,
+                                    contentDescription = null,
+                                    tint = resolvedTint,
+                                    modifier = Modifier.size(20.dp),
                                 )
                             }
                         }
+                        isEmpty -> {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .border(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
+                                        RoundedCornerShape(10.dp),
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Add,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                        }
+                        else -> {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .background(
+                                        color = resolvedContainer,
+                                        shape = RoundedCornerShape(10.dp),
+                                    ),
+                            )
+                        }
                     }
                 }
-                badge != null -> {
+                if (badge != null) {
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .align(Alignment.TopEnd)
+                            .offset(x = 4.dp, y = (-4).dp)
+                            .size(20.dp)
                             .background(
-                                color = resolvedContainer,
-                                shape = RoundedCornerShape(10.dp),
-                            ),
+                                color = MaterialTheme.colorScheme.surface,
+                                shape = RoundedCornerShape(6.dp),
+                            )
+                            .border(1.dp, badgeBorder, RoundedCornerShape(6.dp)),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = badge,
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            color = resolvedTint,
-                        )
-                    }
-                }
-                empty -> {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.45f), RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Add,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 8.sp,
+                            ),
+                            color = badgeColor,
                         )
                     }
                 }
@@ -183,8 +201,9 @@ fun ActionCard(
                     text = title,
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                 )
-                Crossfade(
+                AnimatedContent(
                     targetState = empty,
+                    transitionSpec = { fadeIn() togetherWith fadeOut() },
                     label = "actionCardSubtitle",
                 ) { isEmpty ->
                     Text(

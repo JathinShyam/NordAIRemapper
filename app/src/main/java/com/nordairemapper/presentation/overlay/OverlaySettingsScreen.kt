@@ -54,6 +54,7 @@ import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.presentation.common.RemapActionCatalog
 import com.nordairemapper.presentation.common.RemapActionItem
 import com.nordairemapper.presentation.common.categoryAccent
+import com.nordairemapper.presentation.common.categoryFor
 import com.nordairemapper.presentation.common.displayDescription
 import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.presentation.common.icon
@@ -156,6 +157,9 @@ fun OverlaySettingsScreen(
                     title = "Slot ${index + 1}",
                     subtitle = action.displayName(),
                     icon = if (empty) null else action.icon(),
+                    iconContainer = if (empty) null else categoryAccent(categoryFor(action)).container,
+                    iconTint = if (empty) null else categoryAccent(categoryFor(action)).tint,
+                    badge = (index + 1).toString(),
                     empty = empty,
                     onClick = { editingSlot = index },
                 )
@@ -179,7 +183,7 @@ fun OverlaySettingsScreen(
                         OverlayLayoutStyle.entries.forEach { style ->
                             val selected = config.layoutStyle == style
                             val label = when (style) {
-                                OverlayLayoutStyle.RADIAL   -> "Grid"
+                                OverlayLayoutStyle.GRID -> "Grid"
                                 OverlayLayoutStyle.PILL_BAR -> "Pill bar"
                             }
                             SegButton(label = label, selected = selected) {
@@ -363,7 +367,7 @@ private fun ActionCatalogSheet(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            Text(
+            NordHeading(
                 text = "Choose action",
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 8.dp),

@@ -19,6 +19,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -92,6 +93,22 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     var demoPulse by remember { mutableStateOf(false) }
 
+    fun flashKey() {
+        demoPulse = true
+        scope.launch {
+            delay(700)
+            demoPulse = false
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.plusKeyPulse.collect {
+            demoPulse = true
+            delay(700)
+            demoPulse = false
+        }
+    }
+
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshRuntimeFlags()
@@ -164,13 +181,7 @@ fun HomeScreen(
                     .aspectRatio(77f / 163.4f)
                     .align(Alignment.CenterHorizontally)
                     .padding(vertical = 8.dp)
-                    .clickable {
-                        demoPulse = true
-                        scope.launch {
-                            delay(700)
-                            demoPulse = false
-                        }
-                    },
+                    .clickable { flashKey() },
             )
 
             val statusLabel = when {
@@ -271,7 +282,7 @@ fun HomeScreen(
                     badge = when (pressType) {
                         PressType.SINGLE -> "1×"
                         PressType.DOUBLE -> "2×"
-                        PressType.LONG -> "⏳"
+                        PressType.LONG -> "L"
                     },
                     empty = empty,
                     showConflict = pressType in state.conflictPressTypes,

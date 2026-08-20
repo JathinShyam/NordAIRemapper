@@ -26,8 +26,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import android.view.HapticFeedbackConstants
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.ui.components.NordHeading
@@ -39,6 +41,7 @@ fun LockScreenSettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    val view = LocalView.current
 
     Scaffold(
         topBar = {
@@ -73,7 +76,12 @@ fun LockScreenSettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            // Card 1 - Single Press
+            Text(
+                text = "Controls whether each press type works while the screen is locked. Lock Screen action still requires Accessibility connected.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
@@ -97,11 +105,16 @@ fun LockScreenSettingsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Switch(checked = settings.lockScreenSingleEnabled, onCheckedChange = viewModel::setLockScreenSingleEnabled)
+                    Switch(
+                        checked = settings.lockScreenSingleEnabled,
+                        onCheckedChange = {
+                            view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                            viewModel.setLockScreenSingleEnabled(it)
+                        },
+                    )
                 }
             }
 
-            // Card 2 - Double Press
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
@@ -125,11 +138,16 @@ fun LockScreenSettingsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Switch(checked = settings.lockScreenDoubleEnabled, onCheckedChange = viewModel::setLockScreenDoubleEnabled)
+                    Switch(
+                        checked = settings.lockScreenDoubleEnabled,
+                        onCheckedChange = {
+                            view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                            viewModel.setLockScreenDoubleEnabled(it)
+                        },
+                    )
                 }
             }
 
-            // Card 3 - Long Press
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
@@ -153,7 +171,13 @@ fun LockScreenSettingsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Switch(checked = settings.lockScreenLongEnabled, onCheckedChange = viewModel::setLockScreenLongEnabled)
+                    Switch(
+                        checked = settings.lockScreenLongEnabled,
+                        onCheckedChange = {
+                            view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                            viewModel.setLockScreenLongEnabled(it)
+                        },
+                    )
                 }
             }
         }

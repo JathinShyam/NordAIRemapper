@@ -6,20 +6,14 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -31,13 +25,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.nordairemapper.ui.theme.HeadingRed
+import com.nordairemapper.R
 
 /**
  * Front silhouette of the OnePlus Nord 5.
@@ -256,90 +249,23 @@ fun PhoneDiagram(
         NeverSettleBrand(
             modifier = Modifier
                 .align(Alignment.Center)
-                .offset(y = 4.dp),
+                .offset(y = 2.dp)
+                .width(86.dp),
         )
     }
 }
 
-/** Compact recreation of the OnePlus logo + stacked NEVER / SETTLE bars. */
+/**
+ * Exact classic lockup for the silhouette:
+ * authentic OnePlus 1+ mark + USPTO “NEVER / SETTLE” boxed motto letterforms
+ * (Torch Red). Mark ≈ 45% of bar width.
+ */
 @Composable
 private fun NeverSettleBrand(modifier: Modifier = Modifier) {
-    val red = HeadingRed
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(0.dp),
-    ) {
-        OnePlusMark(color = red, modifier = Modifier.size(28.dp))
-        Spacer(modifier = Modifier.height(10.dp))
-        MottoBar(text = "NEVER", red = red)
-        Spacer(modifier = Modifier.height(3.dp))
-        MottoBar(text = "SETTLE", red = red)
-    }
-}
-
-@Composable
-private fun MottoBar(text: String, red: Color) {
-    Box(
-        modifier = Modifier
-            .width(72.dp)
-            .height(16.dp)
-            .background(red, RoundedCornerShape(1.dp)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = text,
-            color = Color.White,
-            fontSize = 8.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.6.sp,
-            textAlign = TextAlign.Center,
-        )
-    }
-}
-
-/** Red square frame with “1” and a plus on the top-right corner. */
-@Composable
-private fun OnePlusMark(color: Color, modifier: Modifier = Modifier) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val stroke = size.minDimension * 0.11f
-            val square = size.minDimension * 0.78f
-            val left = (size.width - square) / 2f - size.minDimension * 0.04f
-            val top = (size.height - square) / 2f + size.minDimension * 0.06f
-
-            drawRoundRect(
-                color = color,
-                topLeft = Offset(left, top),
-                size = Size(square, square),
-                cornerRadius = CornerRadius(stroke * 0.35f),
-                style = Stroke(width = stroke),
-            )
-
-            val plusCenter = Offset(
-                x = left + square + stroke * 0.15f,
-                y = top - stroke * 0.15f,
-            )
-            val arm = size.minDimension * 0.16f
-            val thick = stroke * 0.95f
-            drawRect(
-                color = color,
-                topLeft = Offset(plusCenter.x - arm, plusCenter.y - thick / 2f),
-                size = Size(arm * 2f, thick),
-            )
-            drawRect(
-                color = color,
-                topLeft = Offset(plusCenter.x - thick / 2f, plusCenter.y - arm),
-                size = Size(thick, arm * 2f),
-            )
-        }
-        Text(
-            text = "1",
-            color = color,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.offset(x = (-1.5).dp, y = 1.5.dp),
-            textAlign = TextAlign.Center,
-        )
-    }
+    Image(
+        painter = painterResource(R.drawable.never_settle_lockup),
+        contentDescription = null,
+        modifier = modifier.aspectRatio(640f / 700f),
+        contentScale = ContentScale.Fit,
+    )
 }

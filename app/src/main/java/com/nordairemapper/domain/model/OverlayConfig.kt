@@ -36,7 +36,23 @@ enum class OverlayIconSize { SMALL, MEDIUM, LARGE }
 
 enum class OverlayAnimation { FADE, SCALE, SLIDE }
 
-enum class OverlayLayoutStyle { RADIAL, PILL_BAR }
+@Serializable(with = OverlayLayoutStyleSerializer::class)
+enum class OverlayLayoutStyle { GRID, PILL_BAR }
+
+object OverlayLayoutStyleSerializer : KSerializer<OverlayLayoutStyle> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("OverlayLayoutStyle", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: OverlayLayoutStyle) {
+        encoder.encodeString(value.name)
+    }
+
+    override fun deserialize(decoder: Decoder): OverlayLayoutStyle = when (decoder.decodeString()) {
+        "GRID", "RADIAL" -> OverlayLayoutStyle.GRID
+        "PILL_BAR" -> OverlayLayoutStyle.PILL_BAR
+        else -> OverlayLayoutStyle.PILL_BAR
+    }
+}
 
 /** Visual language for the action popup / floating overlay chrome. */
 enum class OverlayVisualStyle { ONEPLUS, STOCK }

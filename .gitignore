@@ -20,3 +20,14 @@ captures/
 **/OnePlusSans*
 design/fonts/**
 !design/fonts/README.md
+
+# Local lockup rebuild scratch (venv + intermediate rasters)
+design/assets/.venv/
+design/assets/*.pbm
+design/assets/bar*-glyphs.png
+design/assets/never-settle-bw*.png
+design/assets/MARK.png
+design/assets/MOTTO*.png
+design/assets/mark-*.png
+design/assets/lockup-*.png
+design/assets/_tmp.svg

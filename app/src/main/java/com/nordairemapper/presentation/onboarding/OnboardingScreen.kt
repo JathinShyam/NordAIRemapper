@@ -4,6 +4,7 @@ import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -314,11 +315,15 @@ private fun PageDots(current: Int, total: Int) {
     ) {
         repeat(total) { index ->
             val active = index == current
+            val width by animateDpAsState(
+                targetValue = if (active) 16.dp else 6.dp,
+                label = "pageDotWidth",
+            )
             Box(
                 modifier = Modifier
                     .padding(horizontal = 3.dp)
                     .height(6.dp)
-                    .width(if (active) 16.dp else 6.dp)
+                    .width(width)
                     .clip(CircleShape)
                     .background(
                         if (active) MaterialTheme.colorScheme.primary

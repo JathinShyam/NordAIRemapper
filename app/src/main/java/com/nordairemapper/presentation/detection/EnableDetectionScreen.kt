@@ -256,6 +256,7 @@ fun EnableDetectionScreen(
                             text = if (state.isDiscovering) "Searching for port…" else "Find pairing port",
                             onClick = { requestNearbyWifiThenDiscover() },
                             enabled = !state.isDiscovering && !state.isGranting,
+                            loading = state.isDiscovering,
                         )
                         if (state.discoveredPort != null) {
                             Text(

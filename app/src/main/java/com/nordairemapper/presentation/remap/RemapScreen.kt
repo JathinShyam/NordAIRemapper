@@ -20,9 +20,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Layers
+import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,16 +45,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import android.widget.Toast
 import com.nordairemapper.domain.model.PressType
 import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.presentation.common.RemapActionCatalog
@@ -67,7 +72,8 @@ import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.NordSurfaceCard
 import com.nordairemapper.ui.components.SectionLabel
 import com.nordairemapper.ui.theme.NordBlue
-
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 private enum class RemapSheet { None, AppPicker, UrlInput }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,10 +85,11 @@ fun RemapScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val apps by viewModel.installedApps.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     var sheet by remember { mutableStateOf(RemapSheet.None) }
     var query by remember { mutableStateOf("") }
     var categoryFilter by remember { mutableStateOf<RemapActionCategory?>(null) }
-    val context = LocalContext.current
+    var tryNowLoading by remember { mutableStateOf(false) }
     val grouped = remember { RemapActionCatalog.grouped().toList() }
     val filtered = remember(query, grouped, categoryFilter) {
         val base = if (categoryFilter == null || query.isNotBlank()) {
@@ -157,14 +164,24 @@ fun RemapScreen(
             ) {
                 NordGhostButton(
                     text = "Try now",
-                    onClick = viewModel::tryNow,
+                    onClick = {
+                        tryNowLoading = true
+                        viewModel.tryNow()
+                        scope.launch {
+                            delay(500)
+                            tryNowLoading = false
+                        }
+                    },
+                    loading = tryNowLoading,
                     modifier = Modifier.weight(1f),
                 )
                 NordPrimaryButton(
                     text = "Done",
                     onClick = {
-                        Toast.makeText(context, "Saved", Toast.LENGTH_SHORT).show()
-                        onBack()
+                        scope.launch {
+                            snackbar.showSnackbar("Saved")
+                            onBack()
+                        }
                     },
                     modifier = Modifier.weight(1f),
                 )
@@ -303,8 +320,14 @@ private fun CategoryChips(
             val on = selected == category
             val accent = categoryAccent(category)
             val shape = RoundedCornerShape(999.dp)
-            Text(
-                text = category.label,
+            val chipIcon: ImageVector = when (category) {
+                RemapActionCategory.APPS -> Icons.Outlined.Apps
+                RemapActionCategory.MEDIA -> Icons.Outlined.MusicNote
+                RemapActionCategory.SYSTEM -> Icons.Outlined.Settings
+                RemapActionCategory.OVERLAY -> Icons.Outlined.Layers
+                RemapActionCategory.NONE -> Icons.Outlined.Block
+            }
+            Row(
                 modifier = Modifier
                     .clip(shape)
                     .background(
@@ -322,15 +345,31 @@ private fun CategoryChips(
                     .clickable(enabled = !dimmed) {
                         onSelect(if (on) null else category)
                     }
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.labelMedium,
-                color = when {
-                    dimmed -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
-                    on -> accent.tint
-                    else -> MaterialTheme.colorScheme.onSurface
-                },
-                fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium,
-            )
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Icon(
+                    imageVector = chipIcon,
+                    contentDescription = null,
+                    tint = when {
+                        dimmed -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                        on -> accent.tint
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    modifier = Modifier.size(14.dp),
+                )
+                Text(
+                    text = category.label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = when {
+                        dimmed -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                        on -> accent.tint
+                        else -> MaterialTheme.colorScheme.onSurface
+                    },
+                    fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium,
+                )
+            }
         }
     }
 }

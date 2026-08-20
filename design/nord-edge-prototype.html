@@ -320,30 +320,6 @@
     .nord5 .motto-wrap {
       pointer-events: none;
     }
-    .nord5 .motto-logo {
-      fill: none;
-      stroke: #EB0028;
-      stroke-width: 1.35;
-    }
-    .nord5 .motto-plus { fill: #EB0028; }
-    .nord5 .motto-one {
-      fill: #EB0028;
-      font-family: var(--heading), system-ui, sans-serif;
-      font-size: 9.5px;
-      font-weight: 700;
-      text-anchor: middle;
-      dominant-baseline: central;
-    }
-    .nord5 .motto-bar { fill: #EB0028; }
-    .nord5 .motto-word {
-      fill: #fff;
-      font-family: var(--body), system-ui, sans-serif;
-      font-size: 4.4px;
-      font-weight: 700;
-      letter-spacing: 0.35px;
-      text-anchor: middle;
-      dominant-baseline: central;
-    }
     .nord5 .hole-outer { fill: #030303; }
     .nord5 .hole-inner { fill: #1a1a1a; }
     .nord5 .side {
@@ -443,12 +419,16 @@
       border-color: rgba(10,198,255,.55);
       background: linear-gradient(90deg, rgba(10,198,255,.12), var(--surface));
     }
+    .badge-wrap {
+      position: relative;
+      flex-shrink: 0;
+      width: 36px; height: 36px;
+    }
     .badge {
       width: 36px; height: 36px; border-radius: 10px;
       background: var(--accent-dim); color: var(--accent);
       display: grid; place-items: center; font-weight: 700; font-size: 13px;
       transition: border-radius .4s var(--spring);
-      flex-shrink: 0;
       border: 1px solid rgba(10, 198, 255, 0.18);
     }
     .badge svg {
@@ -456,6 +436,40 @@
       stroke: currentColor; fill: none;
       stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
     }
+    /* Category accents — match Compose ActionCategoryAccent */
+    .pad.tone-system .badge {
+      background: rgba(10, 198, 255, 0.14);
+      color: var(--accent);
+      border-color: rgba(10, 198, 255, 0.22);
+    }
+    .pad.tone-media .badge {
+      background: #14321F; color: #3DDC84; border-color: rgba(61, 220, 132, 0.25);
+    }
+    .pad.tone-apps .badge {
+      background: #3D2E14; color: #FFB020; border-color: rgba(255, 176, 32, 0.25);
+    }
+    .pad.tone-overlay .badge {
+      background: #2A2A2A; color: #B0B0B0; border-color: rgba(176, 176, 176, 0.22);
+    }
+    .pad.tone-none .badge {
+      background: #3A1818; color: #FF6B6B; border-color: rgba(255, 107, 107, 0.25);
+    }
+    .press-badge {
+      position: absolute;
+      top: -4px; right: -4px;
+      min-width: 20px; height: 20px; padding: 0 3px;
+      border-radius: 6px;
+      background: var(--surface);
+      border: 1px solid rgba(10, 198, 255, 0.45);
+      color: var(--accent);
+      font-size: 9px; font-weight: 700;
+      display: grid; place-items: center;
+      line-height: 1;
+      z-index: 1;
+    }
+    .pad.tone-media .press-badge { border-color: rgba(61, 220, 132, 0.45); color: #3DDC84; }
+    .pad.tone-apps .press-badge { border-color: rgba(255, 176, 32, 0.45); color: #FFB020; }
+    .pad.tone-overlay .press-badge { border-color: rgba(176, 176, 176, 0.45); color: #B0B0B0; }
     .pad.hit .badge { border-radius: 50%; }
     .pad .t { font-size: 14px; font-weight: 600; }
     .pad .d { font-size: 12px; color: var(--muted); margin-top: 2px; }
@@ -471,11 +485,21 @@
       font-size: 18px;
       font-weight: 500;
     }
+    .pad.empty .press-badge { display: grid; }
     .pad.empty .d {
       color: var(--accent);
       font-weight: 500;
     }
-    .chev { margin-left: auto; color: #3a3a3a; }
+    .chev {
+      margin-left: auto; color: #3a3a3a;
+      width: 18px; height: 18px; flex-shrink: 0;
+      display: grid; place-items: center;
+    }
+    .chev svg {
+      width: 18px; height: 18px;
+      stroke: currentColor; fill: none;
+      stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+    }
 
     /* Unlock */
     .timeline { display: flex; flex-direction: column; gap: 0; margin-top: 8px; flex: 1; }
@@ -1008,9 +1032,15 @@
       stroke: currentColor; fill: none;
       stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
     }
+    .hub-ico.tone-green { background: #14321F; color: #3DDC84; }
+    .hub-ico.tone-cyan { background: rgba(10, 198, 255, 0.14); color: var(--accent); }
+    .hub-ico.tone-muted { background: #2A1F3D; color: #B388FF; }
+    .hub-ico.tone-purple { background: #2A1F3D; color: #B388FF; }
+    .hub-ico.tone-amber { background: #3D2E14; color: #FFB020; }
+    .hub-ico.tone-red { background: #3A1818; color: #FF6B6B; }
     .hub-row .t { font-size: 13px; font-weight: 600; }
     .hub-row .d { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .hub-row .chev { margin-left: auto; color: #3a3a3a; font-size: 16px; }
+    .hub-row .chev { margin-left: auto; color: #3a3a3a; }
     .empty-hint {
       font-size: 13px;
       color: var(--muted);
@@ -1237,8 +1267,8 @@
       <h1>Nord Edge</h1>
       <p class="lede">
         Full end-to-end review set for Direction A — every app screen, clickable.
-        Synced with the Compose UX polish: Home icons &amp; status ribbon, Remap category
-        tints / Current pill / Done toast, Material hub icons, Backup local snapshot collapsed.
+        Synced with Compose critique v2: Home 1×/2×/L badges (incl. empty), Settings hub
+        purple Visual Overlay, Remap chips with icons, Snackbar Done — not Toast.
       </p>
       <div class="hint">
         Browser prototype (HTML/CSS/JS), not Figma and not the Android app.
@@ -1368,18 +1398,13 @@
               <rect class="body" x="1.5" y="0" width="77" height="163.4" rx="9.2" ry="9.2"/>
               <!-- Display ~90% STB, thin flat bezels -->
               <rect class="glass" x="3.4" y="2.2" width="73.2" height="158.6" rx="7.4" ry="7.4"/>
-              <g class="motto-wrap" transform="translate(40 86)">
-                <!-- OnePlus mark -->
-                <rect class="motto-logo" x="-8.2" y="-28" width="14.5" height="14.5" rx="1.1"/>
-                <text class="motto-one" x="-0.9" y="-20.4">1</text>
-                <rect class="motto-plus" x="5.2" y="-30.2" width="5.2" height="1.35"/>
-                <rect class="motto-plus" x="7.12" y="-32.1" width="1.35" height="5.2"/>
-                <!-- NEVER / SETTLE bars -->
-                <rect class="motto-bar" x="-16" y="-6" width="32" height="7.2" rx="0.4"/>
-                <text class="motto-word" x="0" y="-2.2">NEVER</text>
-                <rect class="motto-bar" x="-16" y="3" width="32" height="7.2" rx="0.4"/>
-                <text class="motto-word" x="0" y="6.8">SETTLE</text>
-              </g>
+              <!-- Exact lockup: mark ~45% of bar width -->
+              <image
+                class="motto-wrap"
+                href="never-settle-lockup.png"
+                x="20" y="56" width="40" height="44"
+                preserveAspectRatio="xMidYMid meet"
+              />
               <!-- Earpiece + centered punch-hole -->
               <rect class="ear" x="33.5" y="5.2" width="13" height="1.15" rx="0.55"/>
               <circle class="hole-outer" cx="40" cy="10.4" r="1.55"/>
@@ -1401,29 +1426,38 @@
           </div>
           <div class="sec-label">Actions</div>
           <div class="pads">
-            <div class="pad" data-pad="single" data-icon="flash">
-              <div class="badge" data-pad-icon></div>
+            <div class="pad tone-system" data-pad="single" data-icon="flash" data-press="1×">
+              <div class="badge-wrap">
+                <div class="press-badge">1×</div>
+                <div class="badge" data-pad-icon></div>
+              </div>
               <div>
                 <div class="t">Single</div>
                 <div class="d">Flashlight</div>
               </div>
-              <div class="chev">›</div>
+              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
             </div>
-            <div class="pad empty" data-pad="double" data-icon="">
-              <div class="badge" data-pad-icon>+</div>
+            <div class="pad empty" data-pad="double" data-icon="" data-press="2×">
+              <div class="badge-wrap">
+                <div class="press-badge">2×</div>
+                <div class="badge" data-pad-icon>+</div>
+              </div>
               <div>
                 <div class="t">Double</div>
                 <div class="d">+ Assign an action</div>
               </div>
-              <div class="chev">›</div>
+              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
             </div>
-            <div class="pad" data-pad="long" data-icon="overlay">
-              <div class="badge" data-pad-icon></div>
+            <div class="pad tone-overlay" data-pad="long" data-icon="overlay" data-press="L">
+              <div class="badge-wrap">
+                <div class="press-badge">L</div>
+                <div class="badge" data-pad-icon></div>
+              </div>
               <div>
                 <div class="t">Long</div>
                 <div class="d">Show overlay</div>
               </div>
-              <div class="chev">›</div>
+              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
             </div>
           </div>
         </section>
@@ -1528,7 +1562,7 @@
             <div class="sec-label">Appearance</div>
             <div class="pref-card" style="margin-bottom:10px">
               <div class="label">Theme</div>
-              <div class="hint-t">Prototype stays dark; chips mirror the app control.</div>
+              <div class="hint-t">Choose light, dark, or follow the system.</div>
               <div class="seg" id="themeSeg">
                 <button type="button" class="on" data-v="dark">Dark</button>
                 <button type="button" data-v="light">Light</button>
@@ -1555,51 +1589,51 @@
             </div>
             <div class="sec-label">Feedback &amp; overlay</div>
             <div class="hub-row" data-go="feedback">
-              <div class="hub-ico"><svg viewBox="0 0 24 24"><path d="M2 10v4h4l5 5V5L6 10H2z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18 6a8.5 8.5 0 0 1 0 12"/></svg></div>
+              <div class="hub-ico tone-green"><svg viewBox="0 0 24 24"><path d="M2 10v4h4l5 5V5L6 10H2z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18 6a8.5 8.5 0 0 1 0 12"/></svg></div>
               <div><div class="t">Feedback</div><div class="d">Haptic feedback &amp; vibration intensity</div></div>
-              <div class="chev">›</div>
+              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
             </div>
             <div class="hub-row" data-go="preferences">
-              <div class="hub-ico"><svg viewBox="0 0 24 24"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/></svg></div>
+              <div class="hub-ico tone-cyan"><svg viewBox="0 0 24 24"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/></svg></div>
               <div><div class="t">Preferences</div><div class="d">How you’re notified when an action triggers</div></div>
-              <div class="chev">›</div>
+              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
             </div>
             <div class="hub-row" data-go="visual">
-              <div class="hub-ico"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div>
+              <div class="hub-ico tone-purple"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div>
               <div><div class="t">Visual overlay</div><div class="d">Action popup style when a remap fires</div></div>
-              <div class="chev">›</div>
+              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
             </div>
             <div class="hub-row" data-go="overlay-settings">
-              <div class="hub-ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+              <div class="hub-ico tone-purple"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
               <div><div class="t">Overlay settings</div><div class="d">Floating menu slots &amp; layout</div></div>
-              <div class="chev">›</div>
+              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
             </div>
             <div class="sec-label">Behavior</div>
             <div class="hub-row" data-go="lock">
-              <div class="hub-ico"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
+              <div class="hub-ico tone-amber"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
               <div><div class="t">Lock Screen</div><div class="d">Gestures while the screen is locked</div></div>
-              <div class="chev">›</div>
+              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
             </div>
             <div class="hub-row" data-go="backup">
-              <div class="hub-ico"><svg viewBox="0 0 24 24"><path d="M4 14.5V17a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2.5"/><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/></svg></div>
+              <div class="hub-ico tone-cyan"><svg viewBox="0 0 24 24"><path d="M4 14.5V17a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2.5"/><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/></svg></div>
               <div><div class="t">Backup &amp; Restore</div><div class="d">Export and import remaps</div></div>
-              <div class="chev">›</div>
+              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
             </div>
             <div class="sec-label">Advanced</div>
             <div class="hub-row" data-go="keysetup">
-              <div class="hub-ico"><svg viewBox="0 0 24 24"><path d="M8 13v-3a4 4 0 1 1 8 0v3"/><rect x="5" y="13" width="14" height="8" rx="2"/><circle cx="12" cy="17" r="1"/></svg></div>
+              <div class="hub-ico tone-cyan"><svg viewBox="0 0 24 24"><path d="M8 13v-3a4 4 0 1 1 8 0v3"/><rect x="5" y="13" width="14" height="8" rx="2"/><circle cx="12" cy="17" r="1"/></svg></div>
               <div><div class="t">Key setup</div><div class="d">Learn / verify Plus Key</div></div>
-              <div class="chev">›</div>
+              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
             </div>
             <div class="hub-row" data-go="lab">
-              <div class="hub-ico"><svg viewBox="0 0 24 24"><path d="M9 3h6"/><path d="M10 3v7l-5.5 9.5A1.5 1.5 0 0 0 5.8 22h12.4a1.5 1.5 0 0 0 1.3-2.5L14 10V3"/><path d="M8.5 14h7"/></svg></div>
+              <div class="hub-ico tone-amber"><svg viewBox="0 0 24 24"><path d="M9 3h6"/><path d="M10 3v7l-5.5 9.5A1.5 1.5 0 0 0 5.8 22h12.4a1.5 1.5 0 0 0 1.3-2.5L14 10V3"/><path d="M8.5 14h7"/></svg></div>
               <div><div class="t">Lab</div><div class="d">Strategy, timing, USB unlock (Developer)</div></div>
-              <div class="chev">›</div>
+              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
             </div>
             <div class="hub-row" data-go="onboarding" id="restartOnboarding">
-              <div class="hub-ico"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></div>
+              <div class="hub-ico tone-red"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></div>
               <div><div class="t">Restart onboarding</div><div class="d">Walk through setup again</div></div>
-              <div class="chev">›</div>
+              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
             </div>
             <div class="sec-label">Per-app exclusions</div>
             <p class="empty-hint">No apps excluded — remapping is active in all apps</p>
@@ -1986,11 +2020,21 @@
         if (!iconKey || pad.classList.contains("empty")) {
           badge.innerHTML = "+";
           pad.classList.add("empty");
+          pad.classList.remove("tone-system", "tone-media", "tone-apps", "tone-overlay", "tone-none");
         } else {
           badge.innerHTML = iconSvg(iconKey);
           pad.classList.remove("empty");
         }
+        const press = pad.querySelector(".press-badge");
+        if (press && pad.dataset.press) press.textContent = pad.dataset.press;
       });
+    }
+
+    function applyPadTone(pad, meta) {
+      pad.classList.remove("tone-system", "tone-media", "tone-apps", "tone-overlay", "tone-none");
+      if (pad.classList.contains("empty")) return;
+      const tone = groupTone(meta.group, meta.tone);
+      pad.classList.add("tone-" + tone);
     }
 
     function updateCurrentPill(name) {
@@ -2023,6 +2067,7 @@
           pad.dataset.icon = meta.icon;
         }
       }
+      applyPadTone(pad, meta);
       syncHomePadIcons();
     }
 

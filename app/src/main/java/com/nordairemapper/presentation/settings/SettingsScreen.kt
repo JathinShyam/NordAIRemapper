@@ -183,8 +183,8 @@ fun SettingsScreen(
                 icon = Icons.Outlined.Visibility,
                 title = "Visual overlay",
                 subtitle = "Action popup style when a remap fires",
-                accentContainer = Color(0xFF2A2A2A),
-                accentTint = Color(0xFFB0B0B0),
+                accentContainer = Color(0xFF2A1F3D),
+                accentTint = Color(0xFFB388FF),
                 onClick = onOpenVisualOverlay,
             )
             HubRow(
@@ -272,10 +272,15 @@ fun SettingsScreen(
                 }
             }
             val pm = context.packageManager
+            val exclusionLabels = remember(settings.excludedApps) {
+                settings.excludedApps.associateWith { pkg ->
+                    runCatching {
+                        pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
+                    }.getOrDefault(pkg)
+                }
+            }
             settings.excludedApps.forEach { pkg ->
-                val label = runCatching {
-                    pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
-                }.getOrDefault(pkg)
+                val label = exclusionLabels[pkg] ?: pkg
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
@@ -368,8 +373,12 @@ private fun HubRow(
     accentTint: Color,
     onClick: () -> Unit,
 ) {
+    val view = LocalView.current
     Card(
-        onClick = onClick,
+        onClick = {
+            view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+            onClick()
+        },
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),

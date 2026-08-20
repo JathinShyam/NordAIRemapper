@@ -402,7 +402,7 @@ private fun OverlayWindowContent(
         when (config.layoutStyle) {
 
             // ── RADIAL: 3×2 square tile grid ──────────────────────────────────
-            OverlayLayoutStyle.RADIAL -> {
+            OverlayLayoutStyle.GRID -> {
                 Box(
                     modifier = Modifier
                         .align(panelAlign)

@@ -48,6 +48,7 @@ import com.nordairemapper.presentation.overlay.OverlaySettingsViewModel
 import com.nordairemapper.service.ActionFeedbackOverlayService
 import com.nordairemapper.ui.components.NordGhostButton
 import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.components.OverlayPreview
 
 private val AccentPresets = listOf(
     0xFF0AC6FF.toInt(),
@@ -163,7 +164,7 @@ fun VisualOverlayScreen(
                     }
                     Box(
                         modifier = Modifier
-                            .size(18.dp)
+                            .size(28.dp)
                             .clip(CircleShape)
                             .background(Color(config.accentColorArgb)),
                     )
@@ -200,6 +201,14 @@ fun VisualOverlayScreen(
                     icon = Icons.Outlined.BlurOn,
                 )
             }
+
+            QuietSectionLabel("Live preview")
+            OverlayPreview(
+                config = config,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 4.dp),
+            )
 
             QuietSectionLabel(
                 "Hold duration · ${String.format("%.1fs", config.holdDurationMs / 1000f)}",

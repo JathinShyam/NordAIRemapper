@@ -45,8 +45,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import android.view.HapticFeedbackConstants
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.HapticIntensity
@@ -62,6 +64,7 @@ fun FeedbackScreen(
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val view = LocalView.current
     val scope = rememberCoroutineScope()
     val ringScale = remember { Animatable(1f) }
     val ringAlpha = remember { Animatable(0.4f) }
@@ -155,7 +158,10 @@ fun FeedbackScreen(
                     }
                     Switch(
                         checked = settings.hapticFeedback,
-                        onCheckedChange = viewModel::setHapticFeedback,
+                        onCheckedChange = {
+                            view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                            viewModel.setHapticFeedback(it)
+                        },
                     )
                 }
             }

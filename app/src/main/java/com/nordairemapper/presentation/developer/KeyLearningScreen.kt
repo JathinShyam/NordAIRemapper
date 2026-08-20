@@ -164,7 +164,12 @@ fun KeyLearningScreen(
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                         )
                         Text(
-                            text = "Volume and other buttons are visible, but the Plus Key is handled by OnePlus system code and never arrives as a KeyEvent. That is expected on Nord 5 — not an Accessibility bug. Unlock detection once (USB preferred, or Wireless as advanced) so the logcat companion can detect the Plus Key. Accessibility stays required for screenshot, lock, and other system actions.",
+                            text = "Volume and other buttons are visible, but the Plus Key is handled by OnePlus system code and never arrives as a KeyEvent. That is expected on Nord 5 — not an Accessibility bug.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = "Unlock detection once (USB preferred, or Wireless as advanced) so the logcat companion can detect the Plus Key. Accessibility stays required for screenshot, lock, and other system actions.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

@@ -66,3 +66,5 @@ Going forward: write/update these notes in the **same turn** as the code.
 | 2026-08-20 | [ux-review-polish](./2026-08-20-ux-review-polish/) | Critical UX review: Home/Remap scan, status ribbon, Material hub icons, motion/empty states |
 | 2026-08-20 | [overlay-never-settle-positions](./2026-08-20-overlay-never-settle-positions/) | Never Settle on silhouette; Top/Middle/Bottom overlay; pill bar align; slot picker accents |
 | 2026-08-20 | [ui-critique-polish](./2026-08-20-ui-critique-polish/) | Second UI critique: category accents, hub colors, onboarding motion, haptics, ADB copy block |
+| 2026-08-20 | [design-sync-never-settle](./2026-08-20-design-sync-never-settle/) | Prototype sync + exact Never Settle lockup (USPTO motto + authentic 1+ mark) |
+| 2026-08-21 | [critique-v2](./2026-08-21-critique-v2/) | UI critique v2: badges, snackbar, live key pulse, haptics, GRID rename, prototype sync |
