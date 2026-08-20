@@ -1,7 +1,11 @@
 package com.nordairemapper.presentation.home
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,18 +14,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.BugReport
-import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.UploadFile
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -62,7 +64,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenOverlaySettings: () -> Unit,
     onOpenBackup: () -> Unit,
-    viewModel: HomeViewModel = hiltViewModel(),
+    viewModel: HomeViewModel = hiltViewModel(), // params kept for NavHost compatibility
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -89,17 +91,29 @@ fun HomeScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onOpenBackup) {
-                        Icon(Icons.Outlined.UploadFile, contentDescription = "Backup")
-                    }
-                    IconButton(onClick = onOpenOverlaySettings) {
-                        Icon(Icons.Outlined.Layers, contentDescription = "Overlay")
-                    }
-                    IconButton(onClick = onOpenDeveloper) {
-                        Icon(Icons.Outlined.BugReport, contentDescription = "Lab")
-                    }
-                    IconButton(onClick = onOpenSettings) {
-                        Icon(Icons.Outlined.Settings, contentDescription = "Settings")
+                    // Single settings icon — 36×36dp bordered box matching .ico in design
+                    Box(
+                        modifier = Modifier
+                            .padding(end = 12.dp)
+                            .size(36.dp)
+                            .background(
+                                MaterialTheme.colorScheme.surface,
+                                RoundedCornerShape(10.dp),
+                            )
+                            .border(
+                                1.dp,
+                                MaterialTheme.colorScheme.outline,
+                                RoundedCornerShape(10.dp),
+                            )
+                            .clickable(onClick = onOpenSettings),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Outlined.Settings,
+                            contentDescription = "Settings",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp),
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

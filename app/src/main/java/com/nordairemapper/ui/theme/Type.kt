@@ -20,6 +20,7 @@ val NordHeadingFontFamily = FontFamily(
     Font(R.font.space_grotesk, FontWeight.Medium),
     Font(R.font.space_grotesk, FontWeight.SemiBold),
     Font(R.font.space_grotesk, FontWeight.Bold),
+    Font(R.font.space_grotesk, FontWeight.ExtraBold),  // w800 on variable font axis
 )
 
 val NordBodyFontFamily = FontFamily(
@@ -35,41 +36,41 @@ val NordFontFamily: FontFamily = NordBodyFontFamily
 val NordTypography = Typography(
     headlineLarge = TextStyle(
         fontFamily = NordHeadingFontFamily,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.ExtraBold,
         fontSize = 32.sp,
         lineHeight = 40.sp,
-        letterSpacing = (-0.5).sp,
+        letterSpacing = (-0.8).sp,
     ),
     headlineMedium = TextStyle(
         fontFamily = NordHeadingFontFamily,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.ExtraBold,
         fontSize = 28.sp,
         lineHeight = 34.sp,
-        letterSpacing = (-0.6).sp,
+        letterSpacing = (-0.84).sp,  // matches design -0.03em at 28sp
     ),
     titleLarge = TextStyle(
         fontFamily = NordHeadingFontFamily,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.ExtraBold,
         fontSize = 22.sp,
         lineHeight = 28.sp,
-        letterSpacing = (-0.5).sp,
+        letterSpacing = (-0.66).sp,  // -0.03em at 22sp
     ),
     titleMedium = TextStyle(
         fontFamily = NordBodyFontFamily,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 14.sp,
         lineHeight = 20.sp,
     ),
     titleSmall = TextStyle(
         fontFamily = NordBodyFontFamily,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 14.sp,
         lineHeight = 20.sp,
     ),
     labelLarge = TextStyle(
         fontFamily = NordBodyFontFamily,
         fontWeight = FontWeight.Bold,
-        fontSize = 15.sp,
+        fontSize = 14.sp,
         lineHeight = 20.sp,
     ),
     labelMedium = TextStyle(
