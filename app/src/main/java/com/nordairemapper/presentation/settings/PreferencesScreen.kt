@@ -58,7 +58,7 @@ fun PreferencesScreen(
             TopAppBar(
                 title = {
                     Column {
-                        NordHeading("Preferences")
+                        NordHeading("Preferences", style = MaterialTheme.typography.titleLarge)
                         Text(
                             text = "How you're notified",
                             style = MaterialTheme.typography.bodySmall,

@@ -170,11 +170,19 @@ fun OverlaySettingsScreen(
             PrefCard {
                 Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
                     Text(
-                        text = "Grid",
+                        text = when (config.layoutStyle) {
+                            OverlayLayoutStyle.GRID -> "Grid"
+                            OverlayLayoutStyle.PILL_BAR -> "Pill bar"
+                        },
                         style = MaterialTheme.typography.titleSmall,
                     )
                     Text(
-                        text = "3×2 square tile grid — the default design panel",
+                        text = when (config.layoutStyle) {
+                            OverlayLayoutStyle.GRID ->
+                                "3×2 square tile panel — Top / Middle / Bottom"
+                            OverlayLayoutStyle.PILL_BAR ->
+                                "Vertical strip (Left/Right) or horizontal scroll row (Bottom)"
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 10.dp),
@@ -199,18 +207,36 @@ fun OverlaySettingsScreen(
             PrefCard {
                 Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
                     Text(
-                        text = "Where the panel appears on screen",
+                        text = when (config.layoutStyle) {
+                            OverlayLayoutStyle.GRID -> "Where the panel appears vertically"
+                            OverlayLayoutStyle.PILL_BAR ->
+                                "Left / Right = vertical strip · Bottom = horizontal scroll row"
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 10.dp),
                     )
+                    val positions = when (config.layoutStyle) {
+                        OverlayLayoutStyle.GRID -> listOf(
+                            OverlayPosition.TOP,
+                            OverlayPosition.MIDDLE,
+                            OverlayPosition.BOTTOM,
+                        )
+                        OverlayLayoutStyle.PILL_BAR -> listOf(
+                            OverlayPosition.LEFT,
+                            OverlayPosition.RIGHT,
+                            OverlayPosition.BOTTOM,
+                        )
+                    }
                     SegRow {
-                        OverlayPosition.entries.forEach { pos ->
+                        positions.forEach { pos ->
                             val selected = config.position == pos
                             val label = when (pos) {
                                 OverlayPosition.TOP -> "Top"
                                 OverlayPosition.MIDDLE -> "Middle"
                                 OverlayPosition.BOTTOM -> "Bottom"
+                                OverlayPosition.LEFT -> "Left"
+                                OverlayPosition.RIGHT -> "Right"
                             }
                             SegButton(label = label, selected = selected) {
                                 viewModel.setPosition(pos)

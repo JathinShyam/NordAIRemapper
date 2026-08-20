@@ -10,10 +10,12 @@ import com.nordairemapper.domain.model.OverlayPosition
 import com.nordairemapper.domain.model.OverlayVisualStyle
 import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.domain.model.AppSettings
+import com.nordairemapper.domain.model.coerceFor
 import com.nordairemapper.domain.repository.RemapConfigRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -24,6 +26,7 @@ class OverlaySettingsViewModel @Inject constructor(
 ) : ViewModel() {
 
     val config: StateFlow<OverlayConfig> = remapConfigRepository.observeOverlayConfig()
+        .map { it.copy(position = it.position.coerceFor(it.layoutStyle)) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), OverlayConfig())
 
     private fun update(transform: (OverlayConfig) -> OverlayConfig) {
@@ -34,7 +37,9 @@ class OverlaySettingsViewModel @Inject constructor(
 
     fun setEnabled(enabled: Boolean) = update { it.copy(enabled = enabled) }
 
-    fun setPosition(position: OverlayPosition) = update { it.copy(position = position) }
+    fun setPosition(position: OverlayPosition) = update {
+        it.copy(position = position.coerceFor(it.layoutStyle))
+    }
 
     fun setOpacity(opacity: Float) = update { it.copy(opacity = opacity.coerceIn(0.3f, 1f)) }
 
@@ -42,7 +47,12 @@ class OverlaySettingsViewModel @Inject constructor(
 
     fun setAnimation(animation: OverlayAnimation) = update { it.copy(animation = animation) }
 
-    fun setLayoutStyle(style: OverlayLayoutStyle) = update { it.copy(layoutStyle = style) }
+    fun setLayoutStyle(style: OverlayLayoutStyle) = update {
+        it.copy(
+            layoutStyle = style,
+            position = it.position.coerceFor(style),
+        )
+    }
 
     fun setVisualStyle(style: OverlayVisualStyle) = update { it.copy(visualStyle = style) }
 

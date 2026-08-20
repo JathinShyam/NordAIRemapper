@@ -828,6 +828,19 @@
       padding: 22px 16px 18px;
       backdrop-filter: blur(16px);
     }
+    /* Pill bar: single vertical icon strip on Left or Right edge */
+    .overlay-panel.pill {
+      left: 10px; right: auto; top: 50%; bottom: auto;
+      transform: translateY(-50%);
+      width: auto;
+      padding: 14px 10px;
+      border-radius: 28px;
+    }
+    .overlay-panel.pill.right {
+      left: auto; right: 10px;
+    }
+    .overlay-panel.pill h2,
+    .overlay-panel.pill .overlay-dismiss { display: none; }
     .overlay-panel h2 {
       font-family: var(--heading); font-size: 18px; text-align: center;
       margin-bottom: 16px; letter-spacing: -0.02em;
@@ -850,6 +863,30 @@
     .tiles {
       display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
     }
+    .overlay-panel.pill .tiles {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      grid-template-columns: none;
+    }
+    .overlay-panel.pill.bottom {
+      left: 14px; right: 14px; top: auto; bottom: 40px;
+      transform: none;
+      width: auto;
+      padding: 12px;
+    }
+    .overlay-panel.pill.bottom .tiles {
+      flex-direction: row;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      max-width: 100%;
+    }
+    .overlay-panel.pill.bottom .tiles::-webkit-scrollbar { display: none; }
+    .overlay-panel.pill.bottom .tile {
+      flex: 0 0 auto;
+      transform: translateY(18px) scale(.86);
+    }
     .tile {
       aspect-ratio: 1;
       border-radius: 22px;
@@ -860,6 +897,18 @@
       font: inherit; color: var(--text);
       opacity: 0; transform: translateY(18px) scale(.86);
       transition: border-color .2s, background .2s;
+    }
+    .overlay-panel.pill .tile {
+      aspect-ratio: auto;
+      width: 58px;
+      padding: 2px 0 4px;
+      background: transparent;
+      border: none;
+      gap: 4px;
+      transform: translateX(-18px) scale(.86);
+    }
+    .overlay-panel.pill.right .tile {
+      transform: translateX(18px) scale(.86);
     }
     .screen.on .tile {
       animation: tileIn .55s var(--spring) forwards;
@@ -1542,7 +1591,7 @@
         <!-- OVERLAY -->
         <section class="screen" id="overlay">
           <div class="overlay-bg" id="overlayBg" title="Dismiss"></div>
-          <div class="overlay-panel">
+          <div class="overlay-panel pill" id="overlayPanel">
             <h2 class="brand">Overlay</h2>
             <div class="tiles" id="overlayTiles"></div>
             <button class="overlay-dismiss" id="overlayDismiss" type="button">Close</button>
@@ -1834,6 +1883,22 @@
             <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.45" id="overlaySlotsCopy">
               Tap a slot to select it. Preview opens the live overlay. Full layout controls are in the app.
             </p>
+            <div class="pref-card" style="margin-bottom:12px">
+              <div class="label">Layout style</div>
+              <div class="hint-t" id="overlayLayoutHint">Vertical strip (Left/Right) or horizontal scroll row (Bottom)</div>
+              <div class="seg" id="overlayLayoutSeg">
+                <button type="button" data-v="grid">Grid</button>
+                <button type="button" class="on" data-v="pill">Pill bar</button>
+              </div>
+            </div>
+            <div class="pref-card" style="margin-bottom:12px">
+              <div class="label">Position</div>
+              <div class="hint-t" id="overlayPosHint">Left / Right = vertical · Bottom = horizontal scroll</div>
+              <div class="seg" id="overlayPosSeg">
+                <button type="button" class="on" data-v="left">Left</button>
+                <button type="button" data-v="right">Right</button>
+              </div>
+            </div>
             <div class="slots" id="slots"></div>
             <button class="btn" id="previewOverlay" type="button">Preview overlay</button>
           </div>
@@ -2081,6 +2146,90 @@
       { name: "Recents", short: "Recents", icon: "recents" },
     ];
     let selectedSlot = 0;
+    let overlayLayout = "pill"; // grid | pill
+    let overlayPos = "left"; // grid: top|middle|bottom · pill: left|right|bottom
+
+    function applyOverlayChrome() {
+      const panel = document.getElementById("overlayPanel");
+      if (!panel) return;
+      panel.classList.toggle("pill", overlayLayout === "pill");
+      panel.classList.toggle("right", overlayLayout === "pill" && overlayPos === "right");
+      panel.classList.toggle("bottom", overlayLayout === "pill" && overlayPos === "bottom");
+      if (overlayLayout === "grid") {
+        panel.classList.remove("right", "bottom");
+        panel.style.top = "";
+        panel.style.bottom = "";
+        panel.style.left = "";
+        panel.style.right = "";
+        panel.style.transform = "";
+        if (overlayPos === "top") {
+          panel.style.top = "56px";
+          panel.style.bottom = "auto";
+        } else if (overlayPos === "middle") {
+          panel.style.top = "50%";
+          panel.style.bottom = "auto";
+          panel.style.transform = "translateY(-50%)";
+        } else {
+          panel.style.bottom = "48px";
+        }
+      } else {
+        panel.style.top = "";
+        panel.style.bottom = "";
+        panel.style.left = "";
+        panel.style.right = "";
+        panel.style.transform = "";
+      }
+    }
+
+    function renderOverlayPosSeg() {
+      const seg = document.getElementById("overlayPosSeg");
+      const hint = document.getElementById("overlayPosHint");
+      if (!seg) return;
+      const opts = overlayLayout === "pill"
+        ? [["left", "Left"], ["right", "Right"], ["bottom", "Bottom"]]
+        : [["top", "Top"], ["middle", "Middle"], ["bottom", "Bottom"]];
+      if (overlayLayout === "pill" && !["left", "right", "bottom"].includes(overlayPos)) overlayPos = "left";
+      if (overlayLayout === "grid" && !["top", "middle", "bottom"].includes(overlayPos)) overlayPos = "middle";
+      if (hint) {
+        hint.textContent = overlayLayout === "pill"
+          ? "Left / Right = vertical · Bottom = horizontal scroll"
+          : "Where the panel appears vertically";
+      }
+      seg.innerHTML = "";
+      opts.forEach(([v, label]) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.dataset.v = v;
+        b.textContent = label;
+        if (v === overlayPos) b.classList.add("on");
+        b.addEventListener("click", () => {
+          overlayPos = v;
+          renderOverlayPosSeg();
+          applyOverlayChrome();
+        });
+        seg.appendChild(b);
+      });
+    }
+
+    const layoutSeg = document.getElementById("overlayLayoutSeg");
+    if (layoutSeg) {
+      layoutSeg.querySelectorAll("button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          overlayLayout = btn.dataset.v === "grid" ? "grid" : "pill";
+          layoutSeg.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b === btn));
+          const layoutHint = document.getElementById("overlayLayoutHint");
+          if (layoutHint) {
+            layoutHint.textContent = overlayLayout === "pill"
+              ? "Vertical strip (Left/Right) or horizontal scroll row (Bottom)"
+              : "3×2 square tile panel — Top / Middle / Bottom";
+          }
+          renderOverlayPosSeg();
+          applyOverlayChrome();
+        });
+      });
+    }
+    renderOverlayPosSeg();
+    applyOverlayChrome();
 
     function renderOverlayChord() {
       const root = document.getElementById("overlayTiles");

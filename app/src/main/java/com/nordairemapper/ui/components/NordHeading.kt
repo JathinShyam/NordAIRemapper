@@ -31,10 +31,8 @@ fun NordHeading(
     val rest = text.drop(1)
     val restColor =
         if (style.color == Color.Unspecified) MaterialTheme.colorScheme.onSurface else style.color
-    // Screen headings (titleLarge / headlineMedium / headlineLarge) are declared at
-    // ExtraBold in NordTypography, so weight comes in as ExtraBold already.
-    // Any explicitly lighter weight (e.g. SemiBold from a card title) is kept as-is.
-    val weight = style.fontWeight ?: FontWeight.ExtraBold
+    // Space Grotesk includes up to Bold — use that (ExtraBold was fake-bold / soft).
+    val weight = style.fontWeight ?: FontWeight.Bold
     Text(
         text = buildAnnotatedString {
             withStyle(

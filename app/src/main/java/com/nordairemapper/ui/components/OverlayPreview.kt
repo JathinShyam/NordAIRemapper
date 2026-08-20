@@ -8,6 +8,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import com.nordairemapper.domain.model.OverlayConfig
 import com.nordairemapper.domain.model.OverlayIconSize
 import com.nordairemapper.domain.model.OverlayLayoutStyle
+import com.nordairemapper.domain.model.OverlayPosition
 import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.presentation.common.conflictKey
 import com.nordairemapper.presentation.common.displayName
@@ -141,41 +144,50 @@ fun OverlayPreview(
                     }
 
                     OverlayLayoutStyle.PILL_BAR -> {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            val tileW = when (config.iconSize) {
-                                OverlayIconSize.SMALL -> 48.dp
-                                OverlayIconSize.MEDIUM -> 54.dp
-                                OverlayIconSize.LARGE -> 60.dp
-                            }
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalAlignment = Alignment.Top,
-                            ) {
-                                animatedSlots.take(3).forEach { action ->
-                                    PreviewPillTile(
-                                        action = action,
-                                        accent = accent,
-                                        iconSize = config.iconSize,
-                                        tileWidth = tileW,
-                                    )
-                                }
-                            }
-                            if (animatedSlots.size > 3) {
+                        val tileW = when (config.iconSize) {
+                            OverlayIconSize.SMALL -> 48.dp
+                            OverlayIconSize.MEDIUM -> 54.dp
+                            OverlayIconSize.LARGE -> 60.dp
+                        }
+                        when (config.position) {
+                            OverlayPosition.BOTTOM -> {
                                 Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState()),
                                     horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    verticalAlignment = Alignment.Top,
                                 ) {
-                                    animatedSlots.drop(3).forEach { action ->
+                                    animatedSlots.forEach { action ->
                                         PreviewPillTile(
                                             action = action,
                                             accent = accent,
                                             iconSize = config.iconSize,
                                             tileWidth = tileW,
                                         )
+                                    }
+                                }
+                            }
+                            else -> {
+                                val edgeAlign = when (config.position) {
+                                    OverlayPosition.RIGHT -> Alignment.CenterEnd
+                                    else -> Alignment.CenterStart
+                                }
+                                Box(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    contentAlignment = edgeAlign,
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                                    ) {
+                                        animatedSlots.forEach { action ->
+                                            PreviewPillTile(
+                                                action = action,
+                                                accent = accent,
+                                                iconSize = config.iconSize,
+                                                tileWidth = tileW,
+                                            )
+                                        }
                                     }
                                 }
                             }

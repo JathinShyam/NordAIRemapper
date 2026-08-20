@@ -8,12 +8,19 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-/** Vertical placement of the floating overlay panel (grid or pill bar). */
+/**
+ * Overlay placement.
+ * - [GRID]: [TOP] / [MIDDLE] / [BOTTOM]
+ * - [OverlayLayoutStyle.PILL_BAR]: [LEFT] / [RIGHT] vertical strip, or [BOTTOM]
+ *   as a single horizontal scrollable row
+ */
 @Serializable(with = OverlayPositionSerializer::class)
 enum class OverlayPosition {
     TOP,
     MIDDLE,
     BOTTOM,
+    LEFT,
+    RIGHT,
 }
 
 object OverlayPositionSerializer : KSerializer<OverlayPosition> {
@@ -26,11 +33,30 @@ object OverlayPositionSerializer : KSerializer<OverlayPosition> {
 
     override fun deserialize(decoder: Decoder): OverlayPosition = when (decoder.decodeString()) {
         "TOP" -> OverlayPosition.TOP
-        "MIDDLE", "LEFT_EDGE", "RIGHT_EDGE" -> OverlayPosition.MIDDLE
+        "MIDDLE" -> OverlayPosition.MIDDLE
         "BOTTOM", "BOTTOM_CENTER" -> OverlayPosition.BOTTOM
+        "LEFT", "LEFT_EDGE" -> OverlayPosition.LEFT
+        "RIGHT", "RIGHT_EDGE" -> OverlayPosition.RIGHT
         else -> OverlayPosition.MIDDLE
     }
 }
+
+/** Positions allowed for a layout style. */
+fun OverlayPosition.isValidFor(style: OverlayLayoutStyle): Boolean = when (style) {
+    OverlayLayoutStyle.GRID -> this == OverlayPosition.TOP ||
+        this == OverlayPosition.MIDDLE ||
+        this == OverlayPosition.BOTTOM
+    OverlayLayoutStyle.PILL_BAR -> this == OverlayPosition.LEFT ||
+        this == OverlayPosition.RIGHT ||
+        this == OverlayPosition.BOTTOM
+}
+
+fun OverlayPosition.coerceFor(style: OverlayLayoutStyle): OverlayPosition =
+    if (isValidFor(style)) this
+    else when (style) {
+        OverlayLayoutStyle.PILL_BAR -> OverlayPosition.LEFT
+        OverlayLayoutStyle.GRID -> OverlayPosition.MIDDLE
+    }
 
 enum class OverlayIconSize { SMALL, MEDIUM, LARGE }
 
@@ -62,7 +88,8 @@ data class OverlayConfig(
     /** When false, [RemapAction.ShowOverlay] will not open the floating menu. */
     val enabled: Boolean = true,
     val slots: List<RemapAction> = emptyList(),
-    val position: OverlayPosition = OverlayPosition.MIDDLE,
+    /** Default LEFT — pill bar (default layout) sits on the Plus Key edge. */
+    val position: OverlayPosition = OverlayPosition.LEFT,
     val opacity: Float = 1f,
     val iconSize: OverlayIconSize = OverlayIconSize.MEDIUM,
     val animation: OverlayAnimation = OverlayAnimation.SCALE,

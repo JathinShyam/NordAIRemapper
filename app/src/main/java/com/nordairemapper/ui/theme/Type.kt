@@ -36,24 +36,25 @@ val NordFontFamily: FontFamily = NordBodyFontFamily
 val NordTypography = Typography(
     headlineLarge = TextStyle(
         fontFamily = NordHeadingFontFamily,
-        fontWeight = FontWeight.ExtraBold,
+        // Space Grotesk ships Light–Bold; ExtraBold was synthetic and looked soft.
+        fontWeight = FontWeight.Bold,
         fontSize = 32.sp,
         lineHeight = 40.sp,
         letterSpacing = (-0.8).sp,
     ),
     headlineMedium = TextStyle(
         fontFamily = NordHeadingFontFamily,
-        fontWeight = FontWeight.ExtraBold,
+        fontWeight = FontWeight.Bold,
         fontSize = 28.sp,
         lineHeight = 34.sp,
         letterSpacing = (-0.84).sp,  // matches design -0.03em at 28sp
     ),
     titleLarge = TextStyle(
         fontFamily = NordHeadingFontFamily,
-        fontWeight = FontWeight.ExtraBold,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = (-0.66).sp,  // -0.03em at 22sp
+        fontWeight = FontWeight.Bold,
+        fontSize = 24.sp,
+        lineHeight = 30.sp,
+        letterSpacing = (-0.5).sp,
     ),
     titleMedium = TextStyle(
         fontFamily = NordBodyFontFamily,

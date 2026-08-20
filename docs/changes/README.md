@@ -68,3 +68,6 @@ Going forward: write/update these notes in the **same turn** as the code.
 | 2026-08-20 | [ui-critique-polish](./2026-08-20-ui-critique-polish/) | Second UI critique: category accents, hub colors, onboarding motion, haptics, ADB copy block |
 | 2026-08-20 | [design-sync-never-settle](./2026-08-20-design-sync-never-settle/) | Prototype sync + exact Never Settle lockup (USPTO motto + authentic 1+ mark) |
 | 2026-08-21 | [critique-v2](./2026-08-21-critique-v2/) | UI critique v2: badges, snackbar, live key pulse, haptics, GRID rename, prototype sync |
+| 2026-08-21 | [lean-launcher-icon](./2026-08-21-lean-launcher-icon/) | Replace fat filled phone launcher with lean cyan outline + Plus Key |
+| 2026-08-21 | [vertical-pill-bar](./2026-08-21-vertical-pill-bar/) | Pill = vertical Left/Right strip; Grid keeps Top/Middle/Bottom |
+| 2026-08-21 | [pill-bottom-vibrant-lockup](./2026-08-21-pill-bottom-vibrant-lockup/) | Pill Bottom scroll row; vector lockup; real Bold top titles |

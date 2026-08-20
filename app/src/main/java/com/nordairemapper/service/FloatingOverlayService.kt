@@ -36,6 +36,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -76,6 +78,7 @@ import com.nordairemapper.domain.model.OverlayIconSize
 import com.nordairemapper.domain.model.OverlayLayoutStyle
 import com.nordairemapper.domain.model.OverlayPosition
 import com.nordairemapper.domain.model.RemapAction
+import com.nordairemapper.domain.model.coerceFor
 import com.nordairemapper.domain.repository.RemapConfigRepository
 import com.nordairemapper.presentation.MainActivity
 import com.nordairemapper.presentation.common.displayName
@@ -91,16 +94,36 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-private fun overlayPanelAlignment(position: OverlayPosition): Alignment = when (position) {
-    OverlayPosition.TOP -> Alignment.TopCenter
-    OverlayPosition.MIDDLE -> Alignment.Center
-    OverlayPosition.BOTTOM -> Alignment.BottomCenter
+private fun overlayPanelAlignment(
+    style: OverlayLayoutStyle,
+    position: OverlayPosition,
+): Alignment = when (style) {
+    OverlayLayoutStyle.GRID -> when (position.coerceFor(style)) {
+        OverlayPosition.TOP -> Alignment.TopCenter
+        OverlayPosition.BOTTOM -> Alignment.BottomCenter
+        else -> Alignment.Center
+    }
+    OverlayLayoutStyle.PILL_BAR -> when (position.coerceFor(style)) {
+        OverlayPosition.RIGHT -> Alignment.CenterEnd
+        OverlayPosition.BOTTOM -> Alignment.BottomCenter
+        else -> Alignment.CenterStart
+    }
 }
 
-private fun overlayPanelPadding(position: OverlayPosition): PaddingValues = when (position) {
-    OverlayPosition.TOP -> PaddingValues(start = 18.dp, top = 56.dp, end = 18.dp, bottom = 18.dp)
-    OverlayPosition.MIDDLE -> PaddingValues(horizontal = 18.dp, vertical = 24.dp)
-    OverlayPosition.BOTTOM -> PaddingValues(start = 18.dp, top = 18.dp, end = 18.dp, bottom = 48.dp)
+private fun overlayPanelPadding(
+    style: OverlayLayoutStyle,
+    position: OverlayPosition,
+): PaddingValues = when (style) {
+    OverlayLayoutStyle.GRID -> when (position.coerceFor(style)) {
+        OverlayPosition.TOP -> PaddingValues(start = 18.dp, top = 56.dp, end = 18.dp, bottom = 18.dp)
+        OverlayPosition.BOTTOM -> PaddingValues(start = 18.dp, top = 18.dp, end = 18.dp, bottom = 48.dp)
+        else -> PaddingValues(horizontal = 18.dp, vertical = 24.dp)
+    }
+    OverlayLayoutStyle.PILL_BAR -> when (position.coerceFor(style)) {
+        OverlayPosition.RIGHT -> PaddingValues(end = 10.dp, top = 24.dp, bottom = 24.dp)
+        OverlayPosition.BOTTOM -> PaddingValues(start = 14.dp, end = 14.dp, bottom = 40.dp)
+        else -> PaddingValues(start = 10.dp, top = 24.dp, bottom = 24.dp)
+    }
 }
 
 private fun pillTileWidth(iconSize: OverlayIconSize): Dp = when (iconSize) {
@@ -395,13 +418,13 @@ private fun OverlayWindowContent(
                 ),
         )
 
-        // ── Panel — layout style + vertical position (Top / Middle / Bottom) ──
-        val panelAlign = overlayPanelAlignment(config.position)
-        val panelPad = overlayPanelPadding(config.position)
+        // ── Panel — Grid: Top/Middle/Bottom · Pill: Left/Right vertical strip ──
+        val panelAlign = overlayPanelAlignment(config.layoutStyle, config.position)
+        val panelPad = overlayPanelPadding(config.layoutStyle, config.position)
 
         when (config.layoutStyle) {
 
-            // ── RADIAL: 3×2 square tile grid ──────────────────────────────────
+            // ── GRID: 3×2 square tile panel ───────────────────────────────────
             OverlayLayoutStyle.GRID -> {
                 Box(
                     modifier = Modifier
@@ -465,14 +488,19 @@ private fun OverlayWindowContent(
                 }
             }
 
-            // ── PILL_BAR: horizontal strip, fixed-width tiles (aligned icons) ──
+            // ── PILL_BAR: vertical Left/Right, or horizontal Bottom (scroll) ─
             OverlayLayoutStyle.PILL_BAR -> {
+                val pillPos = config.position.coerceFor(OverlayLayoutStyle.PILL_BAR)
+                val isBottom = pillPos == OverlayPosition.BOTTOM
                 val tileW = pillTileWidth(config.iconSize)
+                val pillShape = RoundedCornerShape(28.dp)
                 Box(
                     modifier = Modifier
                         .align(panelAlign)
                         .padding(panelPad)
-                        .wrapContentSize()
+                        .then(
+                            if (isBottom) Modifier.fillMaxWidth() else Modifier.wrapContentSize(),
+                        )
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() },
@@ -482,7 +510,7 @@ private fun OverlayWindowContent(
                             if (config.glowEffects) {
                                 Modifier.shadow(
                                     elevation = 20.dp,
-                                    shape = RoundedCornerShape(24.dp),
+                                    shape = pillShape,
                                     ambientColor = accent.copy(alpha = 0.3f),
                                     spotColor = accent.copy(alpha = 0.4f),
                                 )
@@ -490,50 +518,50 @@ private fun OverlayWindowContent(
                         )
                         .background(
                             Color(0xFF141414).copy(alpha = config.opacity.coerceIn(0.3f, 1f)),
-                            RoundedCornerShape(24.dp),
+                            pillShape,
                         )
-                        .border(1.dp, Color(0xFF2C2C2C), RoundedCornerShape(24.dp))
-                        .padding(horizontal = 12.dp, vertical = 12.dp),
+                        .border(1.dp, Color(0xFF2C2C2C), pillShape)
+                        .padding(
+                            horizontal = if (isBottom) 12.dp else 10.dp,
+                            vertical = if (isBottom) 12.dp else 14.dp,
+                        ),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        Row(
+                    if (isBottom) {
+                        LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            verticalAlignment = Alignment.Top,
+                            contentPadding = PaddingValues(horizontal = 2.dp),
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
-                            slots.take(3).forEachIndexed { i, action ->
+                            itemsIndexed(slots) { i, action ->
                                 PillTile(
                                     action = action,
                                     index = i,
                                     accent = accent,
                                     iconSize = config.iconSize,
                                     animation = config.animation,
-                                    position = config.position,
+                                    position = pillPos,
                                     tileWidth = tileW,
                                     onClick = { onAction(action) },
                                 )
                             }
                         }
-                        if (slots.size > 3) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalAlignment = Alignment.Top,
-                            ) {
-                                slots.drop(3).forEachIndexed { i, action ->
-                                    PillTile(
-                                        action = action,
-                                        index = i + 3,
-                                        accent = accent,
-                                        iconSize = config.iconSize,
-                                        animation = config.animation,
-                                        position = config.position,
-                                        tileWidth = tileW,
-                                        onClick = { onAction(action) },
-                                    )
-                                }
+                    } else {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            slots.forEachIndexed { i, action ->
+                                PillTile(
+                                    action = action,
+                                    index = i,
+                                    accent = accent,
+                                    iconSize = config.iconSize,
+                                    animation = config.animation,
+                                    position = pillPos,
+                                    tileWidth = tileW,
+                                    onClick = { onAction(action) },
+                                )
                             }
                         }
                     }
@@ -543,7 +571,7 @@ private fun OverlayWindowContent(
     }
 }
 
-// ─── 3×2 grid (RADIAL layout) ─────────────────────────────────────────────
+// ─── 3×2 grid (GRID layout) ───────────────────────────────────────────────
 
 @Composable
 private fun TileGrid(
@@ -600,7 +628,7 @@ private fun TileGrid(
     }
 }
 
-// ─── Square tile (RADIAL layout) ──────────────────────────────────────────
+// ─── Square tile (GRID layout) ────────────────────────────────────────────
 
 @Composable
 private fun OverlayTile(
@@ -637,8 +665,8 @@ private fun OverlayTile(
                     OverlayAnimation.SLIDE -> {
                         val fromY = when (position) {
                             OverlayPosition.TOP -> -28.dp.toPx()
-                            OverlayPosition.MIDDLE -> 16.dp.toPx()
                             OverlayPosition.BOTTOM -> 28.dp.toPx()
+                            else -> 16.dp.toPx()
                         }
                         translationY = (1f - t) * fromY
                     }
@@ -714,12 +742,17 @@ private fun PillTile(
                         scaleY = 0.7f + t * 0.3f
                     }
                     OverlayAnimation.SLIDE -> {
-                        val fromY = when (position) {
-                            OverlayPosition.TOP -> -20.dp.toPx()
-                            OverlayPosition.MIDDLE -> 12.dp.toPx()
-                            OverlayPosition.BOTTOM -> 20.dp.toPx()
+                        when (position) {
+                            OverlayPosition.BOTTOM -> {
+                                translationY = (1f - t) * 28.dp.toPx()
+                            }
+                            OverlayPosition.RIGHT -> {
+                                translationX = (1f - t) * 24.dp.toPx()
+                            }
+                            else -> {
+                                translationX = (1f - t) * -24.dp.toPx()
+                            }
                         }
-                        translationY = (1f - t) * fromY
                     }
                 }
             }
