@@ -2,7 +2,7 @@
 
 ## Why
 
-CI `Build Debug APK` (run 32382069677) failed on `:app:compileDebugKotlin` after settings/overlay UI polish. Previous commit `e8dfb52` was green.
+CI `Build Debug APK` failed on `:app:compileDebugKotlin` when overlay polish used an invalid Compose padding overload. Reintroduced again in `ac877be` (Polish overlay settings).
 
 ## What
 
