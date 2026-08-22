@@ -20,6 +20,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -48,6 +49,13 @@ class LogcatWatcherService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var logcatProcess: Process? = null
 
+    /**
+     * The one active tail loop. Every settings write used to call [start] again,
+     * which spawned an additional concurrent `logcat` process per call; this job
+     * reference is the "already watching" guard.
+     */
+    private var watchJob: Job? = null
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -64,13 +72,16 @@ class LogcatWatcherService : Service() {
             return START_NOT_STICKY
         }
 
-        scope.launch {
-            val showDetails = settingsRepository.settings.first().showServiceNotification
-            if (!showDetails) {
-                getSystemService(NotificationManager::class.java)
-                    .notify(NOTIFICATION_ID, buildNotification(showDetails = false))
+        // Exactly one tail loop regardless of how many times start() is called.
+        if (watchJob?.isActive != true) {
+            watchJob = scope.launch {
+                val showDetails = settingsRepository.settings.first().showServiceNotification
+                if (!showDetails) {
+                    getSystemService(NotificationManager::class.java)
+                        .notify(NOTIFICATION_ID, buildNotification(showDetails = false))
+                }
+                watchLogcat()
             }
-            watchLogcat()
         }
         return START_STICKY
     }
@@ -170,6 +181,7 @@ class LogcatWatcherService : Service() {
     override fun onDestroy() {
         logcatProcess?.destroy()
         scope.cancel()
+        watchJob = null
         ServiceNotifications.notifyDetectionStopped(this)
         super.onDestroy()
     }

@@ -55,12 +55,20 @@ class RemapEngine @Inject constructor(
 
         scope.launch {
             settingsRepository.settings.collect { next ->
+                val previous = settings
                 settings = next
-                DetectionCoordinator.syncLogcatWatcher(
-                    context = context,
-                    strategy = next.detectionStrategy,
-                    serviceEnabled = next.serviceEnabled,
-                )
+                // Only restart/sync the watcher when detection-relevant fields
+                // actually change; every unrelated toggle used to call start()
+                // again (LogcatWatcherService now also self-guards).
+                if (previous.detectionStrategy != next.detectionStrategy ||
+                    previous.serviceEnabled != next.serviceEnabled
+                ) {
+                    DetectionCoordinator.syncLogcatWatcher(
+                        context = context,
+                        strategy = next.detectionStrategy,
+                        serviceEnabled = next.serviceEnabled,
+                    )
+                }
             }
         }
         scope.launch {

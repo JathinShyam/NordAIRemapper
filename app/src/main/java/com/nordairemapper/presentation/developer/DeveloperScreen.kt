@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -259,14 +260,18 @@ private fun TimingSlider(
     range: LongRange,
     onChange: (Long) -> Unit,
 ) {
+    // Drag locally; commit once on release so we don't write a DataStore
+    // value (and restart detection work) on every tick.
+    var pendingMs by remember(valueMs) { mutableStateOf(valueMs.toFloat()) }
     Column {
         Text(
-            text = "$label · ${valueMs}ms",
+            text = "$label · ${pendingMs.toLong()}ms",
             style = MaterialTheme.typography.titleSmall,
         )
         Slider(
-            value = valueMs.toFloat(),
-            onValueChange = { onChange(it.toLong()) },
+            value = pendingMs,
+            onValueChange = { pendingMs = it },
+            onValueChangeFinished = { onChange(pendingMs.toLong()) },
             valueRange = range.first.toFloat()..range.last.toFloat(),
         )
         Row(

@@ -32,6 +32,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -221,9 +224,16 @@ fun VisualOverlayScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 8.dp),
                     )
+                    // Drag locally; persist once on release.
+                    var pendingHoldMs by remember(config.holdDurationMs) {
+                        mutableStateOf(config.holdDurationMs.toFloat())
+                    }
                     Slider(
-                        value = config.holdDurationMs.toFloat(),
-                        onValueChange = { viewModel.setHoldDurationMs(it.toLong()) },
+                        value = pendingHoldMs,
+                        onValueChange = { pendingHoldMs = it },
+                        onValueChangeFinished = {
+                            viewModel.setHoldDurationMs(pendingHoldMs.toLong())
+                        },
                         valueRange = AppSettings.HOLD_DURATION_RANGE_MS.first.toFloat()..
                             AppSettings.HOLD_DURATION_RANGE_MS.last.toFloat(),
                         steps = 16,
