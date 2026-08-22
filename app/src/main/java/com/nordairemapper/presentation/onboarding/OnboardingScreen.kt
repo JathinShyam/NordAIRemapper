@@ -27,12 +27,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Sensors
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,6 +43,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,7 +71,7 @@ fun OnboardingScreen(
     onOpenEnableDetection: () -> Unit,
     viewModel: OnboardingViewModel = hiltViewModel(),
 ) {
-    var page by remember { mutableIntStateOf(0) }
+    var page by rememberSaveable { mutableIntStateOf(0) }
     val permissions by viewModel.permissions.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -91,6 +94,17 @@ fun OnboardingScreen(
             .padding(horizontal = 20.dp, vertical = 22.dp),
     ) {
         Box(modifier = Modifier.weight(1f)) {
+            if (page > 0) {
+                IconButton(
+                    onClick = { page -= 1 },
+                    modifier = Modifier.align(Alignment.TopStart),
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Previous step",
+                    )
+                }
+            }
             AnimatedContent(
                 targetState = page,
                 transitionSpec = {

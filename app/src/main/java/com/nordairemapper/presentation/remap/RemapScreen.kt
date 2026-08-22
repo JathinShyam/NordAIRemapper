@@ -72,7 +72,6 @@ import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.NordSurfaceCard
 import com.nordairemapper.ui.components.SectionLabel
 import com.nordairemapper.ui.theme.NordBlue
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 private enum class RemapSheet { None, AppPicker, UrlInput }
 
@@ -114,9 +113,9 @@ fun RemapScreen(
     LaunchedEffect(Unit) {
         viewModel.events.collect { message ->
             snackbar.showSnackbar(
-                when {
-                    message.startsWith("Saved:") -> "Action saved"
-                    message == "Tried current action" -> "Trying action…"
+                when (message) {
+                    RemapViewModel.EVENT_SAVED -> "Action saved"
+                    RemapViewModel.EVENT_TRIED -> "Trying action…"
                     else -> message
                 },
             )
@@ -167,9 +166,8 @@ fun RemapScreen(
                     text = "Try now",
                     onClick = {
                         tryNowLoading = true
-                        viewModel.tryNow()
                         scope.launch {
-                            delay(500)
+                            viewModel.tryNow()
                             tryNowLoading = false
                         }
                     },
@@ -178,12 +176,7 @@ fun RemapScreen(
                 )
                 NordPrimaryButton(
                     text = "Done",
-                    onClick = {
-                        scope.launch {
-                            snackbar.showSnackbar("Saved")
-                            onBack()
-                        }
-                    },
+                    onClick = onBack,
                     modifier = Modifier.weight(1f),
                 )
             }

@@ -83,15 +83,14 @@ class RemapViewModel @Inject constructor(
     fun setAction(action: RemapAction) {
         viewModelScope.launch {
             remapConfigRepository.setAction(pressType, action)
-            _events.emit("Saved: ${action::class.simpleName}")
+            _events.emit(EVENT_SAVED)
         }
     }
 
-    fun tryNow() {
-        viewModelScope.launch {
-            actionDispatcher.execute(uiState.value.currentAction)
-            _events.emit("Tried current action")
-        }
+    /** Runs the currently assigned action so users can feel-test it. */
+    suspend fun tryNow() {
+        actionDispatcher.execute(uiState.value.currentAction)
+        _events.emit(EVENT_TRIED)
     }
 
     fun loadInstalledApps() {
@@ -102,5 +101,10 @@ class RemapViewModel @Inject constructor(
                 .onSuccess { _installedApps.value = it }
             _loadingApps.value = false
         }
+    }
+
+    companion object {
+        const val EVENT_SAVED = "saved"
+        const val EVENT_TRIED = "tried"
     }
 }
