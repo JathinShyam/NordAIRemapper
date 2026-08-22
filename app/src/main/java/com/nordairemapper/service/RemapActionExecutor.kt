@@ -285,16 +285,14 @@ class RemapActionExecutor @Inject constructor(
         val down = KeyEvent(KeyEvent.ACTION_DOWN, keyCode)
         val up = KeyEvent(KeyEvent.ACTION_UP, keyCode)
 
-        // Prefer the active media session when the platform allows it.
+        // Prefer the most recent active media session when allowed; sending to
+        // every session skipped a track per session on multi-session devices.
         val sentToSession = runCatching {
-            val sessions = context.getSystemService(MediaSessionManager::class.java)
+            val controller = context.getSystemService(MediaSessionManager::class.java)
                 ?.getActiveSessions(null)
-                .orEmpty()
-            if (sessions.isEmpty()) return@runCatching false
-            sessions.forEach { controller ->
-                controller.dispatchMediaButtonEvent(down)
-                controller.dispatchMediaButtonEvent(up)
-            }
+                ?.firstOrNull() ?: return@runCatching false
+            controller.dispatchMediaButtonEvent(down)
+            controller.dispatchMediaButtonEvent(up)
             true
         }.getOrDefault(false)
 

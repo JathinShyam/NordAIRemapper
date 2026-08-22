@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Explicit backup rules: user remap configs (Room) and settings (DataStore)
+  transfer with cloud backups / device migration. Nothing else is included,
+  and no secrets exist in this app to exclude.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="database" path="nord_remapper.db" />
+        <include domain="file" path="datastore/" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="database" path="nord_remapper.db" />
+        <include domain="file" path="datastore/" />
+    </device-transfer>
+</data-extraction-rules>

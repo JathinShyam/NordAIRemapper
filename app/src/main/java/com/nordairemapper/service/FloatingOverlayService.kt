@@ -49,6 +49,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -403,14 +404,18 @@ private fun OverlayWindowContent(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(accent.copy(alpha = 0.08f), Color.Transparent),
-                        center = Offset(0.3f * 1080f, 0.2f * 2400f),
-                        radius = 600f,
-                    ),
-                )
-                .background(Color(0xFF0B0B0B).copy(alpha = 0.85f))
+                // Glow center scales with the real window size; a hard-coded
+                // 1080x2400 px point landed off-center on other resolutions.
+                .drawBehind {
+                    drawRect(
+                        brush = Brush.radialGradient(
+                            colors = listOf(accent.copy(alpha = 0.08f), Color.Transparent),
+                            center = Offset(size.width * 0.3f, size.height * 0.2f),
+                            radius = size.minDimension * 0.6f,
+                        ),
+                    )
+                    drawRect(Color(0xFF0B0B0B).copy(alpha = 0.85f))
+                }
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() },

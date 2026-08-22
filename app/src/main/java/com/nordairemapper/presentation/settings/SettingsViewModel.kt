@@ -105,7 +105,7 @@ class SettingsViewModel @Inject constructor(
 
     fun versionName(): String = runCatching {
         context.packageManager.getPackageInfo(context.packageName, 0).versionName
-    }.getOrNull() ?: "0.1.0"
+    }.getOrNull() ?: "unknown"
 
     private fun isBatteryExempt(): Boolean {
         val pm = context.getSystemService(PowerManager::class.java)

@@ -57,8 +57,7 @@ class PlusKeyAccessibilityService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
-        val pkg = event.packageName?.toString() ?: return
-        foregroundAppTracker.packageName = pkg
+        foregroundAppTracker.onWindowStateChanged(event.packageName?.toString())
     }
 
     override fun onInterrupt() = Unit
