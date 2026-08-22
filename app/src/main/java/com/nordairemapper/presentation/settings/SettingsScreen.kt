@@ -67,6 +67,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.ThemeMode
+import com.nordairemapper.presentation.common.adaptiveAccent
 import com.nordairemapper.presentation.remap.AppPickerSheet
 import com.nordairemapper.presentation.remap.InstalledAppInfo
 import com.nordairemapper.ui.components.NordHeading
@@ -167,8 +168,18 @@ fun SettingsScreen(
                 icon = Icons.Outlined.Vibration,
                 title = "Feedback",
                 subtitle = "Haptic feedback & vibration intensity",
-                accentContainer = Color(0xFF14321F),
-                accentTint = Color(0xFF3DDC84),
+                accentContainer = adaptiveAccent(
+                    darkContainer = Color(0xFF14321F),
+                    darkTint = Color(0xFF3DDC84),
+                    lightContainer = Color(0xFFDCF3E4),
+                    lightTint = Color(0xFF1C7C46),
+                ).container,
+                accentTint = adaptiveAccent(
+                    darkContainer = Color(0xFF14321F),
+                    darkTint = Color(0xFF3DDC84),
+                    lightContainer = Color(0xFFDCF3E4),
+                    lightTint = Color(0xFF1C7C46),
+                ).tint,
                 onClick = onOpenFeedback,
             )
             HubRow(
@@ -183,16 +194,36 @@ fun SettingsScreen(
                 icon = Icons.Outlined.Visibility,
                 title = "Visual overlay",
                 subtitle = "Action popup style when a remap fires",
-                accentContainer = Color(0xFF2A1F3D),
-                accentTint = Color(0xFFB388FF),
+                accentContainer = adaptiveAccent(
+                    darkContainer = Color(0xFF2A1F3D),
+                    darkTint = Color(0xFFB388FF),
+                    lightContainer = Color(0xFFEAE2FA),
+                    lightTint = Color(0xFF6A46B8),
+                ).container,
+                accentTint = adaptiveAccent(
+                    darkContainer = Color(0xFF2A1F3D),
+                    darkTint = Color(0xFFB388FF),
+                    lightContainer = Color(0xFFEAE2FA),
+                    lightTint = Color(0xFF6A46B8),
+                ).tint,
                 onClick = onOpenVisualOverlay,
             )
             HubRow(
                 icon = Icons.Outlined.Widgets,
                 title = "Overlay settings",
                 subtitle = "Floating menu slots & layout",
-                accentContainer = Color(0xFF2A1F3D),
-                accentTint = Color(0xFFB388FF),
+                accentContainer = adaptiveAccent(
+                    darkContainer = Color(0xFF2A1F3D),
+                    darkTint = Color(0xFFB388FF),
+                    lightContainer = Color(0xFFEAE2FA),
+                    lightTint = Color(0xFF6A46B8),
+                ).container,
+                accentTint = adaptiveAccent(
+                    darkContainer = Color(0xFF2A1F3D),
+                    darkTint = Color(0xFFB388FF),
+                    lightContainer = Color(0xFFEAE2FA),
+                    lightTint = Color(0xFF6A46B8),
+                ).tint,
                 onClick = onOpenOverlay,
             )
 
@@ -202,8 +233,18 @@ fun SettingsScreen(
                 icon = Icons.Outlined.Lock,
                 title = "Lock Screen",
                 subtitle = "Gestures while the screen is locked",
-                accentContainer = Color(0xFF3D2E14),
-                accentTint = Color(0xFFFFB020),
+                accentContainer = adaptiveAccent(
+                    darkContainer = Color(0xFF3D2E14),
+                    darkTint = Color(0xFFFFB020),
+                    lightContainer = Color(0xFFFFF0D6),
+                    lightTint = Color(0xFF9A5F00),
+                ).container,
+                accentTint = adaptiveAccent(
+                    darkContainer = Color(0xFF3D2E14),
+                    darkTint = Color(0xFFFFB020),
+                    lightContainer = Color(0xFFFFF0D6),
+                    lightTint = Color(0xFF9A5F00),
+                ).tint,
                 onClick = onOpenLockScreen,
             )
             HubRow(
@@ -229,8 +270,18 @@ fun SettingsScreen(
                 icon = Icons.Outlined.Science,
                 title = "Lab",
                 subtitle = "Strategy, timing, USB unlock (Developer)",
-                accentContainer = Color(0xFF3D2E14),
-                accentTint = Color(0xFFFFB020),
+                accentContainer = adaptiveAccent(
+                    darkContainer = Color(0xFF3D2E14),
+                    darkTint = Color(0xFFFFB020),
+                    lightContainer = Color(0xFFFFF0D6),
+                    lightTint = Color(0xFF9A5F00),
+                ).container,
+                accentTint = adaptiveAccent(
+                    darkContainer = Color(0xFF3D2E14),
+                    darkTint = Color(0xFFFFB020),
+                    lightContainer = Color(0xFFFFF0D6),
+                    lightTint = Color(0xFF9A5F00),
+                ).tint,
                 onClick = onOpenDeveloper,
             )
             HubRow(
