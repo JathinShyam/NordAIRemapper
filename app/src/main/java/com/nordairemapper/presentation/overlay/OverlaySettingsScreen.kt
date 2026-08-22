@@ -61,7 +61,8 @@ import com.nordairemapper.presentation.common.icon
 import com.nordairemapper.presentation.remap.AppPickerSheet
 import com.nordairemapper.presentation.remap.UrlInputSheet
 import com.nordairemapper.ui.components.ActionCard
-import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.components.NordTopBarHeading
+import com.nordairemapper.ui.components.NordTopBarTitle
 import com.nordairemapper.ui.components.OverlayPreview
 import com.nordairemapper.ui.components.SectionLabel
 
@@ -82,14 +83,10 @@ fun OverlaySettingsScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        NordHeading("Overlay", style = MaterialTheme.typography.titleLarge)
-                        Text(
-                            text = "Floating menu slots",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    NordTopBarTitle(
+                        title = "Overlay",
+                        subtitle = "Floating menu slots",
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -428,9 +425,8 @@ private fun ActionCatalogSheet(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            NordHeading(
+            NordTopBarHeading(
                 text = "Choose action",
-                style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 8.dp),
             )
             grouped.forEach { (category, items) ->

@@ -84,7 +84,7 @@ import com.nordairemapper.domain.repository.RemapConfigRepository
 import com.nordairemapper.presentation.MainActivity
 import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.presentation.common.icon
-import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.components.NordTopBarHeading
 import com.nordairemapper.ui.theme.NordAIRemapperTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -459,12 +459,8 @@ private fun OverlayWindowContent(
                         .padding(start = 16.dp, top = 22.dp, end = 16.dp, bottom = 18.dp),
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        NordHeading(
+                        NordTopBarHeading(
                             text = "Overlay",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                letterSpacing = (-0.02).sp,
-                                textAlign = TextAlign.Center,
-                            ),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 16.dp),

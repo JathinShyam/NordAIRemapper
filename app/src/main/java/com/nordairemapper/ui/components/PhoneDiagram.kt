@@ -6,12 +6,18 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -20,16 +26,19 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.nordairemapper.R
 
 /**
  * Front silhouette of the OnePlus Nord 5.
  *
  * Exact body ratio from GSMArena: **163.4 × 77 × 8.1 mm** (W/H = 77/163.4).
  * Theme-aware chrome (body / frame / Plus Key) for light and dark;
- * screen glass stays near-black.
+ * screen glass shows the classic OnePlus boot/ad lockup (1+ mark + boxed NEVER / SETTLE).
  */
 @Composable
 fun PhoneDiagram(
@@ -91,17 +100,27 @@ fun PhoneDiagram(
         label = "rippleTravel",
     )
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
             .semantics {
                 contentDescription = "OnePlus Nord 5 outline with Plus Key on the left"
             },
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val bodyAspect = 77f / 163.4f
-            val keyGutterFrac = 1.5f / 77f
+        val bodyAspect = 77f / 163.4f
+        val keyGutterFrac = 1.5f / 77f
+        var phoneHeightDp = maxHeight * 0.98f
+        var phoneWidthDp = phoneHeightDp * bodyAspect
+        val maxBodyWidthDp = maxWidth / (1f + 2f * keyGutterFrac)
+        if (phoneWidthDp > maxBodyWidthDp) {
+            phoneWidthDp = maxBodyWidthDp
+            phoneHeightDp = phoneWidthDp / bodyAspect
+        }
+        // Design lockup ≈ 54% of glass / body width; keep proportional when hero shrinks.
+        val lockupWidth = phoneWidthDp * 0.54f
+        val lockupOffsetY = phoneHeightDp * 0.06f
 
+        Canvas(modifier = Modifier.fillMaxSize()) {
             var phoneHeight = size.height * 0.98f
             var phoneWidth = phoneHeight * bodyAspect
             val maxBodyWidth = size.width / (1f + 2f * keyGutterFrac)
@@ -237,5 +256,28 @@ fun PhoneDiagram(
                 cornerRadius = CornerRadius(btnWidth / 2f, btnWidth / 2f),
             )
         }
+
+        // Classic OxygenOS / ad lockup: mark above two red bars (USPTO letterforms).
+        // ~54% of body width; nudged below center to clear the punch-hole.
+        NeverSettleBrand(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .offset(y = lockupOffsetY)
+                .width(lockupWidth),
+        )
     }
+}
+
+/**
+ * Official-style lockup raster (authentic 1+ path + boxed NEVER / SETTLE bars).
+ * Matches classic OnePlus boot / calculator / advertising stack — not live Compose text.
+ */
+@Composable
+private fun NeverSettleBrand(modifier: Modifier = Modifier) {
+    Image(
+        painter = painterResource(R.drawable.never_settle_lockup),
+        contentDescription = null,
+        modifier = modifier.aspectRatio(640f / 700f),
+        contentScale = ContentScale.Fit,
+    )
 }

@@ -38,7 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.OverlayVisualStyle
 import com.nordairemapper.presentation.overlay.OverlaySettingsViewModel
 import com.nordairemapper.ui.components.NordGhostButton
-import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.components.NordTopBarTitle
 import com.nordairemapper.ui.components.SectionLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,14 +57,10 @@ fun PreferencesScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        NordHeading("Preferences", style = MaterialTheme.typography.titleLarge)
-                        Text(
-                            text = "How you're notified",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    NordTopBarTitle(
+                        title = "Preferences",
+                        subtitle = "How you're notified",
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

@@ -1,8 +1,10 @@
 package com.nordairemapper.ui.components
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
@@ -12,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.LocalTextStyle
 import com.nordairemapper.ui.theme.HeadingRed
 import com.nordairemapper.ui.theme.NordHeadingFontFamily
 
@@ -31,8 +34,8 @@ fun NordHeading(
     val rest = text.drop(1)
     val restColor =
         if (style.color == Color.Unspecified) MaterialTheme.colorScheme.onSurface else style.color
-    // Space Grotesk includes up to Bold — use that (ExtraBold was fake-bold / soft).
-    val weight = style.fontWeight ?: FontWeight.Bold
+    // Space Grotesk variable axis — prefer explicit weight from style (titleLarge = ExtraBold).
+    val weight = style.fontWeight ?: FontWeight.ExtraBold
     Text(
         text = buildAnnotatedString {
             withStyle(
@@ -64,6 +67,37 @@ fun NordHeading(
     )
 }
 
+/** Screen top bars — matches design `.topbar .h` (22sp Space Grotesk ExtraBold). */
+@Composable
+fun NordTopBarHeading(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    val style = MaterialTheme.typography.titleLarge.copy(
+        fontFamily = NordHeadingFontFamily,
+        fontWeight = FontWeight.ExtraBold,
+    )
+    CompositionLocalProvider(LocalTextStyle provides style) {
+        NordHeading(text = text, modifier = modifier, style = style)
+    }
+}
+
+@Composable
+fun NordTopBarTitle(
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        NordTopBarHeading(text = title)
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
 @Composable
 fun NordTitle(
     text: String,
@@ -73,9 +107,9 @@ fun NordTitle(
     NordHeading(
         text = text,
         modifier = modifier,
-        style = MaterialTheme.typography.headlineMedium.copy(
+        style = MaterialTheme.typography.titleLarge.copy(
             fontSize = fontSize,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.ExtraBold,
             letterSpacing = (-0.3).sp,
         ),
     )

@@ -72,3 +72,5 @@ Going forward: write/update these notes in the **same turn** as the code.
 | 2026-08-21 | [vertical-pill-bar](./2026-08-21-vertical-pill-bar/) | Pill = vertical Left/Right strip; Grid keeps Top/Middle/Bottom |
 | 2026-08-21 | [pill-bottom-vibrant-lockup](./2026-08-21-pill-bottom-vibrant-lockup/) | Pill Bottom scroll row; vector lockup; real Bold top titles |
 | 2026-08-22 | [audit-fixes](./2026-08-22-audit-fixes/) | Full audit: logcat watcher leak/reconnect, boot+FGS guards, tests+CI gate, light-theme accents, picker perf, backup confirmations, overlay app/URL slots, last-seen health line |
+| 2026-08-22 | [home-silhouette-compact](./2026-08-22-home-silhouette-compact/) | Shrink Home silhouette to design ~220dp so action cards fit without scroll |
+| 2026-08-22 | [launcher-n-monogram](./2026-08-22-launcher-n-monogram/) | App logo = cyan N monogram + Torch Red Plus Key dash (option 3) |

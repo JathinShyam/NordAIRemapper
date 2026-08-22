@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import android.view.HapticFeedbackConstants
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.components.NordTopBarTitle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,14 +47,10 @@ fun LockScreenSettingsScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        NordHeading("Lock Screen", style = MaterialTheme.typography.titleLarge)
-                        Text(
-                            text = "Gestures while locked",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    NordTopBarTitle(
+                        title = "Lock Screen",
+                        subtitle = "Gestures while locked",
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

@@ -53,7 +53,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.HapticIntensity
 import com.nordairemapper.ui.components.NordGhostButton
-import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.components.NordTopBarTitle
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -103,14 +103,10 @@ fun FeedbackScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        NordHeading("Feedback", style = MaterialTheme.typography.titleLarge)
-                        Text(
-                            text = "Haptic confirmation",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    NordTopBarTitle(
+                        title = "Feedback",
+                        subtitle = "Haptic confirmation",
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

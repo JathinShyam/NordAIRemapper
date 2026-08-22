@@ -1,6 +1,5 @@
 package com.nordairemapper.presentation.home
 
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -54,7 +53,7 @@ import com.nordairemapper.presentation.common.icon
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.nordairemapper.ui.components.ActionCard
-import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.components.NordTopBarTitle
 import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.PhoneDiagram
 import com.nordairemapper.ui.components.SectionLabel
@@ -70,11 +69,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -122,14 +121,10 @@ fun HomeScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        NordHeading("Plus Key", style = MaterialTheme.typography.titleLarge)
-                        Text(
-                            text = "Nord AI Remapper · Home",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    NordTopBarTitle(
+                        title = "Plus Key",
+                        subtitle = "Nord AI Remapper · Home",
+                    )
                 },
                 actions = {
                     // Single settings icon — 36×36dp bordered box matching .ico in design
@@ -177,11 +172,11 @@ fun HomeScreen(
                 highlightKey = state.serviceEnabled || demoPulse,
                 edgeRipple = state.serviceEnabled || demoPulse,
                 modifier = Modifier
-                    // Exact GSMArena body ratio 77/163.4; ~56% width so it reads as a phone
-                    .fillMaxWidth(0.56f)
-                    .aspectRatio(77f / 163.4f)
+                    // Match design `.nord5` scale; ~14% above 220dp compact pass
+                    .fillMaxWidth()
+                    .height(250.dp)
                     .align(Alignment.CenterHorizontally)
-                    .padding(vertical = 8.dp)
+                    .padding(top = 2.dp, bottom = 12.dp)
                     .clickable { flashKey() },
             )
 
@@ -197,7 +192,9 @@ fun HomeScreen(
             }
 
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 4.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(
                     1.dp,
@@ -222,6 +219,7 @@ fun HomeScreen(
                         } else {
                             null
                         },
+                        lastUsedLabel = "Last Used: ${relativeLastSeen(state.lastPlusKeySeenAtMs)}",
                     )
                     Row(
                         modifier = Modifier
@@ -248,13 +246,6 @@ fun HomeScreen(
                             },
                         )
                     }
-                    Text(
-                        text = "Last Plus Key press: " +
-                            relativeLastSeen(state.lastPlusKeySeenAtMs),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 12.dp),
-                    )
                 }
             }
 
@@ -309,6 +300,7 @@ private fun StatusRibbon(
     dotColor: Color,
     pulse: Boolean,
     onClick: (() -> Unit)?,
+    lastUsedLabel: String,
 ) {
     val pulseAlpha by rememberInfiniteTransition(label = "statusPulse").animateFloat(
         initialValue = 0.45f,
@@ -328,21 +320,33 @@ private fun StatusRibbon(
             )
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Box(
-            modifier = Modifier
-                .size(9.dp)
-                .alpha(if (pulse) pulseAlpha else 1f)
-                .background(dotColor, CircleShape),
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.weight(1f, fill = false),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(9.dp)
+                    .alpha(if (pulse) pulseAlpha else 1f)
+                    .background(dotColor, CircleShape),
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 15.sp,
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
         Text(
-            text = label,
-            style = MaterialTheme.typography.titleSmall.copy(
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 15.sp,
-            ),
-            color = MaterialTheme.colorScheme.onSurface,
+            text = lastUsedLabel,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
         )
     }
 }

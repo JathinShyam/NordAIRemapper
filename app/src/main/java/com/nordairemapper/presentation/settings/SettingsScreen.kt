@@ -72,7 +72,7 @@ import com.nordairemapper.presentation.common.adaptiveAccent
 import com.nordairemapper.presentation.remap.AppPickerSheet
 import com.nordairemapper.presentation.remap.queryLaunchableApps
 import com.nordairemapper.presentation.remap.InstalledAppInfo
-import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.components.NordTopBarTitle
 import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.SectionLabel
 import com.nordairemapper.ui.theme.Destructive
@@ -115,14 +115,10 @@ fun SettingsScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        NordHeading("Settings", style = MaterialTheme.typography.titleLarge)
-                        Text(
-                            text = "Appearance, feedback & tools",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    NordTopBarTitle(
+                        title = "Settings",
+                        subtitle = "Appearance, feedback & tools",
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

@@ -250,11 +250,21 @@
     .remap-footer .btn { flex: 1; }
 
     .ribbon {
-      display: flex; align-items: center; gap: 8px;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
       padding: 10px 14px;
       border-bottom: 1px solid var(--outline);
       font-size: 12px; font-weight: 600;
       background: rgba(46, 204, 113, 0.06);
+    }
+    .ribbon-left {
+      display: flex; align-items: center; gap: 8px;
+      min-width: 0;
+    }
+    .ribbon-last {
+      font-size: 11px; font-weight: 500;
+      color: var(--muted);
+      white-space: nowrap;
+      flex-shrink: 0;
     }
     .ribbon.warn {
       background: rgba(255, 176, 32, 0.08);
@@ -294,7 +304,7 @@
       height: 236px;
       display: grid;
       place-items: center;
-      margin: 2px 0 10px;
+      margin: 2px 0 12px;
     }
     .nord5 {
       /* Height drives size; width = height × (80 / 163.4) including 1.5mm key gutters each side */
@@ -317,7 +327,7 @@
     .device:not(.paused) .nord5 .glass {
       fill: #0B1820;
     }
-    .nord5 .motto-wrap {
+    .nord5-lockup {
       pointer-events: none;
     }
     .nord5 .hole-outer { fill: #030303; }
@@ -1447,11 +1457,11 @@
               <rect class="body" x="1.5" y="0" width="77" height="163.4" rx="9.2" ry="9.2"/>
               <!-- Display ~90% STB, thin flat bezels -->
               <rect class="glass" x="3.4" y="2.2" width="73.2" height="158.6" rx="7.4" ry="7.4"/>
-              <!-- Exact lockup: mark ~45% of bar width -->
+              <!-- Classic ad / boot lockup (~54% glass width, optical center) -->
               <image
-                class="motto-wrap"
+                class="nord5-lockup"
                 href="never-settle-lockup.png"
-                x="20" y="56" width="40" height="44"
+                x="20" y="60" width="40" height="43.75"
                 preserveAspectRatio="xMidYMid meet"
               />
               <!-- Earpiece + centered punch-hole -->
@@ -1464,7 +1474,10 @@
             </svg>
           </div>
           <div class="master-card">
-            <div class="ribbon" id="ribbon"><span class="dot"></span> Service active</div>
+            <div class="ribbon" id="ribbon">
+              <span class="ribbon-left"><span class="dot"></span><span id="ribbonLabel">Service active</span></span>
+              <span class="ribbon-last" id="ribbonLast">Last Used: 1hr ago</span>
+            </div>
             <div class="master">
               <div>
                 <span>Remapping</span>
@@ -2428,12 +2441,13 @@
       master.setAttribute("aria-checked", String(!off));
       device.classList.toggle("paused", off);
       const ribbon = document.getElementById("ribbon");
+      const ribbonLabel = document.getElementById("ribbonLabel");
       if (off) {
         ribbon.classList.add("warn");
-        ribbon.innerHTML = '<span class="dot"></span> Remapping paused';
+        ribbonLabel.textContent = "Remapping paused";
       } else {
         ribbon.classList.remove("warn");
-        ribbon.innerHTML = '<span class="dot"></span> Service active';
+        ribbonLabel.textContent = "Service active";
       }
     });
 

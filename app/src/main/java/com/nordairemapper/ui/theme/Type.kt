@@ -51,10 +51,11 @@ val NordTypography = Typography(
     ),
     titleLarge = TextStyle(
         fontFamily = NordHeadingFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 24.sp,
-        lineHeight = 30.sp,
-        letterSpacing = (-0.5).sp,
+        // Design `.topbar .h`: 22px / w700; variable Space Grotesk w800 reads closer on device.
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 22.sp,
+        lineHeight = 24.sp,
+        letterSpacing = (-0.66).sp,  // -0.03em @ 22sp
     ),
     titleMedium = TextStyle(
         fontFamily = NordBodyFontFamily,

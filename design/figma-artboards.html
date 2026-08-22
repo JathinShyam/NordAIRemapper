@@ -92,10 +92,12 @@
     .ico { width: 36px; height: 36px; display: grid; place-items: center; }
 
     .chip {
-      display: inline-flex; align-items: center; gap: 6px;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
       padding: 6px 10px; border-radius: 999px; border: 1px solid var(--outline);
       font-size: 11px; font-weight: 500; color: #ccc; margin-bottom: 12px;
     }
+    .chip-left { display: inline-flex; align-items: center; gap: 6px; }
+    .chip-last { font-size: 10px; font-weight: 500; color: #888; white-space: nowrap; }
     .phone.light .chip { border-color: #ddd; color: #444; background: #fff; }
     .dot { width: 6px; height: 6px; border-radius: 50%; background: #2ECC71; }
     .dot.warn { background: #FFB020; }
@@ -334,7 +336,7 @@
               <div class="hero">
                 <div class="sil"><div class="in"></div><div class="punch"></div><div class="plus"></div><div class="vol"></div><div class="pwr"></div></div>
               </div>
-              <div class="chip"><span class="dot"></span> Service active</div>
+              <div class="chip"><span class="chip-left"><span class="dot"></span> Service active</span><span class="chip-last">Last Used: 1hr ago</span></div>
               <div class="card">
                 <div style="flex:1"><div class="ct">Remapping</div><div class="cd">Master switch for Plus Key actions</div></div>
                 <div class="sw"></div>

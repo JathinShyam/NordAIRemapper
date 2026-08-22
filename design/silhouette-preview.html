@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Home preview — before push</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --outline: #2a2a2a;
+      --text: #f5f5f5;
+      --muted: #8a8a8a;
+      --accent: #0ac6ff;
+      --accent-dim: rgba(10, 198, 255, 0.14);
+      --red: #eb0029;
+      --ok: #2ecc71;
+      --heading: "Space Grotesk", system-ui, sans-serif;
+      --body: Inter, system-ui, sans-serif;
+      --phone-w: 380px;
+      --phone-h: 780px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: #050505;
+      color: var(--text);
+      font-family: var(--body);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 28px 16px 48px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .page-title {
+      font-family: var(--heading);
+      font-weight: 800;
+      font-size: 1.35rem;
+      letter-spacing: -0.03em;
+      margin-bottom: 6px;
+    }
+    .page-title::first-letter { color: var(--red); }
+    .page-sub {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      max-width: 420px;
+      line-height: 1.5;
+      margin-bottom: 22px;
+    }
+    .page-sub code {
+      color: var(--accent);
+      font-size: 12px;
+    }
+
+    /* Exact Nord Edge phone chrome */
+    .device-wrap {
+      width: var(--phone-w);
+      max-width: 100%;
+    }
+    .device {
+      width: 100%;
+      height: var(--phone-h);
+      background: var(--bg);
+      border: 1px solid #1f1f1f;
+      border-radius: 36px;
+      box-shadow: 0 0 0 1px #111, 0 24px 80px rgba(0,0,0,.55);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .sb {
+      flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      padding: 14px 22px 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #ccc;
+    }
+    .screen {
+      flex: 1;
+      min-height: 0;
+      padding: 4px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden; /* preview: no scroll — proves fit */
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-shrink: 0;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .topbar .h {
+      font-family: var(--heading);
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+    .topbar .h::first-letter { color: var(--red); }
+    .topbar .meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .ico {
+      width: 36px; height: 36px; border-radius: 10px;
+      border: 1px solid var(--outline);
+      display: grid; place-items: center;
+      color: var(--muted); font-size: 16px;
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    /* App: fillMaxWidth + height(250.dp) — ~14% above compact 220px */
+    .stage-hero {
+      position: relative;
+      height: 250px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      margin: 2px 0 12px;
+    }
+    .nord5 {
+      height: 250px;
+      width: calc(250px * 80 / 163.4);
+      display: block;
+      overflow: visible;
+    }
+    .nord5 .body {
+      fill: url(#bodyGrad);
+      stroke: rgba(255,255,255,.14);
+      stroke-width: 0.35;
+    }
+    .nord5 .glass { fill: #0b1820; stroke: #0e0e0e; stroke-width: 0.2; }
+    .nord5 .ear { fill: #121212; }
+    .nord5 .hole-outer { fill: #030303; }
+    .nord5 .hole-inner { fill: #1a1a1a; }
+    .nord5 .side { fill: #2a2a2a; stroke: #3a3a3a; stroke-width: 0.2; }
+    .nord5 .plus {
+      fill: var(--accent);
+      stroke: #5ad8ff;
+      stroke-width: 0.2;
+      filter: drop-shadow(0 0 3px rgba(10,198,255,.85));
+      animation: glow 1.6s ease-in-out infinite alternate;
+    }
+    @keyframes glow {
+      from { filter: drop-shadow(0 0 1.5px rgba(10,198,255,.5)); }
+      to { filter: drop-shadow(0 0 4px rgba(10,198,255,1)); }
+    }
+
+    .master-card {
+      background: var(--surface);
+      border: 1px solid rgba(10, 198, 255, 0.22);
+      border-radius: 14px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+      margin-bottom: 4px;
+    }
+    .ribbon {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--outline);
+      background: rgba(46, 204, 113, 0.06);
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .ribbon-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .ribbon .dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: var(--ok);
+      box-shadow: 0 0 0 0 rgba(46,204,113,.5);
+      animation: pulseDot 1.8s infinite;
+      flex-shrink: 0;
+    }
+    @keyframes pulseDot {
+      0% { box-shadow: 0 0 0 0 rgba(46,204,113,.45); }
+      70% { box-shadow: 0 0 0 8px rgba(46,204,113,0); }
+      100% { box-shadow: 0 0 0 0 rgba(46,204,113,0); }
+    }
+    .ribbon-last {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .master {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px;
+    }
+    .master .t { font-size: 14px; font-weight: 600; }
+    .master .d { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .sw {
+      width: 44px; height: 26px; border-radius: 999px;
+      background: var(--accent); position: relative; flex-shrink: 0;
+    }
+    .sw::after {
+      content: "";
+      position: absolute; top: 3px; left: 21px;
+      width: 20px; height: 20px; border-radius: 50%; background: #fff;
+    }
+
+    .sec-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .pads {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+      min-height: 0;
+    }
+    .pad {
+      background: var(--surface);
+      border: 1px solid var(--outline);
+      border-radius: 18px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .badge-wrap { position: relative; width: 36px; height: 36px; flex-shrink: 0; }
+    .badge {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: grid; place-items: center;
+      font-weight: 700; font-size: 13px;
+      border: 1px solid rgba(10,198,255,.18);
+      background: var(--accent-dim); color: var(--accent);
+    }
+    .pad.tone-media .badge {
+      background: #14321f; color: #3ddc84; border-color: rgba(61,220,132,.25);
+    }
+    .pad.tone-apps .badge {
+      background: #3d2e14; color: #ffb020; border-color: rgba(255,176,32,.25);
+    }
+    .press-badge {
+      position: absolute; top: -4px; right: -4px;
+      min-width: 20px; height: 20px; padding: 0 3px;
+      border-radius: 6px;
+      background: var(--surface);
+      border: 1px solid rgba(10,198,255,.45);
+      color: var(--accent);
+      font-size: 9px; font-weight: 700;
+      display: grid; place-items: center;
+    }
+    .pad .t { font-size: 13px; font-weight: 600; }
+    .pad .d { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .chev { margin-left: auto; color: #3a3a3a; font-size: 18px; }
+
+    .fit-ok {
+      margin-top: 18px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: rgba(46, 204, 113, 0.1);
+      border: 1px solid rgba(46, 204, 113, 0.28);
+      color: #9fe6b8;
+      font-size: 12px;
+      text-align: center;
+      max-width: var(--phone-w);
+    }
+    .fit-ok strong { color: #c8f5d6; }
+    .links {
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .links a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <h1 class="page-title">Home preview</h1>
+  <p class="page-sub">
+    Exact pre-push layout: silhouette <code>250dp</code> (~14% above compact 220), ExtraBold title,
+    <code>Last Used</code> on the status ribbon, three action cards.
+    Phone frame is <code>380×780</code> — same as the Nord Edge prototype.
+    Screen has <strong>no scroll</strong>; if Long is cut off, we’d still need to shrink further.
+  </p>
+
+  <div class="device-wrap">
+    <div class="device">
+      <div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div class="screen">
+        <div class="topbar">
+          <div>
+            <div class="h">Plus Key</div>
+            <div class="meta">Nord AI Remapper · Home</div>
+          </div>
+          <div class="ico" title="Settings">⚙</div>
+        </div>
+
+        <div class="stage-hero">
+          <svg class="nord5" viewBox="0 0 80 163.4" role="img" aria-label="Nord 5 silhouette">
+            <defs>
+              <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#2a2a2a"/>
+                <stop offset="55%" stop-color="#1a1a1a"/>
+                <stop offset="100%" stop-color="#121212"/>
+              </linearGradient>
+            </defs>
+            <rect class="plus" x="0.15" y="31.5" width="1.7" height="8.5" rx="0.55"/>
+            <rect class="body" x="1.5" y="0" width="77" height="163.4" rx="9.2"/>
+            <rect class="glass" x="3.4" y="2.2" width="73.2" height="158.6" rx="7.4"/>
+            <!-- ~54% of body width, matching PhoneDiagram lockupWidth -->
+            <image
+              href="never-settle-lockup.png"
+              x="20.7" y="58" width="41.6" height="45.5"
+              preserveAspectRatio="xMidYMid meet"
+            />
+            <rect class="ear" x="33.5" y="5.2" width="13" height="1.15" rx="0.55"/>
+            <circle class="hole-outer" cx="40" cy="10.4" r="1.55"/>
+            <circle class="hole-inner" cx="40" cy="10.4" r="0.75"/>
+            <rect class="side" x="78.15" y="34.5" width="1.7" height="19.2" rx="0.55"/>
+            <rect class="side" x="78.15" y="56.5" width="1.7" height="10.2" rx="0.55"/>
+          </svg>
+        </div>
+
+        <div class="master-card">
+          <div class="ribbon">
+            <span class="ribbon-left"><span class="dot"></span> Service active</span>
+            <span class="ribbon-last">Last Used: 1hr ago</span>
+          </div>
+          <div class="master">
+            <div>
+              <div class="t">Remapping</div>
+              <div class="d">Master switch for Plus Key actions</div>
+            </div>
+            <div class="sw" aria-hidden="true"></div>
+          </div>
+        </div>
+
+        <div class="sec-label">Actions</div>
+        <div class="pads">
+          <div class="pad tone-system">
+            <div class="badge-wrap">
+              <div class="press-badge">1×</div>
+              <div class="badge">⚡</div>
+            </div>
+            <div>
+              <div class="t">Single</div>
+              <div class="d">Flashlight</div>
+            </div>
+            <div class="chev">›</div>
+          </div>
+          <div class="pad tone-media">
+            <div class="badge-wrap">
+              <div class="press-badge">2×</div>
+              <div class="badge">▶</div>
+            </div>
+            <div>
+              <div class="t">Double</div>
+              <div class="d">Play / pause</div>
+            </div>
+            <div class="chev">›</div>
+          </div>
+          <div class="pad tone-apps">
+            <div class="badge-wrap">
+              <div class="press-badge">L</div>
+              <div class="badge">📷</div>
+            </div>
+            <div>
+              <div class="t">Long</div>
+              <div class="d">Camera</div>
+            </div>
+            <div class="chev">›</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fit-ok" id="fitNote">
+    Checking whether Long fits without scroll…
+  </div>
+  <p class="links">
+    Full interactive prototype:
+    <a href="nord-edge-prototype.html">nord-edge-prototype.html</a>
+  </p>
+
+  <script>
+    // Prove on-screen fit: Long must be fully visible inside the non-scrolling screen.
+    requestAnimationFrame(() => {
+      const screen = document.querySelector(".screen");
+      const longPad = document.querySelectorAll(".pad")[2];
+      const note = document.getElementById("fitNote");
+      if (!screen || !longPad) return;
+      const s = screen.getBoundingClientRect();
+      const p = longPad.getBoundingClientRect();
+      const fits = p.bottom <= s.bottom + 1;
+      if (fits) {
+        note.innerHTML = "<strong>Fits.</strong> Silhouette 250px + master + Single/Double/Long all visible with no scroll in this 780px frame.";
+      } else {
+        note.style.background = "rgba(255,176,32,0.1)";
+        note.style.borderColor = "rgba(255,176,32,0.35)";
+        note.style.color = "#ffd089";
+        note.innerHTML = "<strong>Still tight.</strong> Long is clipped by " +
+          Math.ceil(p.bottom - s.bottom) + "px — shrink silhouette further before push.";
+      }
+    });
+  </script>
+</body>
+</html>

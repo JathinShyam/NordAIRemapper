@@ -41,7 +41,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.AppSettings
 import com.nordairemapper.domain.model.DetectionStrategy
 import com.nordairemapper.service.LogcatWatcherService
-import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.components.NordTopBarTitle
 import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.NordSurfaceCard
 import com.nordairemapper.ui.components.SectionLabel
@@ -65,14 +65,10 @@ fun DeveloperScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        NordHeading("Lab", style = MaterialTheme.typography.titleLarge)
-                        Text(
-                            text = "Advanced controls · Developer",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    NordTopBarTitle(
+                        title = "Lab",
+                        subtitle = "Advanced controls · Developer",
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

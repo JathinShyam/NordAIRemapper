@@ -50,7 +50,7 @@ import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.presentation.overlay.OverlaySettingsViewModel
 import com.nordairemapper.service.ActionFeedbackOverlayService
 import com.nordairemapper.ui.components.NordGhostButton
-import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.components.NordTopBarTitle
 import com.nordairemapper.ui.components.OverlayPreview
 
 private val AccentPresets = listOf(
@@ -76,14 +76,10 @@ fun VisualOverlayScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        NordHeading("Visual Overlay", style = MaterialTheme.typography.titleLarge)
-                        Text(
-                            text = "Action popup when a remap fires",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    NordTopBarTitle(
+                        title = "Visual Overlay",
+                        subtitle = "Action popup when a remap fires",
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

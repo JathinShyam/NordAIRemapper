@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.presentation.common.relativeLastSeen
-import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.components.NordTopBarTitle
 import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.NordSurfaceCard
 import com.nordairemapper.ui.components.SectionLabel
@@ -67,14 +67,10 @@ fun KeyLearningScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        NordHeading("Key setup", style = MaterialTheme.typography.titleLarge)
-                        Text(
-                            text = "Listening for Plus Key",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    NordTopBarTitle(
+                        title = "Key setup",
+                        subtitle = "Listening for Plus Key",
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

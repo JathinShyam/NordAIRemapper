@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import com.nordairemapper.ui.components.NordTopBarHeading
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
@@ -65,7 +66,7 @@ fun AppPickerSheet(
                 .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Launch app", style = MaterialTheme.typography.titleLarge)
+            NordTopBarHeading(text = "Launch app")
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
@@ -184,7 +185,7 @@ fun UrlInputSheet(
                 .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Open URL / deep link", style = MaterialTheme.typography.titleLarge)
+            NordTopBarHeading(text = "Open URL / deep link")
             OutlinedTextField(
                 value = url,
                 onValueChange = { url = it },

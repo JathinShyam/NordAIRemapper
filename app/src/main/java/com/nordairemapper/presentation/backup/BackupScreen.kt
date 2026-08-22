@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.ui.components.NordGhostButton
-import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.components.NordTopBarTitle
 import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.NordSurfaceCard
 import com.nordairemapper.ui.components.SectionLabel
@@ -82,14 +82,10 @@ fun BackupScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        NordHeading("Backup & Restore", style = MaterialTheme.typography.titleLarge)
-                        Text(
-                            text = "Export & import",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    NordTopBarTitle(
+                        title = "Backup & Restore",
+                        subtitle = "Export & import",
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

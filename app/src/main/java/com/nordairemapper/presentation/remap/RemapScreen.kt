@@ -67,7 +67,7 @@ import com.nordairemapper.presentation.common.displayDescription
 import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.presentation.common.icon
 import com.nordairemapper.ui.components.NordGhostButton
-import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.components.NordTopBarTitle
 import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.NordSurfaceCard
 import com.nordairemapper.ui.components.SectionLabel
@@ -131,17 +131,10 @@ fun RemapScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        NordHeading(
-                            text = pressTitle(state.pressType),
-                            style = MaterialTheme.typography.titleLarge,
-                        )
-                        Text(
-                            text = "${pressTitle(state.pressType)} press · Assign an action",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    NordTopBarTitle(
+                        title = pressTitle(state.pressType),
+                        subtitle = "${pressTitle(state.pressType)} press · Assign an action",
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

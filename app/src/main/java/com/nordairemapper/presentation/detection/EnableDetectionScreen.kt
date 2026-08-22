@@ -48,7 +48,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.service.LogcatWatcherService
 import com.nordairemapper.ui.components.NordGhostButton
-import com.nordairemapper.ui.components.NordHeading
+import com.nordairemapper.ui.components.NordTopBarTitle
 import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.NordSurfaceCard
 import com.nordairemapper.ui.components.SectionLabel
@@ -106,14 +106,10 @@ fun EnableDetectionScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        NordHeading("Unlock", style = MaterialTheme.typography.titleLarge)
-                        Text(
-                            text = "One-time detection setup",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    NordTopBarTitle(
+                        title = "Unlock",
+                        subtitle = "One-time detection setup",
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
