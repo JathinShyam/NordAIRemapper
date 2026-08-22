@@ -1,8 +1,6 @@
 package com.nordairemapper.presentation.remap
 
 import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -54,6 +52,9 @@ class RemapViewModel @Inject constructor(
     private val _installedApps = MutableStateFlow<List<InstalledAppInfo>>(emptyList())
     val installedApps: StateFlow<List<InstalledAppInfo>> = _installedApps.asStateFlow()
 
+    private val _loadingApps = MutableStateFlow(false)
+    val loadingApps: StateFlow<Boolean> = _loadingApps.asStateFlow()
+
     private val _events = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val events: SharedFlow<String> = _events.asSharedFlow()
 
@@ -95,17 +96,11 @@ class RemapViewModel @Inject constructor(
 
     fun loadInstalledApps() {
         viewModelScope.launch {
-            val pm = context.packageManager
-            val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-            val apps = pm.queryIntentActivities(intent, PackageManager.MATCH_ALL)
-                .mapNotNull { resolve ->
-                    val info = resolve.activityInfo ?: return@mapNotNull null
-                    val label = resolve.loadLabel(pm)?.toString().orEmpty()
-                    InstalledAppInfo(packageName = info.packageName, label = label)
-                }
-                .distinctBy { it.packageName }
-                .sortedBy { it.label.lowercase() }
-            _installedApps.value = apps
+            if (_loadingApps.value || _installedApps.value.isNotEmpty()) return@launch
+            _loadingApps.value = true
+            runCatching { queryLaunchableApps(context) }
+                .onSuccess { _installedApps.value = it }
+            _loadingApps.value = false
         }
     }
 }

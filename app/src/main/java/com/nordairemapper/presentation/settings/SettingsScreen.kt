@@ -50,6 +50,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,12 +70,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.ThemeMode
 import com.nordairemapper.presentation.common.adaptiveAccent
 import com.nordairemapper.presentation.remap.AppPickerSheet
+import com.nordairemapper.presentation.remap.queryLaunchableApps
 import com.nordairemapper.presentation.remap.InstalledAppInfo
 import com.nordairemapper.ui.components.NordHeading
 import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.SectionLabel
 import com.nordairemapper.ui.theme.Destructive
 import com.nordairemapper.ui.theme.NordBlue
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,6 +100,8 @@ fun SettingsScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     var showAppPicker by remember { mutableStateOf(false) }
     var installedApps by remember { mutableStateOf<List<InstalledAppInfo>>(emptyList()) }
+    var loadingApps by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -361,19 +366,16 @@ fun SettingsScreen(
             NordPrimaryButton(
                 text = "Add excluded app",
                 onClick = {
-                    val pm = context.packageManager
-                    val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-                    installedApps = pm.queryIntentActivities(intent, PackageManager.MATCH_ALL)
-                        .mapNotNull { resolve ->
-                            val info = resolve.activityInfo ?: return@mapNotNull null
-                            InstalledAppInfo(
-                                packageName = info.packageName,
-                                label = resolve.loadLabel(pm)?.toString().orEmpty(),
-                            )
+                    scope.launch {
+                        if (installedApps.isEmpty()) {
+                            loadingApps = true
+                            installedApps = runCatching {
+                                queryLaunchableApps(context)
+                            }.getOrDefault(emptyList())
+                            loadingApps = false
                         }
-                        .distinctBy { it.packageName }
-                        .sortedBy { it.label.lowercase() }
-                    showAppPicker = true
+                        showAppPicker = true
+                    }
                 },
             )
 
@@ -402,6 +404,7 @@ fun SettingsScreen(
     if (showAppPicker) {
         AppPickerSheet(
             apps = installedApps,
+            isLoading = loadingApps,
             onLoad = {},
             onSelect = {
                 viewModel.addExclusion(it)

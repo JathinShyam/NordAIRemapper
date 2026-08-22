@@ -84,6 +84,7 @@ fun RemapScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val apps by viewModel.installedApps.collectAsStateWithLifecycle()
+    val loadingApps by viewModel.loadingApps.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var sheet by remember { mutableStateOf(RemapSheet.None) }
@@ -284,6 +285,7 @@ fun RemapScreen(
     when (sheet) {
         RemapSheet.AppPicker -> AppPickerSheet(
             apps = apps,
+            isLoading = loadingApps,
             onLoad = viewModel::loadInstalledApps,
             onSelect = { app ->
                 viewModel.setAction(RemapAction.LaunchApp(app.packageName, app.label))
