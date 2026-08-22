@@ -29,6 +29,11 @@ class BackupRepositoryImpl @Inject constructor(
     private val json: Json,
 ) : BackupRepository {
 
+    private companion object {
+        const val SUPPORTED_SCHEMA_VERSION = 1
+        const val MAX_SNAPSHOTS = 20
+    }
+
     override fun observeSnapshots(): Flow<List<ConfigSnapshot>> =
         snapshotDao.observeAll().map { entities ->
             entities.map {
@@ -42,13 +47,15 @@ class BackupRepositoryImpl @Inject constructor(
 
     override suspend fun createSnapshot(name: String): Long {
         val payload = buildPayload()
-        return snapshotDao.insert(
+        val id = snapshotDao.insert(
             ConfigSnapshotEntity(
                 name = name.ifBlank { "Snapshot" },
                 createdAtEpochMs = System.currentTimeMillis(),
                 payloadJson = json.encodeToString(BackupPayload.serializer(), payload),
             )
         )
+        snapshotDao.pruneOldest(MAX_SNAPSHOTS)
+        return id
     }
 
     override suspend fun deleteSnapshot(id: Long) {
@@ -97,6 +104,11 @@ class BackupRepositoryImpl @Inject constructor(
     }
 
     override suspend fun applyPayload(payload: BackupPayload) {
+        if (payload.schemaVersion > SUPPORTED_SCHEMA_VERSION) {
+            throw IllegalArgumentException(
+                "Backup was exported by a newer app version (schema ${payload.schemaVersion})",
+            )
+        }
         PressType.entries.forEach { pressType ->
             val action = payload.remap[pressType.key] ?: RemapAction.None
             remapConfigRepository.setAction(pressType, action)

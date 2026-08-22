@@ -82,6 +82,7 @@ class HomeViewModel @Inject constructor(
             readLogsGranted = flags.readLogsGranted,
             actions = actions,
             conflictPressTypes = conflictPressTypes(actions),
+            lastPlusKeySeenAtMs = settings.lastPlusKeySeenAtMs,
             banner = buildBanner(
                 serviceEnabled = settings.serviceEnabled,
                 accessibilityEnabled = flags.accessibilityEnabled,

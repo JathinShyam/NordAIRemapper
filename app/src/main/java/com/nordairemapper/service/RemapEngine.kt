@@ -131,6 +131,12 @@ class RemapEngine @Inject constructor(
             Gesture.LONG_PRESS -> PressType.LONG
         }
         scope.launch {
+            // Detection health signal (Home / Key setup): throttled to avoid a
+            // DataStore write per physical press.
+            val now = System.currentTimeMillis()
+            if (now - settings.lastPlusKeySeenAtMs > 1_000) {
+                settingsRepository.setLastPlusKeySeen(now)
+            }
             val foreground = foregroundAppTracker.packageName
             if (foreground != null && foreground in settings.excludedApps) {
                 Log.d(TAG, "Skipping gesture in excluded app: $foreground")

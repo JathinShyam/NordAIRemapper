@@ -27,4 +27,5 @@ data class HomeUiState(
     val actions: Map<PressType, RemapAction> = PressType.entries.associateWith { RemapAction.None },
     val conflictPressTypes: Set<PressType> = emptySet(),
     val banner: HomeBanner? = null,
+    val lastPlusKeySeenAtMs: Long = 0L,
 )

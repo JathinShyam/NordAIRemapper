@@ -44,4 +44,11 @@ interface ConfigSnapshotDao {
 
     @Delete
     suspend fun delete(entity: ConfigSnapshotEntity)
+
+    /** Keeps only the newest [limit] snapshots. */
+    @Query(
+        "DELETE FROM config_snapshots WHERE id NOT IN " +
+            "(SELECT id FROM config_snapshots ORDER BY createdAtEpochMs DESC LIMIT :limit)",
+    )
+    suspend fun pruneOldest(limit: Int)
 }

@@ -96,6 +96,10 @@ class KeyLearningViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
+    val lastPlusKeySeenAtMs: StateFlow<Long> = settingsRepository.settings
+        .map { it.lastPlusKeySeenAtMs }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0L)
+
     val logcatPlusKeySeen: StateFlow<Boolean> = _capturedPresses
         .map { presses -> presses.any { it.isLogcatPlusKey } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)

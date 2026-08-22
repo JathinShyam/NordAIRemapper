@@ -22,6 +22,8 @@ data class AppSettings(
     val lockScreenLongEnabled: Boolean = false,
     val excludedApps: Set<String> = emptySet(),
     val onboardingCompleted: Boolean = false,
+    /** Detection health: epoch ms of the last classified Plus Key gesture. */
+    val lastPlusKeySeenAtMs: Long = 0L,
 ) {
     companion object {
         const val DEFAULT_LOGCAT_PATTERN = "KEYCODE_ACTION_BUTTON_CLICK"

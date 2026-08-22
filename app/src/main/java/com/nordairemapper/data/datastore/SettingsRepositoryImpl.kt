@@ -49,6 +49,7 @@ class SettingsRepositoryImpl @Inject constructor(
         val LOCK_LONG = booleanPreferencesKey("lock_screen_long_enabled")
         val EXCLUDED_APPS = stringSetPreferencesKey("excluded_apps")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+        val LAST_PLUS_KEY_SEEN = longPreferencesKey("last_plus_key_seen_ms")
     }
 
     private val defaults = AppSettings()
@@ -80,6 +81,7 @@ class SettingsRepositoryImpl @Inject constructor(
             lockScreenLongEnabled = prefs[Keys.LOCK_LONG] ?: defaults.lockScreenLongEnabled,
             excludedApps = prefs[Keys.EXCLUDED_APPS] ?: defaults.excludedApps,
             onboardingCompleted = prefs[Keys.ONBOARDING_COMPLETED] ?: defaults.onboardingCompleted,
+            lastPlusKeySeenAtMs = prefs[Keys.LAST_PLUS_KEY_SEEN] ?: defaults.lastPlusKeySeenAtMs,
         )
     }
 
@@ -156,5 +158,9 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setOnboardingCompleted(completed: Boolean) {
         context.settingsDataStore.edit { it[Keys.ONBOARDING_COMPLETED] = completed }
+    }
+
+    override suspend fun setLastPlusKeySeen(epochMs: Long) {
+        context.settingsDataStore.edit { it[Keys.LAST_PLUS_KEY_SEEN] = epochMs }
     }
 }

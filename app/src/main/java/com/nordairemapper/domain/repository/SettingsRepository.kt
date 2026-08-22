@@ -27,4 +27,5 @@ interface SettingsRepository {
     suspend fun setLockScreenLongEnabled(enabled: Boolean)
     suspend fun setExcludedApps(packages: Set<String>)
     suspend fun setOnboardingCompleted(completed: Boolean)
+    suspend fun setLastPlusKeySeen(epochMs: Long)
 }

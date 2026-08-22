@@ -47,6 +47,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.PressType
 import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.presentation.common.categoryAccent
+import com.nordairemapper.presentation.common.relativeLastSeen
 import com.nordairemapper.presentation.common.categoryFor
 import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.presentation.common.icon
@@ -247,6 +248,13 @@ fun HomeScreen(
                             },
                         )
                     }
+                    Text(
+                        text = "Last Plus Key press: " +
+                            relativeLastSeen(state.lastPlusKeySeenAtMs),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 12.dp),
+                    )
                 }
             }
 

@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nordairemapper.presentation.common.relativeLastSeen
 import com.nordairemapper.ui.components.NordHeading
 import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.NordSurfaceCard
@@ -57,6 +58,7 @@ fun KeyLearningScreen(
     val serviceActive by viewModel.serviceActive.collectAsStateWithLifecycle()
     val learnedIdentity by viewModel.learnedIdentity.collectAsStateWithLifecycle()
     val plusKeyMissingHint by viewModel.plusKeyMissingHint.collectAsStateWithLifecycle()
+    val lastPlusKeySeenAtMs by viewModel.lastPlusKeySeenAtMs.collectAsStateWithLifecycle()
     val logcatPlusKeySeen by viewModel.logcatPlusKeySeen.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.refreshServiceState() }
@@ -118,6 +120,15 @@ fun KeyLearningScreen(
                                 "Accessibility inactive"
                             },
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                        )
+                        Text(
+                            text = if (lastPlusKeySeenAtMs > 0) {
+                                "Last Plus Key press: " + relativeLastSeen(lastPlusKeySeenAtMs)
+                            } else {
+                                "No Plus Key press recorded yet"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
                             text = when {
