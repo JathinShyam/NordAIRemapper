@@ -1,5 +1,6 @@
 package com.nordairemapper.presentation.backup
 
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -61,6 +62,9 @@ fun BackupScreen(
     var snapshotName by remember { mutableStateOf("") }
     var pendingRestoreId by remember { mutableStateOf<Long?>(null) }
     var localExpanded by remember { mutableStateOf(false) }
+    // Destructive actions confirm first; import overwrites the whole setup.
+    var pendingImportUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingDeleteId by remember { mutableStateOf<Long?>(null) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json"),
@@ -68,7 +72,7 @@ fun BackupScreen(
 
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
-    ) { uri -> uri?.let(viewModel::importFrom) }
+    ) { uri -> uri?.let { pendingImportUri = it } }
 
     LaunchedEffect(Unit) {
         viewModel.messages.collect { snackbar.showSnackbar(it) }
@@ -191,7 +195,7 @@ fun BackupScreen(
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
                                     }
-                                    IconButton(onClick = { viewModel.deleteSnapshot(snapshot.id) }) {
+                                    IconButton(onClick = { pendingDeleteId = snapshot.id }) {
                                         Icon(Icons.Outlined.Delete, contentDescription = "Delete")
                                     }
                                 }
@@ -201,6 +205,44 @@ fun BackupScreen(
                 }
             }
         }
+    }
+
+    pendingImportUri?.let { uri ->
+        AlertDialog(
+            onDismissRequest = { pendingImportUri = null },
+            title = { Text("Import backup?") },
+            text = { Text("This replaces your current remaps, overlay, and related settings with the file's contents.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.importFrom(uri)
+                        pendingImportUri = null
+                    },
+                ) { Text("Import") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingImportUri = null }) { Text("Cancel") }
+            },
+        )
+    }
+
+    pendingDeleteId?.let { id ->
+        AlertDialog(
+            onDismissRequest = { pendingDeleteId = null },
+            title = { Text("Delete snapshot?") },
+            text = { Text("This permanently removes the local snapshot.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteSnapshot(id)
+                        pendingDeleteId = null
+                    },
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDeleteId = null }) { Text("Cancel") }
+            },
+        )
     }
 
     pendingRestoreId?.let { id ->
