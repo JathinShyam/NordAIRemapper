@@ -21,7 +21,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
@@ -86,40 +90,82 @@ class LogcatWatcherService : Service() {
         return START_STICKY
     }
 
+    /**
+     * Tails logcat forever while the service lives. The pattern is observed, so
+     * edits in Lab hot-reload (collectLatest tears down the old process first).
+     * If the stream ends on its own (logd restart etc.) we retry with backoff
+     * and post the death notification once per outage instead of dying silently.
+     */
     private suspend fun watchLogcat() {
-        val pattern = LogcatKeyParser.migratePattern(
-            settingsRepository.settings.first().logcatPattern,
-        )
-        // Persist migration so Developer shows the new default, not the legacy pattern.
-        settingsRepository.setLogcatPattern(pattern)
+        settingsRepository.settings
+            .map { LogcatKeyParser.migratePattern(it.logcatPattern) }
+            .distinctUntilChanged()
+            .collectLatest { pattern ->
+                // Persist migration so Developer shows the new default, not the legacy pattern.
+                settingsRepository.setLogcatPattern(pattern)
+                var backoffMs = RECONNECT_DELAY_MS
+                var outageNotified = false
+                while (scope.isActive) {
+                    val startedAtMs = System.currentTimeMillis()
+                    try {
+                        tailLogcat(pattern)
+                    } catch (t: Throwable) {
+                        if (!scope.isActive) break
+                        Log.w(TAG, "logcat tail crashed", t)
+                    }
+                    if (!scope.isActive) break
+                    if (!outageNotified) {
+                        outageNotified = true
+                        ServiceNotifications.notifyDetectionStopped(this@LogcatWatcherService)
+                    }
+                    delay(backoffMs)
+                    backoffMs = (backoffMs * 2).coerceAtMost(MAX_RECONNECT_DELAY_MS)
+                    // A long stable run means the outage was resolved; re-arm
+                    // so a future outage notifies again.
+                    if (System.currentTimeMillis() - startedAtMs > STABLE_RUN_MS) {
+                        backoffMs = RECONNECT_DELAY_MS
+                        outageNotified = false
+                    }
+                }
+            }
+    }
+
+    /** Streams matching logcat lines until EOF, an error, or cancellation. */
+    private suspend fun tailLogcat(pattern: String) {
         val process = ProcessBuilder("logcat", "-b", "main", "-T", "1", "-v", "brief")
             .redirectErrorStream(true)
             .start()
         logcatProcess = process
+        try {
+            val coalescer = LogcatKeyEdgeCoalescer()
+            BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
+                while (scope.isActive) {
+                    val line = reader.readLine() ?: return
+                    if (LogcatKeyParser.isSelfLog(line)) continue
+                    if (!line.contains(pattern, ignoreCase = true)) continue
 
-        val coalescer = LogcatKeyEdgeCoalescer()
-        BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
-            while (scope.isActive) {
-                val line = reader.readLine() ?: break
-                if (LogcatKeyParser.isSelfLog(line)) continue
-                if (!line.contains(pattern, ignoreCase = true)) continue
+                    val action = coalescer.accept(
+                        LogcatKeyParser.parseKeyAction(line),
+                        System.currentTimeMillis(),
+                    ) ?: continue
 
-                val action = coalescer.accept(
-                    LogcatKeyParser.parseKeyAction(line),
-                    System.currentTimeMillis(),
-                ) ?: continue
-
-                Log.d(TAG, "edge=$action")
-                keyEventBus.emit(
-                    RawKeyEvent(
-                        keyCode = -1,
-                        scanCode = -1,
-                        action = action,
-                        timestampMs = System.currentTimeMillis(),
-                        source = DetectionStrategy.LOGCAT,
+                    Log.d(TAG, "edge=$action")
+                    keyEventBus.emit(
+                        RawKeyEvent(
+                            keyCode = -1,
+                            scanCode = -1,
+                            action = action,
+                            timestampMs = System.currentTimeMillis(),
+                            source = DetectionStrategy.LOGCAT,
+                        )
                     )
-                )
+                }
             }
+        } finally {
+            if (logcatProcess === process) {
+                logcatProcess = null
+            }
+            runCatching { process.destroy() }
         }
     }
 
@@ -127,6 +173,9 @@ class LogcatWatcherService : Service() {
         private const val TAG = "LogcatWatcher"
         private const val CHANNEL_ID = "key_detection"
         private const val NOTIFICATION_ID = 1
+        private const val RECONNECT_DELAY_MS = 2_000L
+        private const val MAX_RECONNECT_DELAY_MS = 30_000L
+        private const val STABLE_RUN_MS = 60_000L
 
         const val ADB_GRANT_COMMAND =
             "adb shell pm grant com.nordairemapper android.permission.READ_LOGS"
