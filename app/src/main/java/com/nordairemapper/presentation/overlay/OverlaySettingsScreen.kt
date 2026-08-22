@@ -58,6 +58,8 @@ import com.nordairemapper.presentation.common.categoryFor
 import com.nordairemapper.presentation.common.displayDescription
 import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.presentation.common.icon
+import com.nordairemapper.presentation.remap.AppPickerSheet
+import com.nordairemapper.presentation.remap.UrlInputSheet
 import com.nordairemapper.ui.components.ActionCard
 import com.nordairemapper.ui.components.NordHeading
 import com.nordairemapper.ui.components.OverlayPreview
@@ -70,7 +72,11 @@ fun OverlaySettingsScreen(
     viewModel: OverlaySettingsViewModel = hiltViewModel(),
 ) {
     val config by viewModel.config.collectAsStateWithLifecycle()
+    val apps by viewModel.installedApps.collectAsStateWithLifecycle()
+    val loadingApps by viewModel.loadingApps.collectAsStateWithLifecycle()
     var editingSlot by remember { mutableStateOf<Int?>(null) }
+    var appPickerSlot by remember { mutableStateOf<Int?>(null) }
+    var urlSheetSlot by remember { mutableStateOf<Int?>(null) }
 
     Scaffold(
         topBar = {
@@ -320,6 +326,38 @@ fun OverlaySettingsScreen(
                 viewModel.setSlot(slot, action)
                 editingSlot = null
             },
+            onPickLaunchApp = {
+                appPickerSlot = slot
+                editingSlot = null
+            },
+            onPickUrl = {
+                urlSheetSlot = slot
+                editingSlot = null
+            },
+        )
+    }
+
+    appPickerSlot?.let { idx ->
+        AppPickerSheet(
+            apps = apps,
+            isLoading = loadingApps,
+            onLoad = viewModel::loadInstalledApps,
+            onSelect = { app ->
+                viewModel.setSlot(idx, RemapAction.LaunchApp(app.packageName, app.label))
+                appPickerSlot = null
+            },
+            onDismiss = { appPickerSlot = null },
+        )
+    }
+
+    urlSheetSlot?.let { idx ->
+        UrlInputSheet(
+            initialUrl = (config.slots.getOrNull(idx) as? RemapAction.OpenUrl)?.url.orEmpty(),
+            onSave = { url ->
+                viewModel.setSlot(idx, RemapAction.OpenUrl(url))
+                urlSheetSlot = null
+            },
+            onDismiss = { urlSheetSlot = null },
         )
     }
 }
@@ -374,15 +412,12 @@ private fun SegButton(label: String, selected: Boolean, onClick: () -> Unit) {
 private fun ActionCatalogSheet(
     onDismiss: () -> Unit,
     onSelect: (RemapAction) -> Unit,
+    onPickLaunchApp: () -> Unit,
+    onPickUrl: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val grouped = remember {
         RemapActionCatalog.grouped()
-            .mapValues { (_, items) ->
-                items.filter {
-                    it.action !is RemapAction.LaunchApp && it.action !is RemapAction.OpenUrl
-                }
-            }
             .filterValues { it.isNotEmpty() }
             .toList()
     }
@@ -403,7 +438,11 @@ private fun ActionCatalogSheet(
                 items.forEach { item ->
                     OverlayActionPickRow(
                         item = item,
-                        onClick = { onSelect(item.action) },
+                        onClick = when (val action = item.action) {
+                            is RemapAction.LaunchApp -> onPickLaunchApp
+                            is RemapAction.OpenUrl -> onPickUrl
+                            else -> ({ onSelect(action) })
+                        },
                     )
                 }
             }

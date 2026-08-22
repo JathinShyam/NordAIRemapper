@@ -12,9 +12,15 @@ import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.domain.model.AppSettings
 import com.nordairemapper.domain.model.coerceFor
 import com.nordairemapper.domain.repository.RemapConfigRepository
+import com.nordairemapper.presentation.remap.InstalledAppInfo
+import com.nordairemapper.presentation.remap.queryLaunchableApps
+import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -22,8 +28,25 @@ import javax.inject.Inject
 
 @HiltViewModel
 class OverlaySettingsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val remapConfigRepository: RemapConfigRepository,
 ) : ViewModel() {
+
+    private val _installedApps = MutableStateFlow<List<InstalledAppInfo>>(emptyList())
+    val installedApps: StateFlow<List<InstalledAppInfo>> = _installedApps.asStateFlow()
+
+    private val _loadingApps = MutableStateFlow(false)
+    val loadingApps: StateFlow<Boolean> = _loadingApps.asStateFlow()
+
+    fun loadInstalledApps() {
+        viewModelScope.launch {
+            if (_loadingApps.value || _installedApps.value.isNotEmpty()) return@launch
+            _loadingApps.value = true
+            runCatching { queryLaunchableApps(context) }
+                .onSuccess { _installedApps.value = it }
+            _loadingApps.value = false
+        }
+    }
 
     val config: StateFlow<OverlayConfig> = remapConfigRepository.observeOverlayConfig()
         .map { it.copy(position = it.position.coerceFor(it.layoutStyle)) }
