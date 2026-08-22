@@ -75,3 +75,4 @@ Going forward: write/update these notes in the **same turn** as the code.
 | 2026-08-22 | [home-silhouette-compact](./2026-08-22-home-silhouette-compact/) | Shrink Home silhouette to design ~220dp so action cards fit without scroll |
 | 2026-08-22 | [launcher-n-monogram](./2026-08-22-launcher-n-monogram/) | App logo = cyan N monogram + Torch Red Plus Key dash (option 3) |
 | 2026-08-22 | [heading-weight-lockup-center](./2026-08-22-heading-weight-lockup-center/) | RCA: variable Space Grotesk needs FontVariation w700; center Never Settle lockup |
+| 2026-08-22 | [rename-keyforge](./2026-08-22-rename-keyforge/) | Display name Nord AI Remapper → Keyforge (package unchanged) |

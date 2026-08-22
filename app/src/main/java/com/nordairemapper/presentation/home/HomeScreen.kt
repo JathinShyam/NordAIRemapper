@@ -123,7 +123,7 @@ fun HomeScreen(
                 title = {
                     NordTopBarTitle(
                         title = "Plus Key",
-                        subtitle = "Nord AI Remapper · Home",
+                        subtitle = "Keyforge · Home",
                     )
                 },
                 actions = {

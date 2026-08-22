@@ -2,7 +2,7 @@ package com.nordairemapper.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Nord AI Remapper palette — dark-first, OxygenOS-inspired
+// Keyforge palette — dark-first, OxygenOS-inspired
 val NordBlue = Color(0xFF0AC6FF)
 val NordBlueDim = Color(0xFF0890BA)
 val NordBlueMuted = Color(0xFF0AC6FF).copy(alpha = 0.16f)

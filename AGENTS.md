@@ -1,4 +1,4 @@
-# Nord AI Remapper — agent instructions
+# Keyforge — agent instructions
 
 Remap the **OnePlus Nord 5 Plus Key** (physical side button) to single / double / long press plus an optional overlay. Package `com.nordairemapper`. Not affiliated with OnePlus.
 

@@ -28,7 +28,7 @@ Ship the riskiest path first: observe hardware keys, classify gestures, learn Pl
 
 ## Manual device test (still required on Nord 5)
 
-1. Enable Accessibility for Nord AI Remapper.  
+1. Enable Accessibility for Keyforge.  
 2. Open Key setup → press Plus Key.  
 3. Confirm keyCode/scanCode appear; save identity.
 

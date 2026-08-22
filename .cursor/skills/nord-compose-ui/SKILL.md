@@ -1,7 +1,7 @@
 ---
 name: nord-compose-ui
 description: >-
-  Rebuild or polish Nord AI Remapper Compose UI (theme, Home, Remap, Settings,
+  Rebuild or polish Keyforge Compose UI (theme, Home, Remap, Settings,
   Overlay, Backup, Onboarding, Developer). Use when editing presentation/ or
   ui/ screens and components. Loads RoninForge Compose guidance with Nord
   product constraints.

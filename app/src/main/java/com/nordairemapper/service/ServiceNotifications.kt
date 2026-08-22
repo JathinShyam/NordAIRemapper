@@ -35,7 +35,7 @@ object ServiceNotifications {
         val notification = Notification.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("Key detection stopped")
-            .setContentText("Tap to reopen Nord AI Remapper and re-enable detection")
+            .setContentText("Tap to reopen Keyforge and re-enable detection")
             .setContentIntent(intent)
             .setAutoCancel(true)
             .build()

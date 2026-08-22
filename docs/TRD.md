@@ -1,6 +1,6 @@
 # Technical Requirements Document (TRD)
 
-**Product:** Nord AI Remapper  
+**Product:** Keyforge  
 **Companion docs:** [PRD.md](./PRD.md), [ARCHITECTURE.md](./ARCHITECTURE.md)  
 **Document version:** 1.0  
 **Build baseline:** Gradle Kotlin DSL · AGP 8.5.x · Kotlin 2.0.x · compile/targetSdk 35 · minSdk 33
@@ -9,7 +9,7 @@
 
 ## 1. Purpose
 
-This TRD specifies **how** Nord AI Remapper must be built and verified: stack, APIs, permissions, detection contracts, data schemas, non-functional requirements, and phased build gates. Product *why* lives in the PRD; module topology and runtime flows live in Architecture.
+This TRD specifies **how** Keyforge must be built and verified: stack, APIs, permissions, detection contracts, data schemas, non-functional requirements, and phased build gates. Product *why* lives in the PRD; module topology and runtime flows live in Architecture.
 
 ---
 

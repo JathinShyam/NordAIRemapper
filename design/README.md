@@ -1,4 +1,4 @@
-# Nord AI Remapper — Design kit
+# Keyforge — Design kit
 
 ## Typography (v2)
 

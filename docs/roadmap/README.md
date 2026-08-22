@@ -1,6 +1,6 @@
 # Implementation Roadmap
 
-**Product:** Nord AI Remapper  
+**Product:** Keyforge  
 **Source of truth:** [PRD](../PRD.md) · [TRD](../TRD.md) · [Architecture](../ARCHITECTURE.md)
 
 Each phase has its own detailed plan under this folder. **Do not start the next phase until `./gradlew assembleDebug` is green and the phase acceptance checklist is checked.**

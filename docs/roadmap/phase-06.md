@@ -29,7 +29,7 @@ Replace the temporary two-button Home with the product Home: Nord 5 silhouette w
 
 | Zone | Spec |
 |------|------|
-| Top app bar | Title “Nord AI Remapper”; actions: Settings (icon), Developer (optional overflow or icon) |
+| Top app bar | Title “Keyforge”; actions: Settings (icon), Developer (optional overflow or icon) |
 | Status row | Green/red dot + “Service active/inactive”; tap inactive → open Accessibility settings (or Developer if Logcat strategy) |
 | Master toggle | Pill / Switch “Remapping enabled” bound to `serviceEnabled` |
 | Phone diagram | Centered composable silhouette; Plus Key on right edge with Nord blue glow (`#0AC6FF`) |

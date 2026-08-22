@@ -1,7 +1,7 @@
 ---
 name: ship-debug-apk
 description: >-
-  Build and ship the Nord AI Remapper debug APK. Use when assembling,
+  Build and ship the Keyforge debug APK. Use when assembling,
   installing on the phone, pushing to main for CI, or when install fails
   with INSTALL_FAILED_UPDATE_INCOMPATIBLE / signature mismatch.
 ---

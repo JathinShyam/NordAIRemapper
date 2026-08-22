@@ -1,4 +1,4 @@
-# Nord AI Remapper
+# Keyforge
 
 **Remap the OnePlus Nord 5 Plus Key** — the physical side button marketed for AI — into *your* shortcuts: single press, double press, long press, plus an optional floating menu.
 
@@ -30,7 +30,7 @@ That is the whole product problem:
 | One permission dialog for remapping | `READ_LOGS` cannot be granted from a normal dialog |
 | Remap always swallows the stock action | Without root, stock Plus Key may still fire (**dual-fire**) |
 
-Nord AI Remapper is honest about that. It unlocks **logcat detection** once, keeps Accessibility for system actions, and lets you assign real remaps.
+Keyforge is honest about that. It unlocks **logcat detection** once, keeps Accessibility for system actions, and lets you assign real remaps.
 
 ---
 
@@ -72,7 +72,7 @@ Introduces the product: remap single, double, and long press on the Plus Key.
 
 ### 2. Accessibility — required
 
-**What you do:** Settings → Accessibility → enable **Nord AI Remapper**.
+**What you do:** Settings → Accessibility → enable **Keyforge**.
 
 **Why:**
 
@@ -113,7 +113,7 @@ If OxygenOS blocks the grant (`GRANT_RUNTIME_PERMISSIONS`), disable **permission
 
 ### 4. Display over other apps — optional
 
-**What you do:** Allow **Display over other apps** for Nord AI Remapper.
+**What you do:** Allow **Display over other apps** for Keyforge.
 
 **Why:** Required for:
 

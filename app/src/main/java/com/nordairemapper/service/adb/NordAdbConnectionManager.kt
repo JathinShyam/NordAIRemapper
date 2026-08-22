@@ -37,7 +37,7 @@ class NordAdbConnectionManager private constructor(
         private const val DIR_NAME = "adb"
         private const val KEY_FILE = "adbkey.pk8"
         private const val CERT_FILE = "adbkey.crt"
-        private const val SUBJECT = "CN=Nord AI Remapper"
+        private const val SUBJECT = "CN=Keyforge"
         private const val KEY_SIZE = 2048
         /** Cert validity in seconds (10 years). */
         private const val CERT_VALIDITY_SECONDS = 10L * 365L * 24L * 60L * 60L

@@ -142,7 +142,7 @@ class HomeViewModel @Inject constructor(
             if (!accessibilityEnabled) {
                 return HomeBanner(
                     title = "Accessibility is off",
-                    body = "Enable Nord AI Remapper in Accessibility settings so key presses and system actions can run. Tip: set the stock Plus Key to a harmless default — the system action may still fire.",
+                    body = "Enable Keyforge in Accessibility settings so key presses and system actions can run. Tip: set the stock Plus Key to a harmless default — the system action may still fire.",
                     primaryLabel = "Open Accessibility",
                     primaryAction = HomeBannerAction.OPEN_ACCESSIBILITY,
                 )

@@ -1,6 +1,6 @@
 # Architecture Document
 
-**Product:** Nord AI Remapper  
+**Product:** Keyforge  
 **Companion docs:** [PRD.md](./PRD.md), [TRD.md](./TRD.md), [changes/](./changes/) (per-change debug notes)  
 **Document version:** 1.1  
 **Codebase package:** `com.nordairemapper`
@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-Nord AI Remapper is a single-module Android app that remaps the OnePlus **Plus Key** using a **pluggable detection layer**, a shared **gesture classifier**, and a **sealed-action executor**. UI is Jetpack Compose; configuration is local (Room + DataStore).
+Keyforge is a single-module Android app that remaps the OnePlus **Plus Key** using a **pluggable detection layer**, a shared **gesture classifier**, and a **sealed-action executor**. UI is Jetpack Compose; configuration is local (Room + DataStore).
 
 The architecture optimizes for three realities:
 

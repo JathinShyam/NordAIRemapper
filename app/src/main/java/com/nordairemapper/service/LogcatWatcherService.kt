@@ -221,7 +221,7 @@ class LogcatWatcherService : Service() {
                 .build()
         } else {
             builder
-                .setContentTitle("Nord AI Remapper")
+                .setContentTitle("Keyforge")
                 .setContentText("Running")
                 .build()
         }

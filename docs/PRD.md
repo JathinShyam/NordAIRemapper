@@ -1,6 +1,6 @@
 # Product Requirements Document (PRD)
 
-**Product:** Nord AI Remapper  
+**Product:** Keyforge  
 **Platform:** Android (OnePlus Nord 5 primary; OxygenOS / ColorOS family)  
 **Package:** `com.nordairemapper`  
 **Document version:** 1.0  
@@ -10,7 +10,7 @@
 
 ## 1. Vision
 
-Nord AI Remapper turns the OnePlus Nord 5’s physical **Plus Key** (marketed around AI features; it replaced the alert slider) into a fully customizable hardware shortcut.
+Keyforge turns the OnePlus Nord 5’s physical **Plus Key** (marketed around AI features; it replaced the alert slider) into a fully customizable hardware shortcut.
 
 Users assign independent actions to **single press**, **double press**, and **long press**, and optionally open a **floating overlay** of up to six quick actions — similar in spirit to Essential Key remappers on Nothing Phone, adapted to OnePlus’s harder-to-intercept key path.
 
@@ -88,7 +88,7 @@ Users unwilling to grant Accessibility or run ADB when Strategy A fails.
 
 ### 6.1 First launch (happy path — Accessibility)
 
-1. Welcome → enable Accessibility for Nord AI Remapper.  
+1. Welcome → enable Accessibility for Keyforge.  
 2. Grant overlay (if planning to use overlay).  
 3. Notifications + battery exemption.  
 4. Home: master toggle on; green status.  

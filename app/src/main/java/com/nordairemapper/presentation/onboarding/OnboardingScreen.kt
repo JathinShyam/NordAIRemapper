@@ -228,7 +228,7 @@ private fun WelcomeStepContent(onPrimary: () -> Unit) {
                     .padding(bottom = 16.dp),
             )
             NordHeading(
-                text = "Nord AI Remapper",
+                text = "Keyforge",
                 style = MaterialTheme.typography.headlineMedium,
             )
             Spacer(Modifier.height(6.dp))
