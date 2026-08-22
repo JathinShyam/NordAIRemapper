@@ -1,6 +1,7 @@
 package com.nordairemapper.ui.components
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -10,17 +11,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontSynthesis
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
-import androidx.compose.material3.LocalTextStyle
 import com.nordairemapper.ui.theme.HeadingRed
 import com.nordairemapper.ui.theme.NordHeadingFontFamily
 
 /**
  * Product heading in Space Grotesk. First letter is OnePlus red (#EB0028).
  * Body / UI copy uses Inter via [MaterialTheme.typography].
+ *
+ * Uses [FontSynthesis.None] so Android never soft-fakes bold on the variable font.
  */
 @Composable
 fun NordHeading(
@@ -34,8 +37,13 @@ fun NordHeading(
     val rest = text.drop(1)
     val restColor =
         if (style.color == Color.Unspecified) MaterialTheme.colorScheme.onSurface else style.color
-    // Space Grotesk variable axis — prefer explicit weight from style (titleLarge = ExtraBold).
-    val weight = style.fontWeight ?: FontWeight.ExtraBold
+    // Space Grotesk axis max is 700 — Bold is the real heavy cut (see Type.kt RCA).
+    val weight = style.fontWeight ?: FontWeight.Bold
+    val headingStyle = style.copy(
+        fontFamily = NordHeadingFontFamily,
+        fontWeight = weight,
+        fontSynthesis = FontSynthesis.None,
+    )
     Text(
         text = buildAnnotatedString {
             withStyle(
@@ -45,6 +53,7 @@ fun NordHeading(
                     fontWeight = weight,
                     fontSize = style.fontSize,
                     letterSpacing = style.letterSpacing,
+                    fontSynthesis = FontSynthesis.None,
                 ),
             ) {
                 append(first)
@@ -56,18 +65,19 @@ fun NordHeading(
                     fontWeight = weight,
                     fontSize = style.fontSize,
                     letterSpacing = style.letterSpacing,
+                    fontSynthesis = FontSynthesis.None,
                 ),
             ) {
                 append(rest)
             }
         },
         modifier = modifier,
-        style = style.copy(fontFamily = NordHeadingFontFamily, fontWeight = weight),
+        style = headingStyle,
         maxLines = maxLines,
     )
 }
 
-/** Screen top bars — matches design `.topbar .h` (22sp Space Grotesk ExtraBold). */
+/** Screen top bars — matches design `.topbar .h` (22sp Space Grotesk w700). */
 @Composable
 fun NordTopBarHeading(
     text: String,
@@ -75,8 +85,10 @@ fun NordTopBarHeading(
 ) {
     val style = MaterialTheme.typography.titleLarge.copy(
         fontFamily = NordHeadingFontFamily,
-        fontWeight = FontWeight.ExtraBold,
+        fontWeight = FontWeight.Bold,
+        fontSynthesis = FontSynthesis.None,
     )
+    // TopAppBar provides its own LocalTextStyle (often softer). Override so weight sticks.
     CompositionLocalProvider(LocalTextStyle provides style) {
         NordHeading(text = text, modifier = modifier, style = style)
     }
@@ -109,8 +121,9 @@ fun NordTitle(
         modifier = modifier,
         style = MaterialTheme.typography.titleLarge.copy(
             fontSize = fontSize,
-            fontWeight = FontWeight.ExtraBold,
+            fontWeight = FontWeight.Bold,
             letterSpacing = (-0.3).sp,
+            fontSynthesis = FontSynthesis.None,
         ),
     )
 }

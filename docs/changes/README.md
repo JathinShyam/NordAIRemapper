@@ -74,3 +74,4 @@ Going forward: write/update these notes in the **same turn** as the code.
 | 2026-08-22 | [audit-fixes](./2026-08-22-audit-fixes/) | Full audit: logcat watcher leak/reconnect, boot+FGS guards, tests+CI gate, light-theme accents, picker perf, backup confirmations, overlay app/URL slots, last-seen health line |
 | 2026-08-22 | [home-silhouette-compact](./2026-08-22-home-silhouette-compact/) | Shrink Home silhouette to design ~220dp so action cards fit without scroll |
 | 2026-08-22 | [launcher-n-monogram](./2026-08-22-launcher-n-monogram/) | App logo = cyan N monogram + Torch Red Plus Key dash (option 3) |
+| 2026-08-22 | [heading-weight-lockup-center](./2026-08-22-heading-weight-lockup-center/) | RCA: variable Space Grotesk needs FontVariation w700; center Never Settle lockup |

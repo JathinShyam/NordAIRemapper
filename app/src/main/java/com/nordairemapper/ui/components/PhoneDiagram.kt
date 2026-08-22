@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -118,7 +117,6 @@ fun PhoneDiagram(
         }
         // Design lockup ≈ 54% of glass / body width; keep proportional when hero shrinks.
         val lockupWidth = phoneWidthDp * 0.54f
-        val lockupOffsetY = phoneHeightDp * 0.06f
 
         Canvas(modifier = Modifier.fillMaxSize()) {
             var phoneHeight = size.height * 0.98f
@@ -257,12 +255,10 @@ fun PhoneDiagram(
             )
         }
 
-        // Classic OxygenOS / ad lockup: mark above two red bars (USPTO letterforms).
-        // ~54% of body width; nudged below center to clear the punch-hole.
+        // Classic OxygenOS / ad lockup: mark + NEVER / SETTLE — true center of silhouette.
         NeverSettleBrand(
             modifier = Modifier
                 .align(Alignment.Center)
-                .offset(y = lockupOffsetY)
                 .width(lockupWidth),
         )
     }
