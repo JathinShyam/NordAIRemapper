@@ -122,8 +122,8 @@ fun HomeScreen(
             TopAppBar(
                 title = {
                     NordTopBarTitle(
-                        title = "Plus Key",
-                        subtitle = "Keyforge · Home",
+                        title = "Keyforge",
+                        subtitle = "Plus Key Remapper · Home",
                     )
                 },
                 actions = {
