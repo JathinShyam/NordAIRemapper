@@ -3,6 +3,7 @@ package com.nordairemapper.service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import com.nordairemapper.domain.repository.SettingsRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -17,24 +18,24 @@ class BootReceiver : BroadcastReceiver() {
     @Inject lateinit var settingsRepository: SettingsRepository
 
     override fun onReceive(context: Context, intent: Intent?) {
-        if (intent?.action != Intent.ACTION_BOOT_COMPLETED &&
-            intent?.action != Intent.ACTION_LOCKED_BOOT_COMPLETED
-        ) {
+        if (intent?.action != Intent.ACTION_BOOT_COMPLETED) {
             return
         }
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val settings = settingsRepository.settings.first()
-                if (!settings.serviceEnabled) return@launch
-                DetectionCoordinator.syncLogcatWatcher(
-                    context = context,
-                    strategy = settings.detectionStrategy,
-                    serviceEnabled = true,
-                )
-                if (!AccessibilityUtils.isServiceEnabled(context)) {
-                    ServiceNotifications.notifyDetectionStopped(context)
-                }
+                runCatching {
+                    val settings = settingsRepository.settings.first()
+                    if (!settings.serviceEnabled) return@runCatching
+                    DetectionCoordinator.syncLogcatWatcher(
+                        context = context,
+                        strategy = settings.detectionStrategy,
+                        serviceEnabled = true,
+                    )
+                    if (!AccessibilityUtils.isServiceEnabled(context)) {
+                        ServiceNotifications.notifyDetectionStopped(context)
+                    }
+                }.onFailure { Log.w("BootReceiver", "Boot re-arm failed", it) }
             } finally {
                 pending.finish()
             }

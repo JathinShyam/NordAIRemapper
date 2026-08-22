@@ -46,11 +46,15 @@ object DetectionCoordinator {
         val shouldRun = serviceEnabled &&
             needsLogcatWatcher(strategy) &&
             LogcatWatcherService.hasReadLogsPermission(context)
-        if (shouldRun) {
-            LogcatWatcherService.start(context)
-        } else {
-            LogcatWatcherService.stop(context)
-        }
+        // Starting an FGS from a background state throws on Android 12+; this
+        // runs from collectors/service callbacks where that is possible.
+        runCatching {
+            if (shouldRun) {
+                LogcatWatcherService.start(context)
+            } else {
+                LogcatWatcherService.stop(context)
+            }
+        }.onFailure { Log.w("DetectionCoordinator", "syncLogcatWatcher failed", it) }
     }
 }
 
