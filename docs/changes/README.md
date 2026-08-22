@@ -71,3 +71,4 @@ Going forward: write/update these notes in the **same turn** as the code.
 | 2026-08-21 | [lean-launcher-icon](./2026-08-21-lean-launcher-icon/) | Replace fat filled phone launcher with lean cyan outline + Plus Key |
 | 2026-08-21 | [vertical-pill-bar](./2026-08-21-vertical-pill-bar/) | Pill = vertical Left/Right strip; Grid keeps Top/Middle/Bottom |
 | 2026-08-21 | [pill-bottom-vibrant-lockup](./2026-08-21-pill-bottom-vibrant-lockup/) | Pill Bottom scroll row; vector lockup; real Bold top titles |
+| 2026-08-22 | [audit-fixes](./2026-08-22-audit-fixes/) | Full audit: logcat watcher leak/reconnect, boot+FGS guards, tests+CI gate, light-theme accents, picker perf, backup confirmations, overlay app/URL slots, last-seen health line |
