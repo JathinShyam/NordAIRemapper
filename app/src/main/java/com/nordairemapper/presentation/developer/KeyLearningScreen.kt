@@ -217,8 +217,17 @@ private fun PressRow(press: CapturedPress, onSave: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            TextButton(onClick = onSave, enabled = !press.isLogcatPlusKey) {
-                Text(if (press.isLogcatPlusKey) "Logcat" else "Set as Plus Key")
+            TextButton(
+                onClick = onSave,
+                enabled = !press.isLogcatPlusKey && !press.isSystemKey,
+            ) {
+                Text(
+                    when {
+                        press.isLogcatPlusKey -> "Logcat"
+                        press.isSystemKey -> "System key"
+                        else -> "Set as Plus Key"
+                    },
+                )
             }
         }
     }

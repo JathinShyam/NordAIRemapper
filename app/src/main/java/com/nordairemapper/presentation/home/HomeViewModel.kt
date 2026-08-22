@@ -49,10 +49,22 @@ class HomeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            keyEventBus.rawEvents.collect { event ->
-                if (event.action == KeyAction.DOWN || event.action == KeyAction.PULSE) {
-                    _plusKeyPulse.tryEmit(Unit)
-                }
+            // Only flash for the actual Plus Key: logcat lines are pre-matched
+            // by pattern, accessibility events must match the learned identity.
+            // Volume/power arriving via Accessibility must not flash it.
+            combine(keyEventBus.rawEvents, settingsRepository.settings) { event, settings ->
+                event to settings.keyIdentity
+            }.collect { (event, identity) ->
+                if (event.action != KeyAction.DOWN && event.action != KeyAction.PULSE) return@collect
+                val isPlusKey = event.source == DetectionStrategy.LOGCAT ||
+                    (identity.isConfigured && run {
+                        if (identity.scanCode > 0) {
+                            event.scanCode == identity.scanCode
+                        } else {
+                            event.keyCode == identity.keyCode
+                        }
+                    })
+                if (isPlusKey) _plusKeyPulse.tryEmit(Unit)
             }
         }
     }

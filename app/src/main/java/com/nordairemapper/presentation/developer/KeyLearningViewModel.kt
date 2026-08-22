@@ -46,6 +46,14 @@ data class CapturedPress(
 
     val isLogcatPlusKey: Boolean get() = source == DetectionStrategy.LOGCAT
 
+    /**
+     * Volume/power must keep passing through to the system; learning one as
+     * the Plus Key would make remapping consume a hardware key users need.
+     */
+    val isSystemKey: Boolean get() = keyCode == KeyEvent.KEYCODE_VOLUME_UP ||
+        keyCode == KeyEvent.KEYCODE_VOLUME_DOWN ||
+        keyCode == KeyEvent.KEYCODE_POWER
+
     fun toRawEvent(): RawKeyEvent = RawKeyEvent(
         keyCode = keyCode,
         scanCode = scanCode,
