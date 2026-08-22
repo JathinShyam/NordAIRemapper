@@ -88,12 +88,15 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun openBatterySettings() {
-        context.startActivity(
+        val intent = if (isBatteryExempt()) {
+            Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+        } else {
             Intent(
                 Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
                 Uri.parse("package:${context.packageName}"),
-            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        )
+            )
+        }
+        context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
     fun openGithub() {

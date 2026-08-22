@@ -1,28 +1,21 @@
 package com.nordairemapper.presentation.settings
 
-import android.content.Intent
-import android.content.pm.PackageManager
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import android.content.pm.ApplicationInfo
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Backup
-import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.BatteryAlert
+import androidx.compose.material.icons.outlined.BatteryChargingFull
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material.icons.outlined.Science
@@ -31,53 +24,29 @@ import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Vibration
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.Widgets
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.platform.LocalView
-import android.view.HapticFeedbackConstants
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.nordairemapper.domain.model.ThemeMode
 import com.nordairemapper.presentation.common.adaptiveAccent
-import com.nordairemapper.presentation.remap.AppPickerSheet
-import com.nordairemapper.presentation.remap.queryLaunchableApps
-import com.nordairemapper.presentation.remap.InstalledAppInfo
 import com.nordairemapper.ui.components.NordTopBarTitle
-import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.SectionLabel
-import com.nordairemapper.ui.theme.Destructive
 import com.nordairemapper.ui.theme.NordBlue
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,6 +60,7 @@ fun SettingsScreen(
     onOpenPreferences: () -> Unit,
     onOpenVisualOverlay: () -> Unit,
     onOpenLockScreen: () -> Unit,
+    onOpenExclusions: () -> Unit,
     onRestartOnboarding: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -98,10 +68,6 @@ fun SettingsScreen(
     val batteryExempt by viewModel.batteryExempt.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    var showAppPicker by remember { mutableStateOf(false) }
-    var installedApps by remember { mutableStateOf<List<InstalledAppInfo>>(emptyList()) }
-    var loadingApps by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -111,13 +77,53 @@ fun SettingsScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+    val green = adaptiveAccent(
+        darkContainer = Color(0xFF14321F),
+        darkTint = Color(0xFF3DDC84),
+        lightContainer = Color(0xFFDCF3E4),
+        lightTint = Color(0xFF1C7C46),
+    )
+    val purple = adaptiveAccent(
+        darkContainer = Color(0xFF2A1F3D),
+        darkTint = Color(0xFFB388FF),
+        lightContainer = Color(0xFFEAE2FA),
+        lightTint = Color(0xFF6A46B8),
+    )
+    val amber = adaptiveAccent(
+        darkContainer = Color(0xFF3D2E14),
+        darkTint = Color(0xFFFFB020),
+        lightContainer = Color(0xFFFFF0D6),
+        lightTint = Color(0xFF9A5F00),
+    )
+    val muted = adaptiveAccent(
+        darkContainer = Color(0xFF222222),
+        darkTint = Color(0xFFB0B0B0),
+        lightContainer = Color(0xFFE8E8E8),
+        lightTint = Color(0xFF5A5A5A),
+    )
+    val red = adaptiveAccent(
+        darkContainer = Color(0xFF3A1818),
+        darkTint = Color(0xFFFF6B6B),
+        lightContainer = Color(0xFFFBE3E0),
+        lightTint = Color(0xFFB3261E),
+    )
+
+    val buildLabel = if (
+        (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+    ) {
+        "Debug"
+    } else {
+        "Release"
+    }
+    val exclusionCount = settings.excludedApps.size
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     NordTopBarTitle(
                         title = "Settings",
-                        subtitle = "Appearance, feedback & tools",
+                        subtitle = "Appearance, Reliability & Tools",
                     )
                 },
                 navigationIcon = {
@@ -136,442 +142,187 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            // ── Appearance ────────────────────────────────────────────────
             SectionLabel("Appearance")
-
-            // Theme pref-card with segmented control
-            ThemePrefCard(
-                selectedMode = settings.themeMode,
-                onSelect = viewModel::setThemeMode,
-            )
-
-            SettingsToggleCard(
-                title = "Dynamic color",
-                checked = settings.dynamicColor,
-                onCheckedChange = viewModel::setDynamicColor,
-                subtitle = "Follow system Material You",
-            )
-
-            SettingsToggleCard(
-                title = "Service notification",
-                checked = settings.showServiceNotification,
-                onCheckedChange = viewModel::setShowServiceNotification,
-                subtitle = "Ongoing status while remapping",
-            )
-
-            // ── Feedback & overlay ────────────────────────────────────────
-            SectionLabel("Feedback & overlay")
-            HubRow(
-                icon = Icons.Outlined.Vibration,
-                title = "Feedback",
-                subtitle = "Haptic feedback & vibration intensity",
-                accentContainer = adaptiveAccent(
-                    darkContainer = Color(0xFF14321F),
-                    darkTint = Color(0xFF3DDC84),
-                    lightContainer = Color(0xFFDCF3E4),
-                    lightTint = Color(0xFF1C7C46),
-                ).container,
-                accentTint = adaptiveAccent(
-                    darkContainer = Color(0xFF14321F),
-                    darkTint = Color(0xFF3DDC84),
-                    lightContainer = Color(0xFFDCF3E4),
-                    lightTint = Color(0xFF1C7C46),
-                ).tint,
-                onClick = onOpenFeedback,
-            )
-            HubRow(
-                icon = Icons.Outlined.Tune,
-                title = "Preferences",
-                subtitle = "How you're notified when an action triggers",
-                accentContainer = MaterialTheme.colorScheme.primaryContainer,
-                accentTint = NordBlue,
-                onClick = onOpenPreferences,
-            )
-            HubRow(
-                icon = Icons.Outlined.Visibility,
-                title = "Visual overlay",
-                subtitle = "Action popup style when a remap fires",
-                accentContainer = adaptiveAccent(
-                    darkContainer = Color(0xFF2A1F3D),
-                    darkTint = Color(0xFFB388FF),
-                    lightContainer = Color(0xFFEAE2FA),
-                    lightTint = Color(0xFF6A46B8),
-                ).container,
-                accentTint = adaptiveAccent(
-                    darkContainer = Color(0xFF2A1F3D),
-                    darkTint = Color(0xFFB388FF),
-                    lightContainer = Color(0xFFEAE2FA),
-                    lightTint = Color(0xFF6A46B8),
-                ).tint,
-                onClick = onOpenVisualOverlay,
-            )
-            HubRow(
-                icon = Icons.Outlined.Widgets,
-                title = "Overlay settings",
-                subtitle = "Floating menu slots & layout",
-                accentContainer = adaptiveAccent(
-                    darkContainer = Color(0xFF2A1F3D),
-                    darkTint = Color(0xFFB388FF),
-                    lightContainer = Color(0xFFEAE2FA),
-                    lightTint = Color(0xFF6A46B8),
-                ).container,
-                accentTint = adaptiveAccent(
-                    darkContainer = Color(0xFF2A1F3D),
-                    darkTint = Color(0xFFB388FF),
-                    lightContainer = Color(0xFFEAE2FA),
-                    lightTint = Color(0xFF6A46B8),
-                ).tint,
-                onClick = onOpenOverlay,
-            )
-
-            // ── Behavior ──────────────────────────────────────────────────
-            SectionLabel("Behavior")
-            HubRow(
-                icon = Icons.Outlined.Lock,
-                title = "Lock Screen",
-                subtitle = "Gestures while the screen is locked",
-                accentContainer = adaptiveAccent(
-                    darkContainer = Color(0xFF3D2E14),
-                    darkTint = Color(0xFFFFB020),
-                    lightContainer = Color(0xFFFFF0D6),
-                    lightTint = Color(0xFF9A5F00),
-                ).container,
-                accentTint = adaptiveAccent(
-                    darkContainer = Color(0xFF3D2E14),
-                    darkTint = Color(0xFFFFB020),
-                    lightContainer = Color(0xFFFFF0D6),
-                    lightTint = Color(0xFF9A5F00),
-                ).tint,
-                onClick = onOpenLockScreen,
-            )
-            HubRow(
-                icon = Icons.Outlined.Backup,
-                title = "Backup & Restore",
-                subtitle = "Export and import remaps",
-                accentContainer = MaterialTheme.colorScheme.primaryContainer,
-                accentTint = NordBlue,
-                onClick = onOpenBackup,
-            )
-
-            // ── Advanced ──────────────────────────────────────────────────
-            SectionLabel("Advanced")
-            HubRow(
-                icon = Icons.Outlined.TouchApp,
-                title = "Key setup",
-                subtitle = "Learn / verify Plus Key",
-                accentContainer = MaterialTheme.colorScheme.primaryContainer,
-                accentTint = NordBlue,
-                onClick = onOpenKeyLearning,
-            )
-            HubRow(
-                icon = Icons.Outlined.Science,
-                title = "Lab",
-                subtitle = "Strategy, timing, USB unlock (Developer)",
-                accentContainer = adaptiveAccent(
-                    darkContainer = Color(0xFF3D2E14),
-                    darkTint = Color(0xFFFFB020),
-                    lightContainer = Color(0xFFFFF0D6),
-                    lightTint = Color(0xFF9A5F00),
-                ).container,
-                accentTint = adaptiveAccent(
-                    darkContainer = Color(0xFF3D2E14),
-                    darkTint = Color(0xFFFFB020),
-                    lightContainer = Color(0xFFFFF0D6),
-                    lightTint = Color(0xFF9A5F00),
-                ).tint,
-                onClick = onOpenDeveloper,
-            )
-            HubRow(
-                icon = Icons.Outlined.RestartAlt,
-                title = "Restart onboarding",
-                subtitle = "Walk through setup again",
-                accentContainer = Color(0xFF3A1818),
-                accentTint = Destructive,
-                onClick = {
-                    viewModel.resetOnboarding()
-                    onRestartOnboarding()
-                },
-            )
-
-            // ── Per-app exclusions ────────────────────────────────────────
-            SectionLabel("Per-app exclusions")
-            Text(
-                text = "Remapping is disabled while these apps are in the foreground.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (settings.excludedApps.isEmpty()) {
-                Row(
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Icon(
-                        Icons.Outlined.Apps,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Text(
-                        text = "No apps excluded — remapping is active in all apps",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            val pm = context.packageManager
-            val exclusionLabels = remember(settings.excludedApps) {
-                settings.excludedApps.associateWith { pkg ->
-                    runCatching {
-                        pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
-                    }.getOrDefault(pkg)
-                }
-            }
-            settings.excludedApps.forEach { pkg ->
-                val label = exclusionLabels[pkg] ?: pkg
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    shape = MaterialTheme.shapes.medium,
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(label, style = MaterialTheme.typography.bodyMedium)
-                            Text(
-                                text = pkg,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        IconButton(onClick = { viewModel.removeExclusion(pkg) }) {
-                            Icon(Icons.Outlined.Delete, contentDescription = "Remove")
-                        }
-                    }
-                }
-            }
-            NordPrimaryButton(
-                text = "Add excluded app",
-                onClick = {
-                    scope.launch {
-                        if (installedApps.isEmpty()) {
-                            loadingApps = true
-                            installedApps = runCatching {
-                                queryLaunchableApps(context)
-                            }.getOrDefault(emptyList())
-                            loadingApps = false
-                        }
-                        showAppPicker = true
-                    }
-                },
-            )
-
-            // ── Power ─────────────────────────────────────────────────────
-            SectionLabel("Power")
-            Text(
-                text = if (batteryExempt) "Battery optimization exempt" else "Not exempt — detection may be killed",
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (batteryExempt) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-            )
-            if (!batteryExempt) {
-                NordPrimaryButton(
-                    text = "Exempt from battery optimization",
-                    onClick = viewModel::openBatterySettings,
+            SettingsHubGroup {
+                ThemeSegmentBlock(
+                    selectedMode = settings.themeMode,
+                    onSelect = viewModel::setThemeMode,
+                )
+                SettingsHubDivider()
+                SettingsHubToggleRow(
+                    title = "Dynamic Color",
+                    subtitle = "Material You From Wallpaper",
+                    checked = settings.dynamicColor,
+                    onCheckedChange = viewModel::setDynamicColor,
+                )
+                SettingsHubDivider()
+                SettingsHubToggleRow(
+                    title = "Service Notification",
+                    subtitle = "Ongoing Status While Remapping",
+                    checked = settings.showServiceNotification,
+                    onCheckedChange = viewModel::setShowServiceNotification,
                 )
             }
 
-            // ── About ─────────────────────────────────────────────────────
+            SectionLabel("Shortcuts")
+            SettingsHubGroup {
+                SettingsHubRow(
+                    icon = Icons.Outlined.Vibration,
+                    title = "Feedback",
+                    subtitle = "Haptics When A Remap Fires",
+                    accentContainer = green.container,
+                    accentTint = green.tint,
+                    onClick = onOpenFeedback,
+                )
+                SettingsHubDivider()
+                SettingsHubRow(
+                    icon = Icons.Outlined.Tune,
+                    title = "Preferences",
+                    subtitle = "Toast, Sound, Confirmation",
+                    accentContainer = MaterialTheme.colorScheme.primaryContainer,
+                    accentTint = NordBlue,
+                    onClick = onOpenPreferences,
+                )
+                SettingsHubDivider()
+                SettingsHubRow(
+                    icon = Icons.Outlined.Visibility,
+                    title = "Visual Overlay",
+                    subtitle = "Popup Style On Remap",
+                    accentContainer = purple.container,
+                    accentTint = purple.tint,
+                    onClick = onOpenVisualOverlay,
+                )
+                SettingsHubDivider()
+                SettingsHubRow(
+                    icon = Icons.Outlined.Widgets,
+                    title = "Overlay Settings",
+                    subtitle = "Floating Menu Slots & Layout",
+                    accentContainer = purple.container,
+                    accentTint = purple.tint,
+                    onClick = onOpenOverlay,
+                )
+            }
+
+            SectionLabel("Tools")
+            SettingsHubGroup {
+                SettingsHubRow(
+                    icon = Icons.Outlined.Lock,
+                    title = "Lock Screen",
+                    subtitle = "Gestures While Locked",
+                    accentContainer = amber.container,
+                    accentTint = amber.tint,
+                    onClick = onOpenLockScreen,
+                )
+                SettingsHubDivider()
+                SettingsHubRow(
+                    icon = Icons.Outlined.Backup,
+                    title = "Backup & Restore",
+                    subtitle = "Export And Import Remaps",
+                    accentContainer = MaterialTheme.colorScheme.primaryContainer,
+                    accentTint = NordBlue,
+                    onClick = onOpenBackup,
+                )
+                SettingsHubDivider()
+                SettingsHubRow(
+                    icon = Icons.Outlined.TouchApp,
+                    title = "Key Setup",
+                    subtitle = "Learn / Verify Plus Key",
+                    accentContainer = MaterialTheme.colorScheme.primaryContainer,
+                    accentTint = NordBlue,
+                    onClick = onOpenKeyLearning,
+                )
+                SettingsHubDivider()
+                SettingsHubRow(
+                    icon = Icons.Outlined.Science,
+                    title = "Lab",
+                    subtitle = "Strategy, Timing, USB Unlock",
+                    accentContainer = amber.container,
+                    accentTint = amber.tint,
+                    onClick = onOpenDeveloper,
+                )
+                SettingsHubDivider()
+                SettingsHubRow(
+                    icon = Icons.Outlined.RestartAlt,
+                    title = "Restart Onboarding",
+                    subtitle = "Walk Through Setup Again",
+                    accentContainer = red.container,
+                    accentTint = red.tint,
+                    onClick = {
+                        viewModel.resetOnboarding()
+                        onRestartOnboarding()
+                    },
+                )
+            }
+
+            SectionLabel("Reliability")
+            SettingsHubGroup {
+                BatteryOptimizationBlock(
+                    exempt = batteryExempt,
+                    icon = if (batteryExempt) {
+                        Icons.Outlined.BatteryChargingFull
+                    } else {
+                        Icons.Outlined.BatteryAlert
+                    },
+                    accentContainer = if (batteryExempt) green.container else amber.container,
+                    accentTint = if (batteryExempt) green.tint else amber.tint,
+                    onCta = viewModel::openBatterySettings,
+                )
+                SettingsHubDivider()
+                SettingsHubRow(
+                    icon = Icons.Outlined.Apps,
+                    title = "Per-App Exclusions",
+                    subtitle = "Pause Remapping In Selected Apps",
+                    accentContainer = muted.container,
+                    accentTint = muted.tint,
+                    onClick = onOpenExclusions,
+                    titleTrailing = {
+                        SettingsStatusChip(
+                            label = when (exclusionCount) {
+                                0 -> "None"
+                                1 -> "1 App"
+                                else -> "$exclusionCount Apps"
+                            },
+                            tone = if (exclusionCount == 0) {
+                                SettingsStatusTone.Muted
+                            } else {
+                                SettingsStatusTone.Ok
+                            },
+                        )
+                    },
+                )
+            }
+
             SectionLabel("About")
-            Text("Version ${viewModel.versionName()}", style = MaterialTheme.typography.bodyMedium)
-            TextButton(onClick = viewModel::openGithub) { Text("GitHub") }
-            Spacer(Modifier.height(16.dp))
-        }
-    }
-
-    if (showAppPicker) {
-        AppPickerSheet(
-            apps = installedApps,
-            isLoading = loadingApps,
-            onLoad = {},
-            onSelect = {
-                viewModel.addExclusion(it)
-                showAppPicker = false
-            },
-            onDismiss = { showAppPicker = false },
-        )
-    }
-}
-
-// ── HubRow ────────────────────────────────────────────────────────────────────
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun HubRow(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    accentContainer: Color,
-    accentTint: Color,
-    onClick: () -> Unit,
-) {
-    val view = LocalView.current
-    Card(
-        onClick = {
-            view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
-            onClick()
-        },
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        elevation = CardDefaults.cardElevation(0.dp),
-        shape = MaterialTheme.shapes.medium,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .background(accentContainer, RoundedCornerShape(11.dp)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = accentTint,
-                    modifier = Modifier.size(18.dp),
+            SettingsHubGroup {
+                SettingsHubRow(
+                    icon = Icons.Outlined.Info,
+                    title = "Version",
+                    accentContainer = muted.container,
+                    accentTint = muted.tint,
+                    onClick = null,
+                    trailing = null,
+                    subtitleContent = {
+                        VersionMeta(
+                            versionName = viewModel.versionName(),
+                            buildLabel = buildLabel,
+                        )
+                    },
+                )
+                SettingsHubDivider()
+                SettingsHubRow(
+                    icon = Icons.Outlined.Code,
+                    title = "GitHub",
+                    subtitle = "Source Code & Issues",
+                    accentContainer = MaterialTheme.colorScheme.primaryContainer,
+                    accentTint = NordBlue,
+                    onClick = viewModel::openGithub,
                 )
             }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                )
-                Text(
-                    subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Icon(
-                imageVector = Icons.Outlined.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.outline,
-            )
-        }
-    }
-}
 
-// ── ThemePrefCard ─────────────────────────────────────────────────────────────
-
-@Composable
-private fun ThemePrefCard(selectedMode: ThemeMode, onSelect: (ThemeMode) -> Unit) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = MaterialTheme.shapes.medium,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = "Theme",
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-            )
-            Text(
-                text = "Choose light, dark, or follow the system.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                ThemeMode.entries.forEach { mode ->
-                    val selected = selectedMode == mode
-                    val label = mode.name.lowercase().replaceFirstChar { it.titlecase() }
-                    OutlinedButton(
-                        onClick = { onSelect(mode) },
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = if (selected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.surface,
-                            contentColor = if (selected) MaterialTheme.colorScheme.onPrimary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                        ),
-                        border = BorderStroke(
-                            width = 1.dp,
-                            color = if (selected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.outline,
-                        ),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 14.dp,
-                            vertical = 6.dp,
-                        ),
-                    ) {
-                        Text(label, style = MaterialTheme.typography.labelMedium)
-                    }
-                }
-            }
-        }
-    }
-}
-
-// ── SettingsToggleCard ────────────────────────────────────────────────────────
-
-@Composable
-private fun SettingsToggleCard(
-    title: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    subtitle: String? = null,
-) {
-    val view = LocalView.current
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = MaterialTheme.shapes.medium,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                )
-                if (subtitle != null) {
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Switch(
-                checked = checked,
-                onCheckedChange = { value ->
-                    view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
-                    onCheckedChange(value)
-                },
-            )
+            Spacer(Modifier.height(24.dp))
         }
     }
 }

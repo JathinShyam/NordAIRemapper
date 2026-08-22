@@ -1093,13 +1093,199 @@
     }
     .hub-ico.tone-green { background: #14321F; color: #3DDC84; }
     .hub-ico.tone-cyan { background: rgba(10, 198, 255, 0.14); color: var(--accent); }
-    .hub-ico.tone-muted { background: #2A1F3D; color: #B388FF; }
+    .hub-ico.tone-muted { background: #222; color: #b0b0b0; }
     .hub-ico.tone-purple { background: #2A1F3D; color: #B388FF; }
     .hub-ico.tone-amber { background: #3D2E14; color: #FFB020; }
     .hub-ico.tone-red { background: #3A1818; color: #FF6B6B; }
     .hub-row .t { font-size: 13px; font-weight: 600; }
     .hub-row .d { font-size: 11px; color: var(--muted); margin-top: 2px; }
     .hub-row .chev { margin-left: auto; color: #3a3a3a; }
+    /* Grouped Settings hub (one surface per section) */
+    .pref-group {
+      background: var(--surface);
+      border: 1px solid var(--outline);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .pref-group .hub-row {
+      margin-bottom: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      border-top: 1px solid #222;
+      opacity: 1;
+      transform: none;
+      animation: none;
+    }
+    .pref-group .hub-row:first-child { border-top: 0; }
+    .pref-group .hub-row:hover { background: #181818; border-color: transparent; }
+    .pref-group .hub-row .t {
+      font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
+    }
+    .pref-group .hub-row .d {
+      font-size: 11.5px; color: var(--muted); margin-top: 2px; line-height: 1.35;
+    }
+    .pref-group .theme-block { padding: 14px; }
+    .pref-group .theme-block .t {
+      font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
+    }
+    .pref-group .theme-block .d {
+      font-size: 11.5px; color: var(--muted); margin: 3px 0 12px; line-height: 1.35;
+    }
+    .pref-group .seg.theme-seg {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 4px;
+      padding: 4px;
+      background: var(--bg);
+      border-radius: 12px;
+      border: 1px solid var(--outline);
+    }
+    .pref-group .seg.theme-seg button {
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      padding: 9px 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .pref-group .seg.theme-seg button.on {
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+    .pref-group .settings-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      min-height: 52px;
+      border-top: 1px solid #222;
+    }
+    .pref-group > .settings-row:first-child { border-top: 0; }
+    .pref-group .settings-row .meta { flex: 1; min-width: 0; }
+    .pref-group .settings-row .t {
+      font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
+    }
+    .pref-group .settings-row .d {
+      font-size: 11.5px; color: var(--muted); margin-top: 2px; line-height: 1.35;
+    }
+    .pref-group .pref-row {
+      padding: 12px 14px;
+      border-top: 1px solid #222;
+      min-height: 52px;
+    }
+    .pref-group .battery-body { padding: 14px; }
+    .pref-group .battery-body .head {
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .pref-group .battery-body .meta { flex: 1; min-width: 0; }
+    .pref-group .battery-body .t {
+      font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
+    }
+    .pref-group .battery-body .d {
+      font-size: 11.5px; color: var(--muted); margin-top: 2px; line-height: 1.35;
+    }
+    .pref-group .battery-body + .settings-row,
+    .pref-group .settings-row + .empty-panel,
+    .pref-group .settings-row + .excl-list,
+    .pref-group .excl-list + .empty-panel { border-top: 1px solid #222; }
+    .pref-group .settings-row.hub {
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .pref-group .settings-row.hub:hover { background: #181818; }
+    .pref-group .settings-row .chev {
+      margin-left: auto; color: #3a3a3a; flex-shrink: 0;
+    }
+    .pref-group .settings-row .chev svg {
+      width: 18px; height: 18px; stroke: currentColor; fill: none;
+      stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .status-chip {
+      display: inline-flex; align-items: center;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.04em;
+      text-transform: uppercase; padding: 4px 8px; border-radius: 999px;
+      flex-shrink: 0;
+    }
+    .status-chip.ok { background: rgba(61,220,132,.14); color: #3ddc84; }
+    .status-chip.warn { background: rgba(255,176,32,.14); color: #ffb020; }
+    .status-chip.muted { background: #222; color: var(--muted); }
+    .title-row {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .batt-cta {
+      appearance: none; border: 0; width: 100%; margin-top: 12px;
+      background: var(--accent); color: #001018;
+      font: inherit; font-size: 12px; font-weight: 700;
+      padding: 10px 14px; border-radius: 12px; cursor: pointer;
+    }
+    .batt-cta.ghost {
+      background: transparent; border: 1px solid var(--outline);
+      color: var(--text); font-weight: 600;
+    }
+    .empty-panel {
+      padding: 16px 14px; text-align: center;
+    }
+    .empty-panel.hidden { display: none; }
+    .empty-panel .icon {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: #1c1c1c; color: var(--muted);
+      display: grid; place-items: center; margin: 0 auto 10px;
+    }
+    .empty-panel .icon svg {
+      width: 20px; height: 20px; stroke: currentColor; fill: none;
+      stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .empty-panel .t {
+      font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
+    }
+    .empty-panel .d {
+      font-size: 11.5px; color: var(--muted); margin: 4px 0 12px; line-height: 1.35;
+    }
+    .excl-list {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px 14px;
+    }
+    .excl-list.show { display: flex; }
+    .excl-app-card {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--surface); border: 1px solid var(--outline);
+      border-radius: 16px; padding: 12px 14px;
+    }
+    .excl-app-card .meta { flex: 1; min-width: 0; }
+    .excl-app-card .t { font-size: 14px; font-weight: 600; }
+    .excl-app-card .pkg {
+      font-size: 11px; color: var(--muted); margin-top: 2px;
+      font-family: ui-monospace, monospace;
+    }
+    .excl-app-card .rm {
+      appearance: none; border: 0; background: transparent;
+      color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px 6px;
+    }
+    .excl-app-card .rm:hover { color: #ff6b6b; }
+    .excl-count {
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      margin: 0 0 8px 2px;
+    }
+    .excl-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #1a1a1a; border: 1px solid var(--outline);
+      border-radius: 999px; padding: 6px 10px 6px 6px;
+      font-size: 12px; font-weight: 500; margin: 4px;
+    }
+    .excl-chip .dot {
+      width: 22px; height: 22px; border-radius: 7px;
+      background: var(--accent-dim); color: var(--accent);
+      display: grid; place-items: center; font-size: 10px; font-weight: 700;
+    }
+    .excl-chip .x {
+      color: var(--muted); cursor: pointer; border: 0; background: none;
+      font-size: 14px; line-height: 1; padding: 0 2px;
+    }
+    .about-ver strong { color: var(--text); font-weight: 600; }
     .empty-hint {
       font-size: 13px;
       color: var(--muted);
@@ -1617,89 +1803,171 @@
             <button class="ico" data-back="stage" type="button" title="Back">‹</button>
             <div>
               <div class="h">Settings</div>
-              <div class="sub">Appearance, feedback &amp; tools</div>
+              <div class="sub">Appearance, Reliability &amp; Tools</div>
             </div>
           </div>
           <div class="scroll" id="settingsHub">
             <div class="sec-label">Appearance</div>
-            <div class="pref-card" style="margin-bottom:10px">
-              <div class="label">Theme</div>
-              <div class="hint-t">Choose light, dark, or follow the system.</div>
-              <div class="seg" id="themeSeg">
-                <button type="button" class="on" data-v="dark">Dark</button>
-                <button type="button" data-v="light">Light</button>
-                <button type="button" data-v="system">System</button>
+            <div class="pref-group">
+              <div class="theme-block">
+                <div class="t">Theme</div>
+                <div class="d">Dark, Light, Or Match The System.</div>
+                <div class="seg theme-seg" id="themeSeg" role="group" aria-label="Theme">
+                  <button type="button" class="on" data-v="dark">Dark</button>
+                  <button type="button" data-v="light">Light</button>
+                  <button type="button" data-v="system">System</button>
+                </div>
               </div>
-            </div>
-            <div class="pref-card" style="margin-bottom:10px">
-              <div class="pref-row">
+              <div class="settings-row">
                 <div class="meta">
-                  <div class="label" style="margin:0">Dynamic color</div>
-                  <div class="hint-t" style="margin:4px 0 0">Follow system Material You</div>
+                  <div class="t">Dynamic Color</div>
+                  <div class="d">Material You From Wallpaper</div>
                 </div>
                 <div class="sw off" id="dynColor" role="switch" tabindex="0" aria-checked="false"></div>
               </div>
-            </div>
-            <div class="pref-card" style="margin-bottom:14px">
-              <div class="pref-row">
+              <div class="settings-row">
                 <div class="meta">
-                  <div class="label" style="margin:0">Service notification</div>
-                  <div class="hint-t" style="margin:4px 0 0">Ongoing status while remapping</div>
+                  <div class="t">Service Notification</div>
+                  <div class="d">Ongoing Status While Remapping</div>
                 </div>
                 <div class="sw" id="svcNotif" role="switch" tabindex="0" aria-checked="true"></div>
               </div>
             </div>
-            <div class="sec-label">Feedback &amp; overlay</div>
-            <div class="hub-row" data-go="feedback">
-              <div class="hub-ico tone-green"><svg viewBox="0 0 24 24"><path d="M2 10v4h4l5 5V5L6 10H2z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18 6a8.5 8.5 0 0 1 0 12"/></svg></div>
-              <div><div class="t">Feedback</div><div class="d">Haptic feedback &amp; vibration intensity</div></div>
-              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+
+            <div class="sec-label">Shortcuts</div>
+            <div class="pref-group">
+              <div class="hub-row" data-go="feedback">
+                <div class="hub-ico tone-green"><svg viewBox="0 0 24 24"><path d="M2 10v4h4l5 5V5L6 10H2z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18 6a8.5 8.5 0 0 1 0 12"/></svg></div>
+                <div><div class="t">Feedback</div><div class="d">Haptics When A Remap Fires</div></div>
+                <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+              </div>
+              <div class="hub-row" data-go="preferences">
+                <div class="hub-ico tone-cyan"><svg viewBox="0 0 24 24"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/></svg></div>
+                <div><div class="t">Preferences</div><div class="d">Toast, Sound, Confirmation</div></div>
+                <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+              </div>
+              <div class="hub-row" data-go="visual">
+                <div class="hub-ico tone-purple"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div>
+                <div><div class="t">Visual Overlay</div><div class="d">Popup Style On Remap</div></div>
+                <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+              </div>
+              <div class="hub-row" data-go="overlay-settings">
+                <div class="hub-ico tone-purple"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+                <div><div class="t">Overlay Settings</div><div class="d">Floating Menu Slots &amp; Layout</div></div>
+                <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+              </div>
             </div>
-            <div class="hub-row" data-go="preferences">
-              <div class="hub-ico tone-cyan"><svg viewBox="0 0 24 24"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/></svg></div>
-              <div><div class="t">Preferences</div><div class="d">How you’re notified when an action triggers</div></div>
-              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+
+            <div class="sec-label">Tools</div>
+            <div class="pref-group">
+              <div class="hub-row" data-go="lock">
+                <div class="hub-ico tone-amber"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
+                <div><div class="t">Lock Screen</div><div class="d">Gestures While Locked</div></div>
+                <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+              </div>
+              <div class="hub-row" data-go="backup">
+                <div class="hub-ico tone-cyan"><svg viewBox="0 0 24 24"><path d="M4 14.5V17a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2.5"/><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/></svg></div>
+                <div><div class="t">Backup &amp; Restore</div><div class="d">Export And Import Remaps</div></div>
+                <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+              </div>
+              <div class="hub-row" data-go="keysetup">
+                <div class="hub-ico tone-cyan"><svg viewBox="0 0 24 24"><path d="M8 13v-3a4 4 0 1 1 8 0v3"/><rect x="5" y="13" width="14" height="8" rx="2"/><circle cx="12" cy="17" r="1"/></svg></div>
+                <div><div class="t">Key Setup</div><div class="d">Learn / Verify Plus Key</div></div>
+                <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+              </div>
+              <div class="hub-row" data-go="lab">
+                <div class="hub-ico tone-amber"><svg viewBox="0 0 24 24"><path d="M9 3h6"/><path d="M10 3v7l-5.5 9.5A1.5 1.5 0 0 0 5.8 22h12.4a1.5 1.5 0 0 0 1.3-2.5L14 10V3"/><path d="M8.5 14h7"/></svg></div>
+                <div><div class="t">Lab</div><div class="d">Strategy, Timing, USB Unlock</div></div>
+                <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+              </div>
+              <div class="hub-row" data-go="onboarding" id="restartOnboarding">
+                <div class="hub-ico tone-red"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></div>
+                <div><div class="t">Restart Onboarding</div><div class="d">Walk Through Setup Again</div></div>
+                <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+              </div>
             </div>
-            <div class="hub-row" data-go="visual">
-              <div class="hub-ico tone-purple"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div>
-              <div><div class="t">Visual overlay</div><div class="d">Action popup style when a remap fires</div></div>
-              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+
+            <div class="sec-label">Reliability</div>
+            <div class="pref-group">
+              <div class="battery-body">
+                <div class="head">
+                  <div class="hub-ico tone-amber" id="battIco" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><rect x="6" y="7" width="12" height="14" rx="2"/><path d="M10 3h4v4H10z"/><path d="M10 12h4"/></svg>
+                  </div>
+                  <div class="meta">
+                    <div class="title-row">
+                      <div class="t">Battery Optimization</div>
+                      <span class="status-chip warn" id="battChip">At Risk</span>
+                    </div>
+                    <div class="d" id="battCopy">OxygenOS May Kill Detection In The Background.</div>
+                  </div>
+                </div>
+                <button class="batt-cta" type="button" id="battCta">Exempt From Battery Optimization</button>
+              </div>
+              <div class="hub-row" data-go="exclusions" id="exclHubRow">
+                <div class="hub-ico tone-muted" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>
+                </div>
+                <div class="meta">
+                  <div class="title-row">
+                    <div class="t">Per-App Exclusions</div>
+                    <span class="status-chip muted" id="exclChip">None</span>
+                  </div>
+                  <div class="d">Pause Remapping In Selected Apps</div>
+                </div>
+                <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+              </div>
             </div>
-            <div class="hub-row" data-go="overlay-settings">
-              <div class="hub-ico tone-purple"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
-              <div><div class="t">Overlay settings</div><div class="d">Floating menu slots &amp; layout</div></div>
-              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+
+            <div class="sec-label">About</div>
+            <div class="pref-group">
+              <div class="settings-row">
+                <div class="hub-ico tone-muted" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+                </div>
+                <div class="meta">
+                  <div class="t">Version</div>
+                  <div class="d about-ver"><strong>1.0.0</strong> · Debug</div>
+                </div>
+              </div>
+              <div class="settings-row hub" id="githubRow" role="link" tabindex="0">
+                <div class="hub-ico tone-cyan" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M9 19c-4.3 1.4-4.3-2.1-6-2.5"/><path d="M16 22v-3.9a3.4 3.4 0 0 0-.9-2.6c3-.3 6.1-1.5 6.1-6.7a5.2 5.2 0 0 0-1.4-3.6 4.8 4.8 0 0 0-.1-3.6s-1.1-.3-3.5 1.3a12 12 0 0 0-6.4 0C7.4 2.1 6.3 2.4 6.3 2.4a4.8 4.8 0 0 0-.1 3.6A5.2 5.2 0 0 0 4.8 9.6c0 5.2 3.2 6.4 6.1 6.7a3.4 3.4 0 0 0-.9 2.6V22"/></svg>
+                </div>
+                <div class="meta">
+                  <div class="t">GitHub</div>
+                  <div class="d">Source Code &amp; Issues</div>
+                </div>
+                <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+              </div>
             </div>
-            <div class="sec-label">Behavior</div>
-            <div class="hub-row" data-go="lock">
-              <div class="hub-ico tone-amber"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
-              <div><div class="t">Lock Screen</div><div class="d">Gestures while the screen is locked</div></div>
-              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+          </div>
+        </section>
+
+        <!-- EXCLUSIONS -->
+        <section class="screen" id="exclusions">
+          <div class="topbar">
+            <button class="ico" data-back="settings" type="button" title="Back">‹</button>
+            <div>
+              <div class="h">Per-App Exclusions</div>
+              <div class="sub">Pause Remapping In Selected Apps</div>
             </div>
-            <div class="hub-row" data-go="backup">
-              <div class="hub-ico tone-cyan"><svg viewBox="0 0 24 24"><path d="M4 14.5V17a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2.5"/><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/></svg></div>
-              <div><div class="t">Backup &amp; Restore</div><div class="d">Export and import remaps</div></div>
-              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+          </div>
+          <div class="scroll">
+            <div class="empty-panel" id="exclEmpty">
+              <div class="icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>
+              </div>
+              <div class="t">No Apps Excluded</div>
+              <div class="d">Remapping Stays On In Every App. Add Apps Where The Plus Key Should Stay Stock.</div>
+              <button class="batt-cta ghost" type="button" id="addExclusionDemo">Add Excluded App</button>
             </div>
-            <div class="sec-label">Advanced</div>
-            <div class="hub-row" data-go="keysetup">
-              <div class="hub-ico tone-cyan"><svg viewBox="0 0 24 24"><path d="M8 13v-3a4 4 0 1 1 8 0v3"/><rect x="5" y="13" width="14" height="8" rx="2"/><circle cx="12" cy="17" r="1"/></svg></div>
-              <div><div class="t">Key setup</div><div class="d">Learn / verify Plus Key</div></div>
-              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+            <div id="exclFilled" style="display:none">
+              <div class="excl-count" id="exclCount">0 Apps Excluded</div>
+              <div class="excl-list show" id="exclList"></div>
+              <button class="batt-cta" type="button" id="addExclusionMore" style="margin-top:8px">Add Excluded App</button>
+              <p class="empty-hint" style="margin-top:12px">Excluded apps keep their own Plus Key behavior. Everywhere else, Keyforge remaps as usual.</p>
             </div>
-            <div class="hub-row" data-go="lab">
-              <div class="hub-ico tone-amber"><svg viewBox="0 0 24 24"><path d="M9 3h6"/><path d="M10 3v7l-5.5 9.5A1.5 1.5 0 0 0 5.8 22h12.4a1.5 1.5 0 0 0 1.3-2.5L14 10V3"/><path d="M8.5 14h7"/></svg></div>
-              <div><div class="t">Lab</div><div class="d">Strategy, timing, USB unlock (Developer)</div></div>
-              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
-            </div>
-            <div class="hub-row" data-go="onboarding" id="restartOnboarding">
-              <div class="hub-ico tone-red"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></div>
-              <div><div class="t">Restart onboarding</div><div class="d">Walk through setup again</div></div>
-              <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
-            </div>
-            <div class="sec-label">Per-app exclusions</div>
-            <p class="empty-hint">No apps excluded — remapping is active in all apps</p>
-            <button class="btn ghost" id="addExclusionDemo" type="button" style="margin-bottom:12px">Add excluded app</button>
           </div>
         </section>
 
@@ -1992,7 +2260,7 @@
     const toast = document.getElementById("toast");
     const screens = [
       "onboarding", "unlock", "stage", "remap", "overlay",
-      "settings", "feedback", "preferences", "visual", "lock",
+      "settings", "exclusions", "feedback", "preferences", "visual", "lock",
       "backup", "overlay-settings", "keysetup", "lab",
     ];
     /* Mirrors RemapActionCatalog + RemapActionUi display strings */
@@ -2759,7 +3027,7 @@
           s.cta = "Allow notifications";
           s.next = "grant-notif";
         } else if (!bOk) {
-          s.cta = "Exempt from battery optimization";
+          s.cta = "Exempt From Battery Optimization";
           s.next = "grant-battery";
         } else {
           s.cta = "Continue";
@@ -2965,9 +3233,109 @@
     if (saveLocalSnap) {
       saveLocalSnap.onclick = () => showToast("Local snapshot saved");
     }
+    let battExempt = false;
+    const battChip = document.getElementById("battChip");
+    const battCopy = document.getElementById("battCopy");
+    const battCta = document.getElementById("battCta");
+    const battIco = document.getElementById("battIco");
+    if (battCta) {
+      battCta.addEventListener("click", () => {
+        battExempt = !battExempt;
+        if (battExempt) {
+          battChip.textContent = "Exempt";
+          battChip.className = "status-chip ok";
+          battCopy.textContent = "Detection Can Keep Running In The Background.";
+          battCta.textContent = "Open Battery Settings";
+          battCta.classList.add("ghost");
+          battIco.className = "hub-ico tone-green";
+          showToast("Battery · exempt");
+        } else {
+          battChip.textContent = "At Risk";
+          battChip.className = "status-chip warn";
+          battCopy.textContent = "OxygenOS May Kill Detection In The Background.";
+          battCta.textContent = "Exempt From Battery Optimization";
+          battCta.classList.remove("ghost");
+          battIco.className = "hub-ico tone-amber";
+          showToast("Battery · at risk");
+        }
+      });
+    }
+
+    const exclApps = [
+      { label: "Camera", pkg: "com.oneplus.camera" },
+      { label: "Maps", pkg: "com.google.android.apps.maps" },
+      { label: "Banking", pkg: "com.example.bank" },
+    ];
+    let excl = [];
+    const exclChip = document.getElementById("exclChip");
+    const exclEmpty = document.getElementById("exclEmpty");
+    const exclFilled = document.getElementById("exclFilled");
+    const exclList = document.getElementById("exclList");
+    const exclCount = document.getElementById("exclCount");
+    function renderExcl() {
+      if (!exclChip) return;
+      if (excl.length === 0) {
+        exclChip.textContent = "None";
+        exclChip.className = "status-chip muted";
+        if (exclEmpty) exclEmpty.style.display = "";
+        if (exclFilled) exclFilled.style.display = "none";
+        if (exclList) exclList.innerHTML = "";
+        return;
+      }
+      exclChip.textContent = excl.length === 1 ? "1 App" : excl.length + " Apps";
+      exclChip.className = "status-chip ok";
+      if (exclEmpty) exclEmpty.style.display = "none";
+      if (exclFilled) exclFilled.style.display = "";
+      if (exclCount) {
+        exclCount.textContent = excl.length === 1 ? "1 App Excluded" : excl.length + " Apps Excluded";
+      }
+      if (exclList) {
+        exclList.innerHTML = excl.map((app, i) =>
+          `<div class="excl-app-card">` +
+          `<div class="hub-ico tone-muted"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg></div>` +
+          `<div class="meta"><div class="t">${app.label}</div><div class="pkg">${app.pkg}</div></div>` +
+          `<button type="button" class="rm" data-i="${i}" aria-label="Remove">×</button>` +
+          `</div>`
+        ).join("");
+      }
+    }
+    function addNextExcl() {
+      const next = exclApps.find((a) => !excl.some((e) => e.pkg === a.pkg));
+      if (next) {
+        excl.push(next);
+        renderExcl();
+        showToast("Excluded · " + next.label);
+      } else {
+        showToast("Demo apps added");
+      }
+    }
     const addExclusion = document.getElementById("addExclusionDemo");
-    if (addExclusion) {
-      addExclusion.onclick = () => showToast("Would open app picker");
+    if (addExclusion) addExclusion.onclick = addNextExcl;
+    const addMore = document.getElementById("addExclusionMore");
+    if (addMore) addMore.onclick = addNextExcl;
+    if (exclList) {
+      exclList.addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-i]");
+        if (!btn) return;
+        excl.splice(Number(btn.dataset.i), 1);
+        renderExcl();
+      });
+    }
+    renderExcl();
+
+    const githubRow = document.getElementById("githubRow");
+    if (githubRow) {
+      const openGithub = () => {
+        window.open("https://github.com/JathinShyam/NordAIRemapper", "_blank", "noopener");
+        showToast("Opening GitHub");
+      };
+      githubRow.addEventListener("click", openGithub);
+      githubRow.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openGithub();
+        }
+      });
     }
 
     document.getElementById("previewOverlay").onclick = () => go("overlay");

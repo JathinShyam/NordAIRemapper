@@ -23,6 +23,7 @@ import com.nordairemapper.presentation.onboarding.OnboardingScreen
 import com.nordairemapper.presentation.backup.BackupScreen
 import com.nordairemapper.presentation.overlay.OverlaySettingsScreen
 import com.nordairemapper.presentation.remap.RemapScreen
+import com.nordairemapper.presentation.settings.ExclusionsScreen
 import com.nordairemapper.presentation.settings.FeedbackScreen
 import com.nordairemapper.presentation.settings.LockScreenSettingsScreen
 import com.nordairemapper.presentation.settings.PreferencesScreen
@@ -42,6 +43,7 @@ object Routes {
     const val PREFERENCES = "preferences"
     const val VISUAL_OVERLAY = "visual_overlay"
     const val LOCK_SCREEN = "lock_screen"
+    const val EXCLUSIONS = "exclusions"
     const val REMAP = "remap/{pressType}"
 
     fun remap(pressType: PressType) = "remap/${pressType.key}"
@@ -125,6 +127,7 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
                 onOpenPreferences = { navController.navigate(Routes.PREFERENCES) },
                 onOpenVisualOverlay = { navController.navigate(Routes.VISUAL_OVERLAY) },
                 onOpenLockScreen = { navController.navigate(Routes.LOCK_SCREEN) },
+                onOpenExclusions = { navController.navigate(Routes.EXCLUSIONS) },
                 onRestartOnboarding = {
                     navController.navigate(Routes.ONBOARDING) {
                         popUpTo(Routes.HOME) { inclusive = true }
@@ -147,6 +150,9 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
         }
         composable(Routes.LOCK_SCREEN) {
             LockScreenSettingsScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.EXCLUSIONS) {
+            ExclusionsScreen(onBack = { navController.popBackStack() })
         }
         composable(Routes.OVERLAY_SETTINGS) {
             OverlaySettingsScreen(onBack = { navController.popBackStack() })

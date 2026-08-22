@@ -76,3 +76,6 @@ Going forward: write/update these notes in the **same turn** as the code.
 | 2026-08-22 | [launcher-n-monogram](./2026-08-22-launcher-n-monogram/) | App logo = cyan N monogram + Torch Red Plus Key dash (option 3) |
 | 2026-08-22 | [heading-weight-lockup-center](./2026-08-22-heading-weight-lockup-center/) | RCA: variable Space Grotesk needs FontVariation w700; center Never Settle lockup |
 | 2026-08-22 | [rename-keyforge](./2026-08-22-rename-keyforge/) | Display name Nord AI Remapper → Keyforge (package unchanged) |
+| 2026-08-22 | [settings-hub-redesign-preview](./2026-08-22-settings-hub-redesign-preview/) | Design-first Settings hub: grouped surfaces, battery/exclusions chips, About+GitHub (HTML only) |
+| 2026-08-22 | [settings-hub-compose](./2026-08-22-settings-hub-compose/) | Compose port of Settings hub from `settings-preview.html` (+ exclusions detail page) |
+| 2026-08-23 | [exclusions-app-icons](./2026-08-23-exclusions-app-icons/) | Per-app exclusions list shows app logos; Version bold; design parity |
