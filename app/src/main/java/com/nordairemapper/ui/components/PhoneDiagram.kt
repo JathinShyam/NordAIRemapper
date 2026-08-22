@@ -6,50 +6,30 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.nordairemapper.R
-import com.nordairemapper.ui.theme.HeadingRed
-import com.nordairemapper.ui.theme.NordHeadingFontFamily
 
 /**
  * Front silhouette of the OnePlus Nord 5.
  *
  * Exact body ratio from GSMArena: **163.4 × 77 × 8.1 mm** (W/H = 77/163.4).
  * Theme-aware chrome (body / frame / Plus Key) for light and dark;
- * screen glass stays near-black so NEVER / SETTLE stays readable.
+ * screen glass stays near-black.
  */
 @Composable
 fun PhoneDiagram(
@@ -257,64 +237,5 @@ fun PhoneDiagram(
                 cornerRadius = CornerRadius(btnWidth / 2f, btnWidth / 2f),
             )
         }
-
-        NeverSettleBrand(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .offset(y = 2.dp)
-                .width(102.dp),
-        )
-    }
-}
-
-/**
- * Crisp classic lockup: vector OnePlus 1+ mark + solid Torch Red NEVER / SETTLE bars.
- * Avoids the soft bitmap that looked dull on the silhouette.
- */
-@Composable
-private fun NeverSettleBrand(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Image(
-            painter = painterResource(R.drawable.ic_oneplus_mark),
-            contentDescription = null,
-            modifier = Modifier
-                .fillMaxWidth(0.48f)
-                .aspectRatio(1f),
-            contentScale = ContentScale.Fit,
-            colorFilter = ColorFilter.tint(HeadingRed),
-        )
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(3.dp),
-        ) {
-            MottoBar(text = "NEVER")
-            MottoBar(text = "SETTLE")
-        }
-    }
-}
-
-@Composable
-private fun MottoBar(text: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(HeadingRed, RoundedCornerShape(2.dp))
-            .padding(horizontal = 6.dp, vertical = 5.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = text,
-            color = Color.White,
-            fontFamily = NordHeadingFontFamily,
-            fontWeight = FontWeight.Bold,
-            fontSize = 11.sp,
-            letterSpacing = 1.2.sp,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-        )
     }
 }
