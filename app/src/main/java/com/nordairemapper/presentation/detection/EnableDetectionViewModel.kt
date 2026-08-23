@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nordairemapper.service.ElevatedPermissions
 import com.nordairemapper.service.LogcatWatcherService
 import com.nordairemapper.service.ReadLogsGrantHelper
 import com.nordairemapper.service.adb.ReadLogsGrantViaWirelessAdb
@@ -20,6 +21,8 @@ import javax.inject.Inject
 
 data class EnableDetectionUiState(
     val readLogsGranted: Boolean = false,
+    /** WRITE_SECURE_SETTINGS + usage access for hands-free banking Accessibility pause. */
+    val bankingAutoResumeReady: Boolean = false,
     val pairingCode: String = "",
     /** Pairing dialog port only (under the 6-digit code). */
     val pairingPort: String = "",
@@ -44,7 +47,10 @@ class EnableDetectionViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
-        EnableDetectionUiState(readLogsGranted = grantViaWirelessAdb.hasReadLogs()),
+        EnableDetectionUiState(
+            readLogsGranted = grantViaWirelessAdb.hasReadLogs(),
+            bankingAutoResumeReady = ElevatedPermissions.canAutoResumeAccessibility(context),
+        ),
     )
     val uiState: StateFlow<EnableDetectionUiState> = _uiState.asStateFlow()
 
@@ -53,13 +59,17 @@ class EnableDetectionViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch {
             val ok = grantViaWirelessAdb.verifyAndSyncWatcher()
+            val banking = ElevatedPermissions.canAutoResumeAccessibility(context)
             _uiState.update {
                 it.copy(
                     readLogsGranted = ok,
-                    statusMessage = if (ok) {
-                        "READ_LOGS granted — Plus Key detection can run."
-                    } else {
-                        it.statusMessage
+                    bankingAutoResumeReady = banking,
+                    statusMessage = when {
+                        ok && banking ->
+                            "Unlocked — Plus Key detection and hands-free banking pause are ready."
+                        ok ->
+                            "READ_LOGS granted. Run Unlock once more for hands-free banking Accessibility pause."
+                        else -> it.statusMessage
                     },
                     errorMessage = null,
                 )
@@ -176,13 +186,21 @@ class EnableDetectionViewModel @Inject constructor(
             when (result) {
                 ReadLogsGrantViaWirelessAdb.GrantResult.AlreadyGranted,
                 ReadLogsGrantViaWirelessAdb.GrantResult.Success,
-                -> _uiState.update {
-                    it.copy(
-                        isGranting = false,
-                        readLogsGranted = true,
-                        statusMessage = "Done. You can turn Wireless debugging off — READ_LOGS stays granted.",
-                        errorMessage = null,
-                    )
+                -> {
+                    val banking = ElevatedPermissions.canAutoResumeAccessibility(context)
+                    _uiState.update {
+                        it.copy(
+                            isGranting = false,
+                            readLogsGranted = true,
+                            bankingAutoResumeReady = banking,
+                            statusMessage = if (banking) {
+                                "Done. You can turn Wireless debugging off — grants stay."
+                            } else {
+                                "READ_LOGS granted. If banking auto-pause still fails, re-run Unlock."
+                            },
+                            errorMessage = null,
+                        )
+                    }
                 }
                 is ReadLogsGrantViaWirelessAdb.GrantResult.Failed -> _uiState.update {
                     it.copy(

@@ -21,6 +21,8 @@ data class AppSettings(
     val lockScreenDoubleEnabled: Boolean = false,
     val lockScreenLongEnabled: Boolean = false,
     val excludedApps: Set<String> = emptySet(),
+    /** When true, opening an excluded app disables Keyforge Accessibility (for banking/UPI). Re-enable via the pause notification. */
+    val pauseAccessibilityInExcludedApps: Boolean = false,
     val onboardingCompleted: Boolean = false,
     /** Detection health: epoch ms of the last classified Plus Key gesture. */
     val lastPlusKeySeenAtMs: Long = 0L,

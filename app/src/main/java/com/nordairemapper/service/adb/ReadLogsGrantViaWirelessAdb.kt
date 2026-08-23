@@ -6,6 +6,7 @@ import android.net.LinkProperties
 import android.util.Log
 import com.nordairemapper.domain.repository.SettingsRepository
 import com.nordairemapper.service.DetectionCoordinator
+import com.nordairemapper.service.ElevatedPermissions
 import com.nordairemapper.service.LogcatWatcherService
 import com.nordairemapper.service.ReadLogsGrantHelper
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -24,8 +25,12 @@ import javax.inject.Singleton
 import kotlin.coroutines.resume
 
 /**
- * One-time in-app Wireless Debugging flow that grants only
- * `android.permission.READ_LOGS` via loopback ADB — no Shizuku, no laptop.
+ * One-time in-app Wireless Debugging flow that grants elevated shell perms
+ * via loopback ADB — no Shizuku, no laptop.
+ *
+ * Grants [ElevatedPermissions.UNLOCK_SHELL_COMMANDS]: READ_LOGS (Plus Key
+ * logcat), WRITE_SECURE_SETTINGS + usage stats (hands-free banking
+ * Accessibility pause/resume).
  *
  * Pairing uses the temporary pairing port; connecting uses a *different*
  * TLS connect port from the Wireless debugging detail page (IP address & port).
@@ -93,7 +98,8 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
         pairingPort: Int? = null,
         connectPort: Int? = null,
     ): GrantResult = withContext(Dispatchers.IO) {
-        if (hasReadLogs()) {
+        // Re-run Unlock when READ_LOGS exists but banking auto-resume grants are still missing.
+        if (hasReadLogs() && ElevatedPermissions.canAutoResumeAccessibility(context)) {
             syncWatcherAfterGrant()
             return@withContext GrantResult.AlreadyGranted
         }
@@ -240,15 +246,17 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
     }
 
     private fun runGrantCommand(manager: NordAdbConnectionManager) {
-        val destination = "shell:${ReadLogsGrantHelper.ON_DEVICE_SHELL_COMMAND}"
-        manager.openStream(destination).use { stream ->
-            val input = stream.openInputStream()
-            val buffer = ByteArray(4096)
-            while (true) {
-                val read = input.read(buffer)
-                if (read <= 0) break
-                val chunk = String(buffer, 0, read, StandardCharsets.UTF_8)
-                Log.d(TAG, "shell: $chunk")
+        for (command in ReadLogsGrantHelper.ON_DEVICE_SHELL_COMMANDS) {
+            Log.i(TAG, "Running: $command")
+            manager.openStream("shell:$command").use { stream ->
+                val input = stream.openInputStream()
+                val buffer = ByteArray(4096)
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read <= 0) break
+                    val chunk = String(buffer, 0, read, StandardCharsets.UTF_8)
+                    Log.d(TAG, "shell: $chunk")
+                }
             }
         }
     }

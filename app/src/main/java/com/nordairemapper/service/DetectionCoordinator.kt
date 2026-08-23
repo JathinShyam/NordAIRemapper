@@ -62,8 +62,8 @@ object DetectionCoordinator {
 /** Helpers for the READ_LOGS grant UX (primary path is in-app Wireless ADB). */
 object ReadLogsGrantHelper {
 
-    const val ON_DEVICE_SHELL_COMMAND =
-        "pm grant com.nordairemapper android.permission.READ_LOGS"
+    /** One Wireless Unlock also enables hands-free banking Accessibility pause/resume. */
+    val ON_DEVICE_SHELL_COMMANDS: List<String> = ElevatedPermissions.UNLOCK_SHELL_COMMANDS
 
     fun openDeveloperOptions(context: Context) {
         val intent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)

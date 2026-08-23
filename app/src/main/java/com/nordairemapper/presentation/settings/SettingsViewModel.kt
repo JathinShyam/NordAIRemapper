@@ -12,6 +12,7 @@ import com.nordairemapper.domain.model.HapticIntensity
 import com.nordairemapper.domain.model.ThemeMode
 import com.nordairemapper.domain.repository.SettingsRepository
 import com.nordairemapper.presentation.remap.InstalledAppInfo
+import com.nordairemapper.service.AccessibilityUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -83,6 +84,10 @@ class SettingsViewModel @Inject constructor(
         settingsRepository.setExcludedApps(settings.value.excludedApps - packageName)
     }
 
+    fun setPauseAccessibilityInExcludedApps(enabled: Boolean) = viewModelScope.launch {
+        settingsRepository.setPauseAccessibilityInExcludedApps(enabled)
+    }
+
     fun resetOnboarding() = viewModelScope.launch {
         settingsRepository.setOnboardingCompleted(false)
     }
@@ -97,6 +102,10 @@ class SettingsViewModel @Inject constructor(
             )
         }
         context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+
+    fun openAccessibilitySettings() {
+        AccessibilityUtils.openAccessibilitySettings(context)
     }
 
     fun openGithub() {

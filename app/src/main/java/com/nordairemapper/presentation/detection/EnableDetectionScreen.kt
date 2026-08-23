@@ -56,7 +56,8 @@ import com.nordairemapper.ui.components.StatusChip
 import com.nordairemapper.ui.components.StatusTone
 
 /**
- * Unlock Plus Key detection (READ_LOGS).
+ * Unlock Plus Key detection (READ_LOGS) and optional hands-free banking
+ * Accessibility pause (WRITE_SECURE_SETTINGS + usage access).
  * Nord Edge happy path: one USB ADB grant. Wireless debugging is advanced.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -132,7 +133,7 @@ fun EnableDetectionScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                text = "OnePlus doesn’t send the Plus Key to apps. Unlock logcat detection once — then you’re done.",
+                text = "OnePlus doesn’t send the Plus Key to apps. Unlock once — logcat detection and hands-free banking pause use the same grant.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -141,15 +142,25 @@ fun EnableDetectionScreen(
                 label = if (state.readLogsGranted) "READ_LOGS granted" else "READ_LOGS needed",
                 tone = if (state.readLogsGranted) StatusTone.Active else StatusTone.Warning,
             )
-
             if (state.readLogsGranted) {
+                StatusChip(
+                    label = if (state.bankingAutoResumeReady) {
+                        "Banking auto-pause ready"
+                    } else {
+                        "Banking auto-pause needs Unlock"
+                    },
+                    tone = if (state.bankingAutoResumeReady) StatusTone.Active else StatusTone.Warning,
+                )
+            }
+
+            if (state.readLogsGranted && state.bankingAutoResumeReady) {
                 NordSurfaceCard {
                     Column(
                         modifier = Modifier.padding(14.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text(
-                            text = "Detection unlocked. Open Home to assign Single, Double, and Long press.",
+                            text = "Unlocked. Open Home to assign presses, or Exclusions → Auto-Pause for BHIM/UPI.",
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         if (onContinue != null) {
@@ -161,6 +172,20 @@ fun EnableDetectionScreen(
                 }
                 Spacer(modifier = Modifier.height(24.dp))
                 return@Column
+            }
+
+            if (state.readLogsGranted && !state.bankingAutoResumeReady) {
+                NordSurfaceCard {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "Detection works. Run Unlock once more (USB or Wireless below) so Keyforge can pause Accessibility in banking apps and turn it back on when you leave — no daily Settings trip.",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
             }
 
             SectionLabel("1 · Preferred: USB")
@@ -200,7 +225,7 @@ fun EnableDetectionScreen(
                         onClick = viewModel::refresh,
                     )
                     Text(
-                        text = "We only grant READ_LOGS. Nothing else.",
+                        text = "Grants READ_LOGS plus banking auto-pause permissions. Nothing else.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -310,7 +335,7 @@ fun EnableDetectionScreen(
                             enabled = !state.isGranting,
                         )
                         NordPrimaryButton(
-                            text = if (state.isGranting) "Granting…" else "Pair and grant READ_LOGS",
+                            text = if (state.isGranting) "Granting…" else "Pair and grant Unlock",
                             onClick = viewModel::pairAndGrant,
                             enabled = !state.isGranting && state.pairingCode.length == 6,
                             loading = state.isGranting,

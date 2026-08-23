@@ -48,6 +48,7 @@ class SettingsRepositoryImpl @Inject constructor(
         val LOCK_DOUBLE = booleanPreferencesKey("lock_screen_double_enabled")
         val LOCK_LONG = booleanPreferencesKey("lock_screen_long_enabled")
         val EXCLUDED_APPS = stringSetPreferencesKey("excluded_apps")
+        val PAUSE_ACCESSIBILITY_EXCLUDED = booleanPreferencesKey("pause_accessibility_in_excluded_apps")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         val LAST_PLUS_KEY_SEEN = longPreferencesKey("last_plus_key_seen_ms")
     }
@@ -80,6 +81,8 @@ class SettingsRepositoryImpl @Inject constructor(
             lockScreenDoubleEnabled = prefs[Keys.LOCK_DOUBLE] ?: defaults.lockScreenDoubleEnabled,
             lockScreenLongEnabled = prefs[Keys.LOCK_LONG] ?: defaults.lockScreenLongEnabled,
             excludedApps = prefs[Keys.EXCLUDED_APPS] ?: defaults.excludedApps,
+            pauseAccessibilityInExcludedApps = prefs[Keys.PAUSE_ACCESSIBILITY_EXCLUDED]
+                ?: defaults.pauseAccessibilityInExcludedApps,
             onboardingCompleted = prefs[Keys.ONBOARDING_COMPLETED] ?: defaults.onboardingCompleted,
             lastPlusKeySeenAtMs = prefs[Keys.LAST_PLUS_KEY_SEEN] ?: defaults.lastPlusKeySeenAtMs,
         )
@@ -154,6 +157,10 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setExcludedApps(packages: Set<String>) {
         context.settingsDataStore.edit { it[Keys.EXCLUDED_APPS] = packages }
+    }
+
+    override suspend fun setPauseAccessibilityInExcludedApps(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.PAUSE_ACCESSIBILITY_EXCLUDED] = enabled }
     }
 
     override suspend fun setOnboardingCompleted(completed: Boolean) {

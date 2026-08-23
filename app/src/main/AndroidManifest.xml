@@ -28,6 +28,14 @@
     <uses-permission
         android:name="android.permission.READ_LOGS"
         tools:ignore="ProtectedPermissions" />
+    <!-- ADB Unlock: soft-toggle Accessibility for banking apps -->
+    <uses-permission
+        android:name="android.permission.WRITE_SECURE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
+    <!-- ADB Unlock / special access: detect when user leaves a banking app -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
     <!-- For the auto-rotate toggle action; user grants via special-access settings -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <!-- DND + ringer silent; user must also grant Do Not Disturb access in Special app access -->
@@ -86,6 +94,15 @@
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Shows a floating action menu triggered by the Plus Key" />
+        </service>
+
+        <service
+            android:name=".service.AccessibilityAutoResumeService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Restores Keyforge Accessibility after pausing it for an excluded banking or UPI app" />
         </service>
 
         <service

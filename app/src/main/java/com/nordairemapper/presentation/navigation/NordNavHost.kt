@@ -152,7 +152,10 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
             LockScreenSettingsScreen(onBack = { navController.popBackStack() })
         }
         composable(Routes.EXCLUSIONS) {
-            ExclusionsScreen(onBack = { navController.popBackStack() })
+            ExclusionsScreen(
+                onBack = { navController.popBackStack() },
+                onOpenEnableDetection = { navController.navigate(Routes.ENABLE_DETECTION) },
+            )
         }
         composable(Routes.OVERLAY_SETTINGS) {
             OverlaySettingsScreen(onBack = { navController.popBackStack() })

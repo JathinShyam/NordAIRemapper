@@ -177,8 +177,9 @@ class LogcatWatcherService : Service() {
         private const val MAX_RECONNECT_DELAY_MS = 30_000L
         private const val STABLE_RUN_MS = 60_000L
 
-        const val ADB_GRANT_COMMAND =
-            "adb shell pm grant com.nordairemapper android.permission.READ_LOGS"
+        /** USB paste block: detection + hands-free banking Accessibility pause/resume. */
+        val ADB_GRANT_COMMAND: String =
+            ElevatedPermissions.UNLOCK_SHELL_COMMANDS.joinToString("\n") { "adb shell $it" }
 
         fun hasReadLogsPermission(context: Context): Boolean =
             context.checkSelfPermission(android.Manifest.permission.READ_LOGS) ==

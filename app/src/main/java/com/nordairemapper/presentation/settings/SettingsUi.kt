@@ -612,7 +612,7 @@ fun ExclusionsEmptyPanel(
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
         )
         Text(
-            text = "Remapping Stays On In Every App. Add Apps Where The Plus Key Should Stay Stock.",
+            text = "Remapping Stays On In Every App. Add Apps Where The Plus Key Should Stay Stock. Banking Apps May Still Require Turning Accessibility Off.",
             style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
