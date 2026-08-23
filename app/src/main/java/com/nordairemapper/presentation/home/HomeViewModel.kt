@@ -92,6 +92,7 @@ class HomeViewModel @Inject constructor(
                 strategy = settings.detectionStrategy,
                 keyConfigured = settings.keyIdentity.isConfigured,
                 readLogsGranted = flags.readLogsGranted,
+                hasAnyAction = actions.values.any { it !is RemapAction.None },
             ),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
@@ -173,6 +174,7 @@ class HomeViewModel @Inject constructor(
             strategy: DetectionStrategy,
             keyConfigured: Boolean,
             readLogsGranted: Boolean,
+            hasAnyAction: Boolean = false,
         ): HomeBanner? {
             if (!accessibilityEnabled) {
                 return HomeBanner(
@@ -219,6 +221,17 @@ class HomeViewModel @Inject constructor(
                         primaryAction = HomeBannerAction.OPEN_ENABLE_DETECTION,
                     )
                 }
+            }
+            if (serviceEnabled && !hasAnyAction) {
+                // Keyforge SEES every press, but a fresh install (or wiped
+                // data) ships with no actions — presses look like "detection
+                // is broken" when detection is actually fine.
+                return HomeBanner(
+                    title = "Assign your presses",
+                    body = "Keyforge sees every Plus Key press. Choose what Single, Double, and Long press should do.",
+                    primaryLabel = "Key setup",
+                    primaryAction = HomeBannerAction.OPEN_KEY_LEARNING,
+                )
             }
             if (!serviceEnabled) {
                 return HomeBanner(
