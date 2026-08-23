@@ -42,3 +42,20 @@ the app proves access and reconnects itself; no adb, no Settings trip.
    (logcat `LogcatWatcher: edge=`, Home silhouette flashes).
 2. Blind case (if consent denied): watchdog notification fires; chip on Enable
    Detection reads "Blind" with guidance.
+
+### Live verification 2026-08-23 ~16:07–16:18 IST (`3d4dd38`)
+Driven end-to-end over ADB on CPH2707: fresh CI install → `adb reboot` →
+boot nudge posted instantly (dumpsys id=103) → app launched remotely →
+`LogAccessDialogActivity` (SystemUI consent) focused on screen → Allow →
+tail reconnected → live key presses classified (DataStore gesture timestamp
+advanced during a timed press burst; smoke ALL GREEN via gesture-freshness
+check; boot notification auto-cleared).
+
+Consent semantics confirmed: **Allow applies to connections created after it**
+— the connection alive during the prompt never recovers, which is why the heal
+now reconnects unconditionally whenever the tail has never seen foreign lines.
+
+## Known quirk (harmless)
+This build suppresses app-authored `Log.*` tags from the buffer (framework
+lines from our pid still appear), so tag-based debugging is unreliable here —
+rely on probes, DataStore state, and smoke script instead.

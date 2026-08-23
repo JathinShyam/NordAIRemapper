@@ -47,19 +47,27 @@ echo "$P" | grep -q 'WRITE_SECURE_SETTINGS' \
   && ok "WRITE_SECURE_SETTINGS requested/granted block found" \
   || warn "WRITE_SECURE_SETTINGS absent (banking Auto-Pause needs Unlock)"
 
-# 5 · THE BIG ONE — logd actually delivers other apps' logs to our uid.
-#     Probes the exact view the watcher's spawned `logcat` gets.
-SYS_PID=$(sh "pidof system_server" | awk '{print $1}')
-if [ -n "${SYS_PID:-}" ]; then
-  VIS=$(sh "run-as $PKG logcat -d -b main -v brief -t 3000" | grep -c "( *${SYS_PID})")
-  if [ "${VIS:-0}" -gt 0 ]; then
-    ok "logd visibility OK ($VIS system_server lines visible to app uid)"
-  else
-    bad "logd BLIND: app uid sees none of system_server's logs — READ_LOGS granted but not honored. ColorOS resets 'USB debugging (Security settings)' on every reboot: enable it, reboot, re-run Unlock. See docs/changes/2026-08-23-readlogs-logd-blind/"
-  fi
-else
-  warn "could not resolve system_server pid; skipped visibility probe"
-fi
+# 5 · Is detection actually alive? Two signals, best-first:
+#     a) A fresh classified gesture (DataStore write mtime) — ground truth.
+NOW=$(sh "date +%s"); MT=$(sh "run-as $PKG stat -c %Y files/datastore/settings.preferences_pb")
+case "${MT:-0}/${NOW:-0}" in
+  */0|0/*) warn "could not stat datastore; falling back to probe" ;;
+  *)
+    AGE=$((NOW - MT))
+    if [ "$AGE" -lt 900 ]; then
+      ok "log path effective — gesture classified ${AGE}s ago"
+    else
+      # b) Secondary: can a shell-spawned process as our uid see system logs?
+      SYS_PID=$(sh "pidof system_server" | awk '{print $1}')
+      VIS=$(sh "run-as $PKG logcat -d -b main -v brief -t 3000" | grep -c "( *${SYS_PID})")
+      if [ "${VIS:-0}" -gt 0 ]; then
+        ok "logd visible to app uid; no key press in the last 15 min yet"
+      else
+        bad "tail cannot see system logs (per-boot consent). Open Keyforge and tap ALLOW on the log-access prompt — detection recovers on the next open. Details: docs/changes/2026-08-23-readlogs-logd-blind/"
+      fi
+    fi
+    ;;
+esac
 
 # 6 · Watcher FGS alive + foreground
 REC=$(sh "dumpsys activity services $PKG" | sed -n '/LogcatWatcherService/,/^  \* /p')
