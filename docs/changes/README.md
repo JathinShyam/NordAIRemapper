@@ -81,7 +81,7 @@ Going forward: write/update these notes in the **same turn** as the code.
 | 2026-08-23 | [exclusions-app-icons](./2026-08-23-exclusions-app-icons/) | Per-app exclusions list shows app logos; Version bold; design parity |
 | 2026-08-23 | [rename-floating-menu](./2026-08-23-rename-floating-menu/) | User-facing "Overlay" → Floating Menu; Visual Overlay unchanged |
 | 2026-08-23 | [remove-settings-preferences](./2026-08-23-remove-settings-preferences/) | Drop redundant Preferences hub; use Feedback + Visual Overlay |
-| 2026-08-23 | [visual-overlay-edge-popup](./2026-08-23-visual-overlay-edge-popup/) | Visual Overlay: Plus Key edge pill + glow; Preview on screen; API 33 FGS fix (live preview removed) |
+| 2026-08-23 | [visual-overlay-edge-popup](./2026-08-23-visual-overlay-edge-popup/) | Visual Overlay: Plus Key edge pill + glow; Preview on screen; raised key anchor |
 | 2026-08-23 | [exclusions-accessibility-limit](./2026-08-23-exclusions-accessibility-limit/) | Banking Accessibility: Auto-Pause + one-time Unlock for hands-free resume |
 | 2026-08-23 | [readlogs-logd-blind](./2026-08-23-readlogs-logd-blind/) | RCA: READ_LOGS granted but logd serves only self logs → blind watcher; blindness watchdog + alert |
 | 2026-08-23 | [change-safety](./2026-08-23-change-safety/) | Mandatory regression review protocol + `scripts/device-smoke.sh` post-install gate |

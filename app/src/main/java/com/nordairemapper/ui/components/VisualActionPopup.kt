@@ -30,10 +30,20 @@ import com.nordairemapper.domain.model.OverlayAnimation
 import com.nordairemapper.domain.model.OverlayVisualStyle
 
 /**
- * Vertical center of the Plus Key on Nord 5 — matches [PhoneDiagram]
+ * Plus Key geometry on Nord 5 — matches [PhoneDiagram]
  * (top 31.5 / 163.4, height 8.5 / 163.4).
  */
-const val VISUAL_OVERLAY_KEY_Y_FRACTION = (31.5f + 8.5f / 2f) / 163.4f
+const val VISUAL_OVERLAY_KEY_TOP_FRACTION = 31.5f / 163.4f
+const val VISUAL_OVERLAY_KEY_HEIGHT_FRACTION = 8.5f / 163.4f
+
+/**
+ * Vertical anchor within the key (0 = top, 0.5 = center).
+ * Slightly above center so the pill sits flush with the physical key on a full-screen overlay.
+ */
+const val VISUAL_OVERLAY_KEY_ANCHOR_IN_KEY = 0.25f
+
+const val VISUAL_OVERLAY_KEY_Y_FRACTION =
+    VISUAL_OVERLAY_KEY_TOP_FRACTION + VISUAL_OVERLAY_KEY_HEIGHT_FRACTION * VISUAL_OVERLAY_KEY_ANCHOR_IN_KEY
 
 /**
  * Edge-aligned action popup shown when a remap fires (Visual Overlay).
@@ -58,7 +68,7 @@ fun VisualActionPopupLayer(
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val keyCenterY = maxHeight * VISUAL_OVERLAY_KEY_Y_FRACTION
-        val edgeInset = (6.dp * previewScale).coerceAtLeast(4.dp)
+        val edgeInset = (4.dp * previewScale).coerceAtLeast(2.dp)
         val pillWidth = (52.dp * previewScale).coerceAtLeast(40.dp)
         val pillHeight = (68.dp * previewScale).coerceAtLeast(52.dp)
         val iconSize = (28.dp * previewScale).coerceAtLeast(20.dp)
