@@ -35,6 +35,13 @@ class BootReceiver : BroadcastReceiver() {
                     if (!AccessibilityUtils.isServiceEnabled(context)) {
                         ServiceNotifications.notifyDetectionStopped(context)
                     }
+                    // Per-boot log consent: the boot-time watcher tail is blind
+                    // until Keyforge is opened once in the foreground. Nudge.
+                    if (LogcatWatcherService.hasReadLogsPermission(context) &&
+                        DetectionCoordinator.needsLogcatWatcher(settings.detectionStrategy)
+                    ) {
+                        ServiceNotifications.notifyOpenAfterBoot(context)
+                    }
                 }.onFailure { Log.w("BootReceiver", "Boot re-arm failed", it) }
             } finally {
                 pending.finish()

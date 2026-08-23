@@ -32,9 +32,10 @@ so it stays blind until something reconnects it. The earlier "USB debugging
 | `service/LogcatWatcherService.kt` | Companion-level tail-health state + `isTailBlindNow()`; new `restart()` (stop→start with suppressed death notification); watchdog/alerts unchanged. |
 | `presentation/home/HomeViewModel.kt` | **Auto-heal on Home open**: if READ_LOGS granted and gestures are stale-or-tail-blind, run the probe; when a foreground spawn proves visibility while the live tail is still blind, restart the tail silently. |
 | `EnableDetectionViewModel.kt` | Same heal after refresh() / Unlock completes. |
+| `service/BootReceiver.kt` + `ServiceNotifications.kt` | Post a "Open Keyforge to restore Plus Key detection" notification right after boot (only when logcat detection is relevant); cleared automatically on first app open. |
 
-Post-reboot user flow is now: **open Keyforge once** — the app proves access and
-reconnects itself; no adb, no Settings trip.
+Post-reboot user flow is now: tap the boot notification (or open Keyforge) —
+the app proves access and reconnects itself; no adb, no Settings trip.
 
 ## Verify
 1. Reboot device → open Home → within seconds press Plus Key: gesture fires

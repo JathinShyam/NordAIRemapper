@@ -15,6 +15,7 @@ import com.nordairemapper.service.KeyAction
 import com.nordairemapper.service.KeyEventBus
 import com.nordairemapper.service.LogVisibilityProbe
 import com.nordairemapper.service.LogcatWatcherService
+import com.nordairemapper.service.ServiceNotifications
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -115,6 +116,7 @@ class HomeViewModel @Inject constructor(
      */
     private fun healBlindTailIfNeeded() {
         viewModelScope.launch {
+            ServiceNotifications.clearOpenAfterBoot(context)
             if (!LogcatWatcherService.hasReadLogsPermission(context)) return@launch
             val seenAt = settingsRepository.settings.first().lastPlusKeySeenAtMs
             val recentlyWorking = System.currentTimeMillis() - seenAt < STALE_GESTURE_MS
@@ -123,6 +125,7 @@ class HomeViewModel @Inject constructor(
             if (visible && LogcatWatcherService.isTailBlindNow()) {
                 Log.i("HomeHeal", "Foreground spawn sees logs; restarting blind tail")
                 LogcatWatcherService.restart(context)
+                ServiceNotifications.clearLogsBlind(context)
             }
         }
     }

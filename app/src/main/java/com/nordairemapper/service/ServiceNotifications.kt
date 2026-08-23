@@ -14,6 +14,7 @@ object ServiceNotifications {
     private const val DEATH_NOTIFICATION_ID = 99
     private const val ACCESSIBILITY_PAUSED_ID = 100
     private const val LOGS_BLIND_ID = 102
+    private const val OPEN_AFTER_BOOT_ID = 103
 
     fun ensureChannel(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
@@ -103,6 +104,37 @@ object ServiceNotifications {
     fun clearLogsBlind(context: Context) {
         context.getSystemService(NotificationManager::class.java)
             .cancel(LOGS_BLIND_ID)
+    }
+
+    /**
+     * Posted from [BootReceiver]. Android 16-based OxygenOS denies background
+     * device-log access after every boot even with READ_LOGS granted, so the
+     * watcher tail starts blind until Keyforge is opened once in the
+     * foreground (Home auto-heals on open). This tells the user exactly that.
+     */
+    fun notifyOpenAfterBoot(context: Context) {
+        ensureChannel(context)
+        val intent = PendingIntent.getActivity(
+            context,
+            OPEN_AFTER_BOOT_ID,
+            Intent(context, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val notification = Notification.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("Open Keyforge to restore Plus Key detection")
+            .setContentText("After a reboot, Android blocks Keyforge until you open the app once. Tap here — detection recovers automatically.")
+            .setContentIntent(intent)
+            .setAutoCancel(true)
+            .setOngoing(false)
+            .build()
+        context.getSystemService(NotificationManager::class.java)
+            .notify(OPEN_AFTER_BOOT_ID, notification)
+    }
+
+    fun clearOpenAfterBoot(context: Context) {
+        context.getSystemService(NotificationManager::class.java)
+            .cancel(OPEN_AFTER_BOOT_ID)
     }
 
 }
