@@ -183,7 +183,7 @@ class FloatingOverlayService :
             )
         } catch (t: Throwable) {
             Log.e(TAG, "startForeground failed", t)
-            toast("Overlay failed to start")
+            toast("Floating menu failed to start")
             stopSelf()
             return START_NOT_STICKY
         }
@@ -198,7 +198,7 @@ class FloatingOverlayService :
         val keyguard = getSystemService(KeyguardManager::class.java)
         if (keyguard?.isKeyguardLocked == true) {
             Log.w(TAG, "Keyguard locked; overlay suppressed")
-            toast("Unlock phone to show overlay")
+            toast("Unlock phone to show floating menu")
             stopSelf()
             return START_NOT_STICKY
         }
@@ -208,7 +208,7 @@ class FloatingOverlayService :
                 val config = remapConfigRepository.observeOverlayConfig().first()
                 if (!config.enabled) {
                     Log.w(TAG, "Overlay disabled in settings")
-                    toast("Turn on Enable overlay in Overlay settings")
+                    toast("Turn on Enable floating menu in Settings → Floating Menu")
                     stopSelf()
                     return@launch
                 }
@@ -225,7 +225,7 @@ class FloatingOverlayService :
                 showOverlay(config.copy(slots = slots))
             }.onFailure { t ->
                 Log.e(TAG, "Failed to show overlay", t)
-                toast("Overlay crashed — check logcat")
+                toast("Floating menu crashed — check logcat")
                 dismissAndStop()
             }
         }
@@ -311,7 +311,7 @@ class FloatingOverlayService :
     private fun buildNotification(): Notification {
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, "Overlay", NotificationManager.IMPORTANCE_MIN)
+            NotificationChannel(CHANNEL_ID, "Floating Menu", NotificationManager.IMPORTANCE_MIN)
         )
         val contentIntent = PendingIntent.getActivity(
             this,
@@ -321,7 +321,7 @@ class FloatingOverlayService :
         )
         return Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Overlay menu")
+            .setContentTitle("Floating menu")
             .setContentText("Floating Plus Key actions")
             .setContentIntent(contentIntent)
             .setOngoing(true)
@@ -350,7 +350,7 @@ class FloatingOverlayService :
                 Log.w(TAG, "canDrawOverlays=false; skipping start")
                 Toast.makeText(
                     context.applicationContext,
-                    "Allow Display over other apps for overlay",
+                    "Allow Display over other apps for the floating menu",
                     Toast.LENGTH_SHORT,
                 ).show()
                 return
@@ -363,7 +363,7 @@ class FloatingOverlayService :
                 Log.e(TAG, "startForegroundService failed", t)
                 Toast.makeText(
                     context.applicationContext,
-                    "Could not start overlay service",
+                    "Could not start floating menu",
                     Toast.LENGTH_SHORT,
                 ).show()
             }
@@ -460,7 +460,7 @@ private fun OverlayWindowContent(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         NordTopBarHeading(
-                            text = "Overlay",
+                            text = "Floating Menu",
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 16.dp),

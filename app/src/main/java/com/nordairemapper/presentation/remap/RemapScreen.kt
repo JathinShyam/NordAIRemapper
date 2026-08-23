@@ -519,7 +519,7 @@ private fun actionAliases(action: RemapAction): List<String> = when (action) {
     RemapAction.CycleRingerMode -> listOf("mute", "silent", "vibrate", "ringer")
     RemapAction.OpenNotificationShade -> listOf("notifications", "shade", "dropdown")
     RemapAction.OpenQuickSettings -> listOf("qs", "tiles", "panel")
-    RemapAction.ShowOverlay -> listOf("chord", "floating", "menu")
+    RemapAction.ShowOverlay -> listOf("chord", "floating", "menu", "floating menu")
     RemapAction.None -> listOf("disable", "off", "nothing")
     RemapAction.TakeScreenshot -> listOf("capture", "snap")
     RemapAction.OpenAssistant -> listOf("voice", "gemini", "google")

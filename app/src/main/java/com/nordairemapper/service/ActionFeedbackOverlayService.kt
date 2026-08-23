@@ -8,35 +8,14 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
+import android.os.Build
 import android.os.IBinder
 import android.provider.Settings
 import android.util.Log
 import android.view.Gravity
 import android.view.WindowManager
 import android.widget.FrameLayout
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.ViewModelStore
@@ -48,14 +27,12 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.nordairemapper.R
-import com.nordairemapper.domain.model.OverlayAnimation
 import com.nordairemapper.domain.model.OverlayConfig
-import com.nordairemapper.domain.model.OverlayVisualStyle
 import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.domain.repository.RemapConfigRepository
 import com.nordairemapper.presentation.MainActivity
-import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.presentation.common.icon
+import com.nordairemapper.ui.components.VisualActionPopupLayer
 import com.nordairemapper.ui.theme.NordAIRemapperTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -114,11 +91,16 @@ class ActionFeedbackOverlayService :
         }
 
         try {
-            startForeground(
-                NOTIFICATION_ID,
-                buildNotification(),
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
-            )
+            val notification = buildNotification()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
         } catch (t: Throwable) {
             Log.e(TAG, "startForeground failed", t)
             stopSelf()
@@ -162,7 +144,13 @@ class ActionFeedbackOverlayService :
             setViewTreeSavedStateRegistryOwner(this@ActionFeedbackOverlayService)
             setContent {
                 NordAIRemapperTheme {
-                    ActionFeedbackContent(action = action, config = config)
+                    VisualActionPopupLayer(
+                        icon = action.icon(),
+                        accent = androidx.compose.ui.graphics.Color(config.accentColorArgb),
+                        visualStyle = config.visualStyle,
+                        glowEffects = config.glowEffects,
+                        animation = config.animation,
+                    )
                 }
             }
         }
@@ -255,93 +243,6 @@ class ActionFeedbackOverlayService :
                 Log.e(TAG, "startForegroundService failed", t)
                 pendingAction.set(null)
             }
-        }
-    }
-}
-
-@androidx.compose.runtime.Composable
-private fun ActionFeedbackContent(
-    action: RemapAction,
-    config: OverlayConfig,
-) {
-    val accent = Color(config.accentColorArgb)
-    val onePlus = config.visualStyle == OverlayVisualStyle.ONEPLUS
-    val surface = if (onePlus) Color(0xFF141414) else Color(0xFFF2F2F2)
-    val onSurface = if (onePlus) Color(0xFFF5F5F5) else Color(0xFF1A1A1A)
-    val appear = remember { Animatable(0f) }
-
-    LaunchedEffect(config.animation) {
-        appear.snapTo(0f)
-        appear.animateTo(1f, animationSpec = tween(220))
-    }
-
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.BottomCenter,
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(bottom = 96.dp)
-                .graphicsLayer {
-                    val t = appear.value
-                    alpha = t
-                    when (config.animation) {
-                        OverlayAnimation.FADE -> Unit
-                        OverlayAnimation.SCALE -> {
-                            scaleX = 0.86f + 0.14f * t
-                            scaleY = 0.86f + 0.14f * t
-                        }
-                        OverlayAnimation.SLIDE -> {
-                            translationY = (1f - t) * 28f
-                        }
-                    }
-                }
-                .then(
-                    if (config.glowEffects) {
-                        Modifier.shadow(
-                            elevation = 12.dp,
-                            shape = RoundedCornerShape(28.dp),
-                            ambientColor = accent.copy(alpha = 0.45f),
-                            spotColor = accent.copy(alpha = 0.55f),
-                        )
-                    } else {
-                        Modifier
-                    },
-                )
-                .background(surface.copy(alpha = 0.94f), RoundedCornerShape(28.dp))
-                .then(
-                    if (config.glowEffects && onePlus) {
-                        Modifier.border(1.dp, accent.copy(alpha = 0.55f), RoundedCornerShape(28.dp))
-                    } else {
-                        Modifier
-                    },
-                )
-                .padding(horizontal = 18.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        if (onePlus) accent.copy(alpha = 0.2f) else Color(0xFF9E9E9E).copy(alpha = 0.2f),
-                        RoundedCornerShape(12.dp),
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = action.icon(),
-                    contentDescription = null,
-                    tint = if (onePlus) accent else Color(0xFF616161),
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-            Text(
-                text = action.displayName(),
-                style = MaterialTheme.typography.titleSmall,
-                color = onSurface,
-                maxLines = 1,
-            )
         }
     }
 }

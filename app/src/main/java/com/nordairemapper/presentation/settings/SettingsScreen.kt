@@ -20,7 +20,6 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material.icons.outlined.TouchApp
-import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Vibration
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.Widgets
@@ -57,7 +56,6 @@ fun SettingsScreen(
     onOpenBackup: () -> Unit,
     onOpenOverlay: () -> Unit,
     onOpenFeedback: () -> Unit,
-    onOpenPreferences: () -> Unit,
     onOpenVisualOverlay: () -> Unit,
     onOpenLockScreen: () -> Unit,
     onOpenExclusions: () -> Unit,
@@ -179,15 +177,6 @@ fun SettingsScreen(
                 )
                 SettingsHubDivider()
                 SettingsHubRow(
-                    icon = Icons.Outlined.Tune,
-                    title = "Preferences",
-                    subtitle = "Toast, Sound, Confirmation",
-                    accentContainer = MaterialTheme.colorScheme.primaryContainer,
-                    accentTint = NordBlue,
-                    onClick = onOpenPreferences,
-                )
-                SettingsHubDivider()
-                SettingsHubRow(
                     icon = Icons.Outlined.Visibility,
                     title = "Visual Overlay",
                     subtitle = "Popup Style On Remap",
@@ -198,8 +187,8 @@ fun SettingsScreen(
                 SettingsHubDivider()
                 SettingsHubRow(
                     icon = Icons.Outlined.Widgets,
-                    title = "Overlay Settings",
-                    subtitle = "Floating Menu Slots & Layout",
+                    title = "Floating Menu",
+                    subtitle = "Slots, Layout & Position",
                     accentContainer = purple.container,
                     accentTint = purple.tint,
                     onClick = onOpenOverlay,

@@ -26,7 +26,6 @@ import com.nordairemapper.presentation.remap.RemapScreen
 import com.nordairemapper.presentation.settings.ExclusionsScreen
 import com.nordairemapper.presentation.settings.FeedbackScreen
 import com.nordairemapper.presentation.settings.LockScreenSettingsScreen
-import com.nordairemapper.presentation.settings.PreferencesScreen
 import com.nordairemapper.presentation.settings.SettingsScreen
 import com.nordairemapper.presentation.settings.VisualOverlayScreen
 
@@ -40,7 +39,6 @@ object Routes {
     const val OVERLAY_SETTINGS = "overlay_settings"
     const val BACKUP = "backup"
     const val FEEDBACK = "feedback"
-    const val PREFERENCES = "preferences"
     const val VISUAL_OVERLAY = "visual_overlay"
     const val LOCK_SCREEN = "lock_screen"
     const val EXCLUSIONS = "exclusions"
@@ -124,7 +122,6 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
                 onOpenBackup = { navController.navigate(Routes.BACKUP) },
                 onOpenOverlay = { navController.navigate(Routes.OVERLAY_SETTINGS) },
                 onOpenFeedback = { navController.navigate(Routes.FEEDBACK) },
-                onOpenPreferences = { navController.navigate(Routes.PREFERENCES) },
                 onOpenVisualOverlay = { navController.navigate(Routes.VISUAL_OVERLAY) },
                 onOpenLockScreen = { navController.navigate(Routes.LOCK_SCREEN) },
                 onOpenExclusions = { navController.navigate(Routes.EXCLUSIONS) },
@@ -137,13 +134,6 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
         }
         composable(Routes.FEEDBACK) {
             FeedbackScreen(onBack = { navController.popBackStack() })
-        }
-        composable(Routes.PREFERENCES) {
-            PreferencesScreen(
-                onBack = { navController.popBackStack() },
-                onFinish = { navController.popBackStack() },
-                onOpenVisualOverlay = { navController.navigate(Routes.VISUAL_OVERLAY) },
-            )
         }
         composable(Routes.VISUAL_OVERLAY) {
             VisualOverlayScreen(onBack = { navController.popBackStack() })

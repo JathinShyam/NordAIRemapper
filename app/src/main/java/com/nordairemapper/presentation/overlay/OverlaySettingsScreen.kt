@@ -84,8 +84,8 @@ fun OverlaySettingsScreen(
             TopAppBar(
                 title = {
                     NordTopBarTitle(
-                        title = "Overlay",
-                        subtitle = "Floating menu slots",
+                        title = "Floating Menu",
+                        subtitle = "Quick-action slots",
                     )
                 },
                 navigationIcon = {
@@ -119,11 +119,11 @@ fun OverlaySettingsScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            "Enable overlay",
+                            "Enable floating menu",
                             style = MaterialTheme.typography.titleSmall,
                         )
                         Text(
-                            text = "Show overlay actions will not open this menu when off",
+                            text = "\"Show floating menu\" actions will not open the menu when off",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -141,14 +141,14 @@ fun OverlaySettingsScreen(
             val allSlotsEmpty = config.slots.none { it !is RemapAction.None }
             if (allSlotsEmpty) {
                 Text(
-                    text = "Tap a slot to add an action — at least one is needed for the overlay to show",
+                    text = "Tap a slot to add an action — at least one is needed for the floating menu to show",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 4.dp),
                 )
             } else {
                 Text(
-                    text = "Tap a slot to assign an action. Up to 6 slots are shown in the overlay.",
+                    text = "Tap a slot to assign an action. Up to 6 slots are shown in the floating menu.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -276,7 +276,7 @@ fun OverlaySettingsScreen(
             PrefCard {
                 Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
                     Text(
-                        text = "How tiles animate in when the overlay opens",
+                        text = "How tiles animate in when the floating menu opens",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 10.dp),

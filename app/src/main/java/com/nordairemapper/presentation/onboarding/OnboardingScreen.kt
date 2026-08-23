@@ -149,10 +149,10 @@ fun OnboardingScreen(
                     3 -> StepContent(
                         icon = Icons.Outlined.Layers,
                         title = "Display over apps",
-                        body = "Needed for the floating overlay menu. Skip if you only want single actions. You can still use single-action remaps without it.",
+                        body = "Needed for the floating menu and visual action popup. Skip if you only want single-action remaps without on-screen UI.",
                         statusLabel = if (permissions.overlayGranted) "Granted" else "Not granted yet",
                         statusTone = if (permissions.overlayGranted) StatusTone.Active else StatusTone.Warning,
-                        primaryLabel = if (permissions.overlayGranted) "Continue" else "Open overlay settings",
+                        primaryLabel = if (permissions.overlayGranted) "Continue" else "Open Display over apps",
                         onPrimary = {
                             if (permissions.overlayGranted) page = 4
                             else viewModel.openOverlaySettings()

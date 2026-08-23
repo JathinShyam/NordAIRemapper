@@ -1356,24 +1356,104 @@
       40% { transform: scale(1.2); }
     }
 
-    /* Visual overlay preview */
-    .viz-bar {
-      height: 6px; border-radius: 4px; background: #222; overflow: hidden;
-      margin-top: 8px; position: relative;
+    /* Visual Overlay — VisualOverlayScreen.kt + components */
+    .viz-intro {
+      font-size: 14px; color: #8a8a8a; line-height: 1.45; margin: 0 0 12px;
     }
-    .viz-bar::after {
-      content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 28%;
-      background: linear-gradient(90deg, transparent, var(--accent), transparent);
-      border-radius: 4px; opacity: .35;
-      transition: width .5s var(--spring), opacity .3s, border-radius .4s var(--spring);
+    .chip-status {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 10px; margin-bottom: 12px;
+      border-radius: 999px; border: 1px solid #2a2a2a;
+      font-size: 12px; font-weight: 500; color: rgba(255,255,255,.85);
     }
-    .viz-bar.on::after {
-      width: 100%; opacity: 1; border-radius: 999px;
-      animation: vizMorph 1.2s var(--spring) infinite alternate;
+    .chip-status .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .chip-status.ok .dot { background: #2ecc71; }
+    .chip-status.warn .dot { background: #ffb020; }
+    .group-card {
+      background: #141414; border: 1px solid #2a2a2a;
+      border-radius: 12px; width: 100%; box-sizing: border-box;
     }
-    @keyframes vizMorph {
-      from { width: 40%; }
-      to { width: 100%; }
+    .group-card .card-stack { padding: 4px 0; }
+    .group-card .card-pad {
+      padding: 14px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .toggle-row {
+      display: flex; align-items: center; gap: 12px; padding: 13px 14px;
+    }
+    .toggle-row .row-ico {
+      width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+      background: rgba(10,198,255,.16); color: #0ac6ff;
+      display: grid; place-items: center;
+    }
+    .toggle-row .row-ico svg {
+      width: 18px; height: 18px; stroke: currentColor; fill: none;
+      stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .toggle-row .row-meta { flex: 1; min-width: 0; }
+    .toggle-row .row-meta .t { font-size: 13px; font-weight: 600; color: #fff; }
+    .toggle-row .row-meta .d {
+      font-size: 11px; color: #8a8a8a; margin-top: 2px; line-height: 1.35;
+    }
+    .viz-sec.sec-label { margin-top: 10px; margin-bottom: 8px; letter-spacing: 0.04em; }
+    .viz-style-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .viz-style-card {
+      appearance: none; border: 0; background: none; padding: 0; cursor: pointer;
+      font: inherit; color: inherit; text-align: center;
+    }
+    .viz-style-preview {
+      height: 100px; background: #0a0a0a; border-radius: 14px;
+      border: 1px solid #2a2a2a; position: relative; overflow: hidden;
+      margin-bottom: 6px; box-sizing: border-box;
+    }
+    .viz-style-card.on .viz-style-preview.oneplus { border: 2px solid var(--viz-accent, #0ac6ff); }
+    .viz-style-card.on .viz-style-preview.stock { border: 2px solid #9e9e9e; }
+    .viz-style-card .lab { font-size: 13px; font-weight: 700; color: #8a8a8a; }
+    .viz-style-card.on .lab { color: #fff; }
+    .viz-style-preview .mini-pill {
+      position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+      width: 40px; height: 52px; border-radius: 20px; box-sizing: border-box;
+      background: rgba(10,10,10,.96); display: grid; place-items: center;
+      color: var(--viz-accent, #0ac6ff);
+    }
+    .viz-style-preview .mini-pill.glow-border {
+      border: 1.5px solid color-mix(in srgb, var(--viz-accent, #0ac6ff) 90%, transparent);
+    }
+    .viz-style-preview .mini-pill.stock {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: rgba(236,236,236,.96); border: 1px solid #bdbdbd; color: #424242;
+    }
+    .viz-style-preview .mini-pill svg {
+      width: 22px; height: 22px; stroke: currentColor; fill: none;
+      stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .viz-accent-header {
+      display: flex; align-items: center; gap: 12px; padding: 13px 14px;
+    }
+    .viz-accent-header .row-ico svg {
+      width: 18px; height: 18px; stroke: currentColor; fill: none;
+      stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .viz-accent-header .row-meta { flex: 1; min-width: 0; }
+    .viz-accent-header .swatch { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; }
+    .viz-accent-row { display: flex; gap: 10px; padding: 8px 14px; flex-wrap: wrap; }
+    .viz-accent-dot {
+      width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent; box-sizing: border-box;
+    }
+    .viz-accent-dot.on { border-color: #fff; }
+    .viz-hold-card { padding: 14px; }
+    .viz-hold-card .hint-t { margin: 0 0 8px; font-size: 11px; color: #8a8a8a; line-height: 1.35; }
+    .viz-spacer-12 { height: 12px; flex-shrink: 0; }
+    .viz-spacer-24 { height: 24px; flex-shrink: 0; }
+    .btn-primary-full {
+      appearance: none; width: 100%; height: 48px; border: 0; border-radius: 12px;
+      background: #0ac6ff; color: #000; font: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-ghost-full {
+      appearance: none; width: 100%; height: 48px; margin-top: 12px;
+      border-radius: 12px; border: 1px solid #2a2a2a; background: transparent;
+      color: #fff; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer;
     }
 
     /* Overlay slot editor */
@@ -1541,8 +1621,8 @@
           <small>Assign action for a press</small>
         </button>
         <button data-screen="overlay">
-          Overlay
-          <small>Floating quick menu</small>
+          Floating Menu
+          <small>Live quick-action panel</small>
         </button>
 
         <div class="nav-section">Settings</div>
@@ -1553,10 +1633,6 @@
         <button data-screen="feedback">
           Feedback
           <small>Haptic + vibration intensity</small>
-        </button>
-        <button data-screen="preferences">
-          Preferences
-          <small>Notify when an action triggers</small>
         </button>
         <button data-screen="visual">
           Visual Overlay
@@ -1571,8 +1647,8 @@
           <small>Export / import</small>
         </button>
         <button data-screen="overlay-settings">
-          Overlay settings
-          <small>Six chord slots</small>
+          Floating Menu settings
+          <small>Six quick-action slots</small>
         </button>
         <button data-screen="keysetup">
           Key setup
@@ -1703,7 +1779,7 @@
               </div>
               <div>
                 <div class="t">Long</div>
-                <div class="d">Show overlay</div>
+                <div class="d">Show floating menu</div>
               </div>
               <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
             </div>
@@ -1772,7 +1848,7 @@
             <div class="chip" data-g="apps">Apps</div>
             <div class="chip" data-g="media">Media</div>
             <div class="chip on" data-g="system">System</div>
-            <div class="chip" data-g="overlay">Overlay</div>
+            <div class="chip" data-g="overlay">Floating Menu</div>
             <div class="chip" data-g="none">None</div>
           </div>
           <div class="sec-label">Current</div>
@@ -1791,7 +1867,7 @@
         <section class="screen" id="overlay">
           <div class="overlay-bg" id="overlayBg" title="Dismiss"></div>
           <div class="overlay-panel pill" id="overlayPanel">
-            <h2 class="brand">Overlay</h2>
+            <h2 class="brand">Floating Menu</h2>
             <div class="tiles" id="overlayTiles"></div>
             <button class="overlay-dismiss" id="overlayDismiss" type="button">Close</button>
           </div>
@@ -1841,11 +1917,6 @@
                 <div><div class="t">Feedback</div><div class="d">Haptics When A Remap Fires</div></div>
                 <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
               </div>
-              <div class="hub-row" data-go="preferences">
-                <div class="hub-ico tone-cyan"><svg viewBox="0 0 24 24"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M2 14h4"/><path d="M10 8h4"/><path d="M18 16h4"/></svg></div>
-                <div><div class="t">Preferences</div><div class="d">Toast, Sound, Confirmation</div></div>
-                <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
-              </div>
               <div class="hub-row" data-go="visual">
                 <div class="hub-ico tone-purple"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div>
                 <div><div class="t">Visual Overlay</div><div class="d">Popup Style On Remap</div></div>
@@ -1853,7 +1924,7 @@
               </div>
               <div class="hub-row" data-go="overlay-settings">
                 <div class="hub-ico tone-purple"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
-                <div><div class="t">Overlay Settings</div><div class="d">Floating Menu Slots &amp; Layout</div></div>
+                <div><div class="t">Floating Menu</div><div class="d">Slots, Layout &amp; Position</div></div>
                 <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
               </div>
             </div>
@@ -2007,69 +2078,109 @@
           </div>
         </section>
 
-        <!-- PREFERENCES -->
-        <section class="screen" id="preferences">
-          <div class="topbar">
-            <button class="ico" data-back="settings" type="button" title="Back">‹</button>
-            <div>
-              <div class="h">Preferences</div>
-              <div class="sub">How you’re notified</div>
-            </div>
-          </div>
-          <div class="scroll">
-            <p style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:14px;">
-              Choose how you’re notified when an action triggers. You can change these later in Settings.
-            </p>
-            <div class="pref-card">
-              <div class="pref-row">
-                <div class="meta">
-                  <div class="label" style="margin:0">Haptic feedback</div>
-                  <div class="hint-t" style="margin:4px 0 0">Vibrate on button press</div>
-                </div>
-                <div class="sw" id="prefHaptic" role="switch" tabindex="0" aria-checked="true"></div>
-              </div>
-            </div>
-            <div class="pref-card">
-              <div class="pref-row">
-                <div class="meta">
-                  <div class="label" style="margin:0">Visual overlay</div>
-                  <div class="hint-t" style="margin:4px 0 0">Show action popup on screen</div>
-                </div>
-                <div class="sw" id="prefVisual" role="switch" tabindex="0" aria-checked="true"></div>
-              </div>
-            </div>
-            <div class="sec-label">Overlay style</div>
-            <div class="seg" id="overlayStyleSeg" style="margin-bottom:12px">
-              <button type="button" class="on" data-v="oneplus">OnePlus</button>
-              <button type="button" data-v="stock">Stock</button>
-            </div>
-            <button class="btn ghost" id="openVisualFromPrefs" type="button">Customize visual overlay</button>
-          </div>
-        </section>
-
-        <!-- VISUAL OVERLAY -->
+        <!-- VISUAL OVERLAY — VisualOverlayScreen.kt -->
         <section class="screen" id="visual">
           <div class="topbar">
             <button class="ico" data-back="settings" type="button" title="Back">‹</button>
             <div>
               <div class="h">Visual Overlay</div>
-              <div class="sub">Action popup when a remap fires</div>
+              <div class="sub">Action popup near Plus Key</div>
             </div>
           </div>
           <div class="scroll">
-            <div class="pref-card">
-              <div class="pref-row">
-                <div class="meta">
-                  <div class="label" style="margin:0">Enable visual overlay</div>
-                  <div class="hint-t" style="margin:4px 0 0">Show a brief popup when an action triggers</div>
-                </div>
-                <div class="sw" id="vizToggle" role="switch" tabindex="0" aria-checked="true"></div>
-              </div>
-              <div class="viz-bar on" id="vizBar"></div>
+            <p class="viz-intro">Shows which action fired — a brief icon popup on the Plus Key edge. Not the floating menu (see Floating Menu in Settings).</p>
+
+            <div class="chip-status ok" id="vizPermChip" role="status">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="chip-label">Display over apps granted</span>
             </div>
-            <p style="font-size:11px;color:var(--muted);line-height:1.45;padding:0 4px">
-              Preview of the edge signal. Full style, accent, and glow controls live in the app’s Visual Overlay screen.
-            </p>
+
+            <div class="group-card" id="vizPermCard" style="display:none">
+              <div class="card-pad">
+                <p class="hint-t" style="margin:0;font-size:11px;color:#8a8a8a;line-height:1.35">Visual Overlay needs Display over other apps to draw on screen.</p>
+                <button class="btn-primary-full" type="button" id="vizPermBtn">Open Display over apps</button>
+              </div>
+            </div>
+            <div class="viz-spacer-12" id="vizPermSpacer" style="display:none"></div>
+
+            <div class="group-card">
+              <div class="card-stack">
+                <div class="toggle-row">
+                  <div class="row-ico" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5C21.27 7.61 17 4.5 12 4.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                  </div>
+                  <div class="row-meta">
+                    <div class="t">Enable visual overlay</div>
+                    <div class="d">Popup when Single, Double, or Long press fires</div>
+                  </div>
+                  <div class="sw" id="vizToggle" role="switch" tabindex="0" aria-checked="true"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="sec-label viz-sec">Style</div>
+            <div class="viz-style-grid" id="vizStyleGrid">
+              <button type="button" class="viz-style-card on" data-style="oneplus">
+                <div class="viz-style-preview oneplus">
+                  <div class="mini-pill glow-border" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2v1"/><path d="M7 5 5.5 6.5"/><path d="M17 5l1.5 1.5"/><path d="M5 12H3"/><path d="M21 12h-2"/><path d="M7 19l-1.5 1.5"/><path d="M17 19l1.5 1.5"/><path d="M9 14h6v4H9z"/></svg>
+                  </div>
+                </div>
+                <span class="lab">OnePlus</span>
+              </button>
+              <button type="button" class="viz-style-card" data-style="stock">
+                <div class="viz-style-preview stock">
+                  <div class="mini-pill stock" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2v1"/><path d="M7 5 5.5 6.5"/><path d="M17 5l1.5 1.5"/><path d="M5 12H3"/><path d="M21 12h-2"/><path d="M7 19l-1.5 1.5"/><path d="M17 19l1.5 1.5"/><path d="M9 14h6v4H9z"/></svg>
+                  </div>
+                </div>
+                <span class="lab">Stock</span>
+              </button>
+            </div>
+
+            <div class="sec-label viz-sec">Appearance</div>
+            <div class="group-card">
+              <div class="card-stack">
+                <div class="viz-accent-header">
+                  <div class="row-ico" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8z"/><circle cx="6.5" cy="11.5" r="1.5"/><circle cx="9.5" cy="7.5" r="1.5"/><circle cx="14.5" cy="7.5" r="1.5"/><circle cx="17.5" cy="11.5" r="1.5"/></svg>
+                  </div>
+                  <div class="row-meta">
+                    <div class="t">Accent color</div>
+                    <div class="d">Border, icon, and edge glow</div>
+                  </div>
+                  <div class="swatch" id="vizAccentCurrent" style="background:#0AC6FF"></div>
+                </div>
+                <div class="viz-accent-row" id="vizAccentRow">
+                  <div class="viz-accent-dot on" data-accent="#0AC6FF" style="background:#0AC6FF" title="Cyan"></div>
+                  <div class="viz-accent-dot" data-accent="#FFD60A" style="background:#FFD60A" title="Yellow"></div>
+                  <div class="viz-accent-dot" data-accent="#2ECC71" style="background:#2ECC71" title="Green"></div>
+                  <div class="viz-accent-dot" data-accent="#FF4D4D" style="background:#FF4D4D" title="Red"></div>
+                  <div class="viz-accent-dot" data-accent="#9B59B6" style="background:#9B59B6" title="Purple"></div>
+                </div>
+                <div class="toggle-row">
+                  <div class="row-ico" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 8.5c1.5-1.5 4-1.5 5.5 0"/><path d="M8.5 15.5c1.5 1.5 4 1.5 5.5 0"/></svg>
+                  </div>
+                  <div class="row-meta">
+                    <div class="t">Glow effect</div>
+                    <div class="d">Accent line and bloom on the Plus Key edge</div>
+                  </div>
+                  <div class="sw" id="vizGlowToggle" role="switch" tabindex="0" aria-checked="true"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="sec-label viz-sec" id="vizHoldLabel">Hold duration · 0.7s</div>
+            <div class="group-card">
+              <div class="viz-hold-card">
+                <p class="hint-t">How long the popup stays on screen</p>
+                <input type="range" id="vizHoldSlider" min="300" max="2000" step="100" value="700" />
+              </div>
+            </div>
+
+            <button class="btn-ghost-full" id="vizPreviewBtn" type="button">Preview on screen</button>
+            <div class="viz-spacer-24"></div>
           </div>
         </section>
 
@@ -2125,7 +2236,7 @@
           <div class="scroll">
             <div class="pref-card">
               <div class="label">Export</div>
-              <div class="hint-t">Save remaps, overlay slots, and prefs as a file.</div>
+              <div class="hint-t">Save remaps, floating menu slots, and prefs as a file.</div>
               <button class="btn" id="exportBtn" type="button">Export backup</button>
             </div>
             <div class="pref-card">
@@ -2153,16 +2264,16 @@
           <div class="topbar">
             <button class="ico" data-back="settings" type="button" title="Back">‹</button>
             <div>
-              <div class="h">Overlay</div>
-              <div class="sub">Floating menu slots</div>
+              <div class="h">Floating Menu</div>
+              <div class="sub">Quick-action slots</div>
             </div>
           </div>
           <div class="scroll">
             <p class="empty-hint accent" id="overlayEmptyHint" hidden>
-              Tap a slot to add an action — at least one is needed for the overlay to show
+              Tap a slot to add an action — at least one is needed for the floating menu to show
             </p>
             <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.45" id="overlaySlotsCopy">
-              Tap a slot to select it. Preview opens the live overlay. Full layout controls are in the app.
+              Tap a slot to select it. Preview opens the live floating menu. Full layout controls are in the app.
             </p>
             <div class="pref-card" style="margin-bottom:12px">
               <div class="label">Layout style</div>
@@ -2181,7 +2292,7 @@
               </div>
             </div>
             <div class="slots" id="slots"></div>
-            <button class="btn" id="previewOverlay" type="button">Preview overlay</button>
+            <button class="btn" id="previewOverlay" type="button">Preview floating menu</button>
           </div>
         </section>
 
@@ -2260,7 +2371,7 @@
     const toast = document.getElementById("toast");
     const screens = [
       "onboarding", "unlock", "stage", "remap", "overlay",
-      "settings", "exclusions", "feedback", "preferences", "visual", "lock",
+      "settings", "exclusions", "feedback", "visual", "lock",
       "backup", "overlay-settings", "keysetup", "lab",
     ];
     /* Mirrors RemapActionCatalog + RemapActionUi display strings */
@@ -2268,7 +2379,7 @@
       apps: "Apps",
       media: "Media",
       system: "System",
-      overlay: "Overlay",
+      overlay: "Floating Menu",
       none: "None",
     };
     const actionCatalog = {
@@ -2300,7 +2411,7 @@
         { name: "Auto-rotate", hint: "Toggle accelerometer rotation", icon: "rotate", aliases: ["rotation", "orientation", "portrait", "landscape"] },
       ],
       overlay: [
-        { name: "Show overlay", hint: "Open the floating action menu", icon: "overlay", tone: "overlay", aliases: ["chord", "floating", "quick menu", "radial"] },
+        { name: "Show floating menu", hint: "Open the floating menu", icon: "overlay", tone: "overlay", aliases: ["chord", "floating", "quick menu", "radial", "floating menu"] },
       ],
       none: [
         { name: "No action", hint: "This press type does nothing", icon: "block", tone: "muted", aliases: ["disable", "off", "empty", "nothing", "ignore"] },
@@ -2946,10 +3057,10 @@
       {
         icon: "layers",
         title: "Display over apps",
-        copy: "Needed for the floating overlay menu. Skip if you only want single actions. You can still use single-action remaps without it.",
+        copy: "Needed for the floating menu and visual action popup. Skip if you only want single-action remaps without on-screen UI.",
         status: "Not granted yet",
         statusTone: "warn",
-        cta: "Open overlay settings",
+        cta: "Open Display over apps",
         secondary: "I've enabled it",
         tertiary: "Skip for now",
         next: "grant-overlay",
@@ -3180,8 +3291,6 @@
     }
 
     wireSwitch("hapticToggle", "Haptics");
-    wireSwitch("prefHaptic", "Haptics");
-    wireSwitch("prefVisual", "Visual overlay");
     wireSwitch("dynColor", "Dynamic color");
     wireSwitch("svcNotif", "Notification");
 
@@ -3198,18 +3307,116 @@
       syncLockHint(id);
     });
 
-    wireSeg("overlayStyleSeg", (v) => showToast("Overlay style · " + v));
-    const openVisualFromPrefs = document.getElementById("openVisualFromPrefs");
-    if (openVisualFromPrefs) openVisualFromPrefs.onclick = () => go("visual");
-
     const vizToggle = document.getElementById("vizToggle");
-    const vizBar = document.getElementById("vizBar");
-    vizToggle.addEventListener("click", () => {
-      const off = vizToggle.classList.toggle("off");
-      vizToggle.setAttribute("aria-checked", String(!off));
-      vizBar.classList.toggle("on", !off);
-      showToast(off ? "Visual overlay off" : "Visual overlay on");
+    const vizGlowToggle = document.getElementById("vizGlowToggle");
+    const vizPermChip = document.getElementById("vizPermChip");
+    const vizPermCard = document.getElementById("vizPermCard");
+    const vizPermSpacer = document.getElementById("vizPermSpacer");
+    const vizPermBtn = document.getElementById("vizPermBtn");
+    const vizHoldSlider = document.getElementById("vizHoldSlider");
+    const vizHoldLabel = document.getElementById("vizHoldLabel");
+    const vizPreviewBtn = document.getElementById("vizPreviewBtn");
+    const vizAccentCurrent = document.getElementById("vizAccentCurrent");
+    let vizAccent = "#0AC6FF";
+    let vizStyle = "oneplus";
+    let vizOverlayGranted = true;
+
+    function syncVizPreview() {
+      document.documentElement.style.setProperty("--viz-accent", vizAccent);
+      if (vizAccentCurrent) vizAccentCurrent.style.background = vizAccent;
+      const glowOn = vizGlowToggle && !vizGlowToggle.classList.contains("off");
+      document.querySelectorAll("#vizStyleGrid .mini-pill").forEach((pill) => {
+        const stockPill = pill.classList.contains("stock");
+        pill.classList.toggle("glow-border", !stockPill && glowOn);
+      });
+    }
+
+    if (vizToggle) {
+      vizToggle.addEventListener("click", () => {
+        const off = vizToggle.classList.toggle("off");
+        vizToggle.setAttribute("aria-checked", String(!off));
+        showToast(off ? "Visual overlay off" : "Visual overlay on");
+      });
+    }
+    if (vizGlowToggle) {
+      vizGlowToggle.addEventListener("click", () => {
+        const off = vizGlowToggle.classList.toggle("off");
+        vizGlowToggle.setAttribute("aria-checked", String(!off));
+        syncVizPreview();
+        showToast(off ? "Glow effect off" : "Glow effect on");
+      });
+    }
+    document.querySelectorAll("#vizAccentRow .viz-accent-dot").forEach((dot) => {
+      dot.addEventListener("click", () => {
+        document.querySelectorAll("#vizAccentRow .viz-accent-dot").forEach((d) => d.classList.remove("on"));
+        dot.classList.add("on");
+        vizAccent = dot.dataset.accent || "#0AC6FF";
+        syncVizPreview();
+        showToast("Accent · " + vizAccent);
+      });
     });
+    document.querySelectorAll("#vizStyleGrid .viz-style-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        document.querySelectorAll("#vizStyleGrid .viz-style-card").forEach((c) => c.classList.remove("on"));
+        card.classList.add("on");
+        vizStyle = card.dataset.style || "oneplus";
+        syncVizPreview();
+        showToast("Style · " + vizStyle);
+      });
+    });
+    if (vizHoldSlider && vizHoldLabel) {
+      const syncHoldLabel = () => {
+        const sec = (Number(vizHoldSlider.value) / 1000).toFixed(1);
+        vizHoldLabel.textContent = "Hold duration · " + sec + "s";
+      };
+      vizHoldSlider.addEventListener("input", syncHoldLabel);
+      syncHoldLabel();
+    }
+    function syncVizPermUi() {
+      if (!vizPermChip || !vizPermCard) return;
+      const label = vizPermChip.querySelector(".chip-label");
+      if (vizOverlayGranted) {
+        if (label) label.textContent = "Display over apps granted";
+        vizPermChip.className = "chip-status ok";
+        vizPermCard.style.display = "none";
+        if (vizPermSpacer) vizPermSpacer.style.display = "none";
+      } else {
+        if (label) label.textContent = "Display over apps needed";
+        vizPermChip.className = "chip-status warn";
+        vizPermCard.style.display = "";
+        if (vizPermSpacer) vizPermSpacer.style.display = "";
+      }
+    }
+    if (vizPermChip) {
+      vizPermChip.addEventListener("click", () => {
+        vizOverlayGranted = !vizOverlayGranted;
+        syncVizPermUi();
+        showToast(vizOverlayGranted ? "Overlay permission granted" : "Overlay permission needed");
+      });
+    }
+    if (vizPermBtn) {
+      vizPermBtn.addEventListener("click", () => {
+        vizOverlayGranted = true;
+        syncVizPermUi();
+        showToast("Display over apps · granted (demo)");
+      });
+    }
+    if (vizPreviewBtn) {
+      vizPreviewBtn.addEventListener("click", () => {
+        if (!vizOverlayGranted) {
+          syncVizPermUi();
+          showToast("Grant Display over apps first");
+          return;
+        }
+        if (vizToggle && vizToggle.classList.contains("off")) {
+          showToast("Enable visual overlay first");
+          return;
+        }
+        showToast("Flashlight popup preview");
+      });
+    }
+    syncVizPermUi();
+    syncVizPreview();
 
     document.getElementById("previewHaptic").onclick = () => {
       const ring = document.getElementById("hapticPulse");

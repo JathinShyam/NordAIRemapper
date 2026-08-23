@@ -6,7 +6,7 @@ enum class RemapActionCategory(val label: String) {
     APPS("Apps"),
     MEDIA("Media"),
     SYSTEM("System"),
-    OVERLAY("Overlay"),
+    OVERLAY("Floating Menu"),
     NONE("None"),
 }
 
@@ -18,7 +18,7 @@ data class RemapActionItem(
 )
 
 /**
- * Canonical list of assignable actions for Remap Config and Overlay Settings.
+ * Canonical list of assignable actions for Remap Config and Floating Menu settings.
  * Parameterized actions appear as templates (Launch App, URL, camera faces, volume).
  */
 object RemapActionCatalog {

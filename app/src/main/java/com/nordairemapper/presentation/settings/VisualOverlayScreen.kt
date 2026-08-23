@@ -1,5 +1,8 @@
 package com.nordairemapper.presentation.settings
 
+import android.content.Intent
+import android.provider.Settings
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,10 +18,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.BlurOn
+import androidx.compose.material.icons.outlined.FlashlightOn
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,9 +46,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.AppSettings
 import com.nordairemapper.domain.model.OverlayVisualStyle
@@ -50,8 +59,11 @@ import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.presentation.overlay.OverlaySettingsViewModel
 import com.nordairemapper.service.ActionFeedbackOverlayService
 import com.nordairemapper.ui.components.NordGhostButton
+import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.NordTopBarTitle
-import com.nordairemapper.ui.components.OverlayPreview
+import com.nordairemapper.ui.components.StatusChip
+import com.nordairemapper.ui.components.StatusTone
+import com.nordairemapper.ui.components.VisualActionPopupPill
 
 private val AccentPresets = listOf(
     0xFF0AC6FF.toInt(),
@@ -71,6 +83,20 @@ fun VisualOverlayScreen(
     val config by viewModel.config.collectAsStateWithLifecycle()
     val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var overlayGrantedNow by remember {
+        mutableStateOf(Settings.canDrawOverlays(context))
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                overlayGrantedNow = Settings.canDrawOverlays(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     Scaffold(
         topBar = {
@@ -78,7 +104,7 @@ fun VisualOverlayScreen(
                 title = {
                     NordTopBarTitle(
                         title = "Visual Overlay",
-                        subtitle = "Action popup when a remap fires",
+                        subtitle = "Action popup near Plus Key",
                     )
                 },
                 navigationIcon = {
@@ -101,16 +127,49 @@ fun VisualOverlayScreen(
                 .verticalScroll(rememberScrollState()),
         ) {
             Text(
-                text = "Brief popup when a remap fires. Needs Display over other apps.",
+                text = "Shows which action fired — a brief icon popup on the Plus Key edge. Not the floating menu (see Floating Menu in Settings).",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 12.dp),
             )
 
+            StatusChip(
+                label = if (overlayGrantedNow) "Display over apps granted" else "Display over apps needed",
+                tone = if (overlayGrantedNow) StatusTone.Active else StatusTone.Warning,
+                modifier = Modifier.padding(bottom = 12.dp),
+            )
+
+            if (!overlayGrantedNow) {
+                SettingsGroupCard {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Text(
+                            text = "Visual Overlay needs Display over other apps to draw on screen.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        NordPrimaryButton(
+                            text = "Open Display over apps",
+                            onClick = {
+                                context.startActivity(
+                                    Intent(
+                                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                        android.net.Uri.parse("package:${context.packageName}"),
+                                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                                )
+                            },
+                        )
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+
             SettingsGroupCard {
                 SettingsToggleRow(
                     title = "Enable visual overlay",
-                    subtitle = "Show a brief popup when an action triggers",
+                    subtitle = "Popup when Single, Double, or Long press fires",
                     checked = settings.visualOverlayEnabled,
                     onCheckedChange = settingsViewModel::setVisualOverlayEnabled,
                     icon = Icons.Outlined.Visibility,
@@ -122,19 +181,21 @@ fun VisualOverlayScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                StylePreviewCard(
+                VisualStyleCard(
                     title = "OnePlus",
                     selected = config.visualStyle == OverlayVisualStyle.ONEPLUS,
                     accent = Color(config.accentColorArgb),
-                    darkPreview = true,
+                    visualStyle = OverlayVisualStyle.ONEPLUS,
+                    glowEffects = config.glowEffects,
                     onClick = { viewModel.setVisualStyle(OverlayVisualStyle.ONEPLUS) },
                     modifier = Modifier.weight(1f),
                 )
-                StylePreviewCard(
+                VisualStyleCard(
                     title = "Stock",
                     selected = config.visualStyle == OverlayVisualStyle.STOCK,
                     accent = Color(0xFF9E9E9E),
-                    darkPreview = false,
+                    visualStyle = OverlayVisualStyle.STOCK,
+                    glowEffects = false,
                     onClick = { viewModel.setVisualStyle(OverlayVisualStyle.STOCK) },
                     modifier = Modifier.weight(1f),
                 )
@@ -152,11 +213,11 @@ fun VisualOverlayScreen(
                     Icon(Icons.Outlined.Palette, contentDescription = null)
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            "Color",
+                            "Accent color",
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                         )
                         Text(
-                            "Choose the accent color",
+                            "Border, icon, and edge glow",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -193,21 +254,13 @@ fun VisualOverlayScreen(
                     }
                 }
                 SettingsToggleRow(
-                    title = "Glow effects",
-                    subtitle = "Edge glow, shadow, and line",
+                    title = "Glow effect",
+                    subtitle = "Accent line and bloom on the Plus Key edge",
                     checked = config.glowEffects,
                     onCheckedChange = viewModel::setGlowEffects,
                     icon = Icons.Outlined.BlurOn,
                 )
             }
-
-            QuietSectionLabel("Live preview")
-            OverlayPreview(
-                config = config,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 4.dp),
-            )
 
             QuietSectionLabel(
                 "Hold duration · ${String.format("%.1fs", config.holdDurationMs / 1000f)}",
@@ -215,12 +268,11 @@ fun VisualOverlayScreen(
             SettingsGroupCard {
                 Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp)) {
                     Text(
-                        text = "How long the action popup stays visible",
+                        text = "How long the popup stays on screen",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 8.dp),
                     )
-                    // Drag locally; persist once on release.
                     var pendingHoldMs by remember(config.holdDurationMs) {
                         mutableStateOf(config.holdDurationMs.toFloat())
                     }
@@ -238,9 +290,19 @@ fun VisualOverlayScreen(
             }
 
             NordGhostButton(
-                text = "Preview popup",
+                text = "Preview on screen",
                 onClick = {
-                    ActionFeedbackOverlayService.show(context, RemapAction.ToggleFlashlight)
+                    overlayGrantedNow = Settings.canDrawOverlays(context)
+                    if (!overlayGrantedNow) {
+                        context.startActivity(
+                            Intent(
+                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                android.net.Uri.parse("package:${context.packageName}"),
+                            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
+                    } else {
+                        ActionFeedbackOverlayService.show(context, RemapAction.ToggleFlashlight)
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -248,5 +310,57 @@ fun VisualOverlayScreen(
             )
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+}
+
+@Composable
+private fun VisualStyleCard(
+    title: String,
+    selected: Boolean,
+    accent: Color,
+    visualStyle: OverlayVisualStyle,
+    glowEffects: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color(0xFF0A0A0A))
+                .border(
+                    BorderStroke(
+                        width = if (selected) 2.dp else 1.dp,
+                        color = if (selected) accent else MaterialTheme.colorScheme.outline,
+                    ),
+                    RoundedCornerShape(14.dp),
+                ),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            VisualActionPopupPill(
+                icon = Icons.Outlined.FlashlightOn,
+                accent = accent,
+                visualStyle = visualStyle,
+                glowEffects = glowEffects && visualStyle == OverlayVisualStyle.ONEPLUS,
+                pillWidth = 40.dp,
+                pillHeight = 52.dp,
+                iconSize = 22.dp,
+                modifier = Modifier.padding(start = 10.dp),
+            )
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+            color = if (selected) MaterialTheme.colorScheme.onSurface
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }

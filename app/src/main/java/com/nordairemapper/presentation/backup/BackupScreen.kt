@@ -207,7 +207,7 @@ fun BackupScreen(
         AlertDialog(
             onDismissRequest = { pendingImportUri = null },
             title = { Text("Import backup?") },
-            text = { Text("This replaces your current remaps, overlay, and related settings with the file's contents.") },
+            text = { Text("This replaces your current remaps, floating menu, and related settings with the file's contents.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -245,7 +245,7 @@ fun BackupScreen(
         AlertDialog(
             onDismissRequest = { pendingRestoreId = null },
             title = { Text("Restore snapshot?") },
-            text = { Text("This replaces your current remap, overlay, and related settings.") },
+            text = { Text("This replaces your current remap, floating menu, and related settings.") },
             confirmButton = {
                 TextButton(
                     onClick = {

@@ -94,7 +94,7 @@ fun OverlayPreview(
             }
             if (animatedSlots.isEmpty()) {
                 Text(
-                    text = "No overlay slots configured",
+                    text = "No floating menu slots configured",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier

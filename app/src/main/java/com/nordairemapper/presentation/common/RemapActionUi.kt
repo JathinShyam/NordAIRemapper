@@ -47,7 +47,7 @@ fun RemapAction.displayName(): String = when (this) {
     RemapAction.LockScreen -> "Lock screen"
     RemapAction.ToggleAutoRotate -> "Auto-rotate"
     is RemapAction.OpenUrl -> "Open link"
-    RemapAction.ShowOverlay -> "Show overlay"
+    RemapAction.ShowOverlay -> "Show floating menu"
     RemapAction.None -> "No action"
 }
 
@@ -71,7 +71,7 @@ fun RemapAction.displayDescription(): String = when (this) {
     RemapAction.LockScreen -> "Lock the device"
     RemapAction.ToggleAutoRotate -> "Toggle accelerometer rotation"
     is RemapAction.OpenUrl -> url
-    RemapAction.ShowOverlay -> "Open the floating action menu"
+    RemapAction.ShowOverlay -> "Open the floating menu"
     RemapAction.None -> "This press type does nothing"
 }
 
