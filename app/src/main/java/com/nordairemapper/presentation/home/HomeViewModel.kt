@@ -13,6 +13,7 @@ import com.nordairemapper.service.AccessibilityUtils
 import com.nordairemapper.service.DetectionCoordinator
 import com.nordairemapper.service.KeyAction
 import com.nordairemapper.service.KeyEventBus
+import com.nordairemapper.service.LogVisibilityProbe
 import com.nordairemapper.service.LogcatWatcherService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -23,9 +24,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import android.util.Log
 import javax.inject.Inject
 
 @HiltViewModel
@@ -100,6 +103,28 @@ class HomeViewModel @Inject constructor(
                 readLogsGranted = LogcatWatcherService.hasReadLogsPermission(context),
             )
         }
+        healBlindTailIfNeeded()
+    }
+
+    /**
+     * Post-boot self-heal for ColorOS per-boot log consent: spawns made in the
+     * background are denied even with READ_LOGS granted, so the boot-time
+     * watcher tail is born blind while this foreground probe can succeed.
+     * When visibility is proven and the live tail is blind, reconnect it —
+     * no adb, no Settings trip. Gated so we do not probe on every resume.
+     */
+    private fun healBlindTailIfNeeded() {
+        viewModelScope.launch {
+            if (!LogcatWatcherService.hasReadLogsPermission(context)) return@launch
+            val seenAt = settingsRepository.settings.first().lastPlusKeySeenAtMs
+            val recentlyWorking = System.currentTimeMillis() - seenAt < STALE_GESTURE_MS
+            if (recentlyWorking && !LogcatWatcherService.isTailBlindNow()) return@launch
+            val visible = LogVisibilityProbe.probe() == LogVisibilityProbe.Result.VISIBLE
+            if (visible && LogcatWatcherService.isTailBlindNow()) {
+                Log.i("HomeHeal", "Foreground spawn sees logs; restarting blind tail")
+                LogcatWatcherService.restart(context)
+            }
+        }
     }
 
     fun setServiceEnabled(enabled: Boolean) {
@@ -121,6 +146,9 @@ class HomeViewModel @Inject constructor(
     )
 
     companion object {
+        /** Probe/re-heal at most this often while gestures keep flowing. */
+        private const val STALE_GESTURE_MS = 60_000L
+
         fun conflictPressTypes(actions: Map<PressType, RemapAction>): Set<PressType> {
             val groups = actions.entries
                 .filter { it.value !is RemapAction.None }

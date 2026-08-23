@@ -10,7 +10,9 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.IBinder
+import android.os.Looper
 import android.os.PowerManager
+import android.os.Handler
 import android.util.Log
 import com.nordairemapper.R
 import com.nordairemapper.domain.model.DetectionStrategy
@@ -56,15 +58,59 @@ class LogcatWatcherService : Service() {
 
     private val selfPid = android.os.Process.myPid()
 
-    /**
-     * Epoch ms of the last streamed line originating from a pid other than
-     * ours. OxygenOS builds have been observed to serve an app only its own
-     * logs even with READ_LOGS granted (logd-side enforcement); then every
-     * Plus Key line from system_server is invisible and detection dies
-     * silently. The watchdog turns that into a visible, actionable alert.
-     */
-    @Volatile private var lastNonSelfLineAtMs = 0L
-    @Volatile private var blindNotified = false
+    companion object {
+        private const val TAG = "LogcatWatcher"
+        private const val CHANNEL_ID = "key_detection"
+        private const val NOTIFICATION_ID = 1
+        private const val RECONNECT_DELAY_MS = 2_000L
+        private const val MAX_RECONNECT_DELAY_MS = 30_000L
+        private const val STABLE_RUN_MS = 60_000L
+
+        /** Watchdog cadence and how much silence (screen on) means "blind". */
+        private const val BLIND_CHECK_MS = 30_000L
+        private const val BLIND_AFTER_MS = 3 * 60_000L
+        private const val RESTART_DELAY_MS = 400L
+        private val PID_REGEX = Regex("\\(\\s*(\\d+)\\)")
+
+        @Volatile private var sLastNonSelfLineAtMs = 0L
+        @Volatile private var sBlindNotified = false
+        @Volatile private var sRestarting = false
+
+        /** True when the live tail has not seen another pid's lines recently. */
+        @JvmStatic
+        fun isTailBlindNow(): Boolean =
+            sLastNonSelfLineAtMs in 1..(System.currentTimeMillis() - BLIND_AFTER_MS)
+
+        /**
+         * Stop + start so a tail born under denied log access reconnects after
+         * a foreground spawn proved visibility (post-boot consent flow).
+         */
+        fun restart(context: Context) {
+            if (sRestarting) return
+            sRestarting = true
+            stop(context)
+            Handler(Looper.getMainLooper()).postDelayed({
+                sRestarting = false
+                start(context)
+            }, RESTART_DELAY_MS)
+        }
+
+        /** USB paste block: detection + hands-free banking Accessibility pause/resume. */
+        val ADB_GRANT_COMMAND: String =
+            ElevatedPermissions.UNLOCK_SHELL_COMMANDS.joinToString("\n") { "adb shell $it" }
+
+        fun hasReadLogsPermission(context: Context): Boolean =
+            context.checkSelfPermission(android.Manifest.permission.READ_LOGS) ==
+                PackageManager.PERMISSION_GRANTED
+
+        fun start(context: Context) {
+            context.startForegroundService(Intent(context, LogcatWatcherService::class.java))
+        }
+
+        fun stop(context: Context) {
+            context.stopService(Intent(context, LogcatWatcherService::class.java))
+        }
+    }
 
     /**
      * The one active tail loop. Every settings write used to call [start] again,
@@ -111,22 +157,22 @@ class LogcatWatcherService : Service() {
      * leave the stream all-self.
      */
     private suspend fun blindWatchdog() {
-        lastNonSelfLineAtMs = System.currentTimeMillis()
+        sLastNonSelfLineAtMs = System.currentTimeMillis()
         while (scope.isActive) {
             delay(BLIND_CHECK_MS)
             val now = System.currentTimeMillis()
             val interactive = runCatching {
                 getSystemService(PowerManager::class.java)?.isInteractive == true
             }.getOrDefault(false)
-            val blind = now - lastNonSelfLineAtMs > BLIND_AFTER_MS
+            val blind = now - sLastNonSelfLineAtMs > BLIND_AFTER_MS
             when {
-                interactive && blind && !blindNotified -> {
-                    Log.w(TAG, "Tail is blind: no non-self lines for ${now - lastNonSelfLineAtMs}ms")
-                    blindNotified = true
+                interactive && blind && !sBlindNotified -> {
+                    Log.w(TAG, "Tail is blind: no non-self lines for ${now - sLastNonSelfLineAtMs}ms")
+                    sBlindNotified = true
                     ServiceNotifications.notifyLogsBlind(this)
                 }
-                !blind && blindNotified -> {
-                    blindNotified = false
+                !blind && sBlindNotified -> {
+                    sBlindNotified = false
                     ServiceNotifications.clearLogsBlind(this)
                 }
             }
@@ -136,7 +182,7 @@ class LogcatWatcherService : Service() {
     private fun noteLineOrigin(line: String) {
         val pid = PID_REGEX.find(line)?.groupValues?.get(1)?.toIntOrNull() ?: return
         if (pid != selfPid) {
-            lastNonSelfLineAtMs = System.currentTimeMillis()
+            sLastNonSelfLineAtMs = System.currentTimeMillis()
         }
     }
 
@@ -186,7 +232,7 @@ class LogcatWatcherService : Service() {
             .redirectErrorStream(true)
             .start()
         logcatProcess = process
-        lastNonSelfLineAtMs = System.currentTimeMillis()
+        sLastNonSelfLineAtMs = System.currentTimeMillis()
         Log.i(TAG, "tail started pattern=$pattern selfPid=$selfPid")
         try {
             val coalescer = LogcatKeyEdgeCoalescer()
@@ -219,36 +265,6 @@ class LogcatWatcherService : Service() {
                 logcatProcess = null
             }
             runCatching { process.destroy() }
-        }
-    }
-
-    companion object {
-        private const val TAG = "LogcatWatcher"
-        private const val CHANNEL_ID = "key_detection"
-        private const val NOTIFICATION_ID = 1
-        private const val RECONNECT_DELAY_MS = 2_000L
-        private const val MAX_RECONNECT_DELAY_MS = 30_000L
-        private const val STABLE_RUN_MS = 60_000L
-
-        /** Watchdog cadence and how much silence (screen on) means "blind". */
-        private const val BLIND_CHECK_MS = 30_000L
-        private const val BLIND_AFTER_MS = 3 * 60_000L
-        private val PID_REGEX = Regex("\\(\\s*(\\d+)\\)")
-
-        /** USB paste block: detection + hands-free banking Accessibility pause/resume. */
-        val ADB_GRANT_COMMAND: String =
-            ElevatedPermissions.UNLOCK_SHELL_COMMANDS.joinToString("\n") { "adb shell $it" }
-
-        fun hasReadLogsPermission(context: Context): Boolean =
-            context.checkSelfPermission(android.Manifest.permission.READ_LOGS) ==
-                PackageManager.PERMISSION_GRANTED
-
-        fun start(context: Context) {
-            context.startForegroundService(Intent(context, LogcatWatcherService::class.java))
-        }
-
-        fun stop(context: Context) {
-            context.stopService(Intent(context, LogcatWatcherService::class.java))
         }
     }
 
@@ -290,7 +306,10 @@ class LogcatWatcherService : Service() {
         logcatProcess?.destroy()
         scope.cancel()
         watchJob = null
-        ServiceNotifications.notifyDetectionStopped(this)
+        if (!sRestarting) {
+            // A planned restart() must not cry wolf about detection dying.
+            ServiceNotifications.notifyDetectionStopped(this)
+        }
         super.onDestroy()
     }
 }

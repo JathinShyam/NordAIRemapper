@@ -1,4 +1,4 @@
-# 01 — Reboot blindness: ColorOS resets the log authorization every boot
+# 01 — Reboot blindness: per-boot log consent + blind-tail auto-heal
 
 ## Why (RCA for "detection dies after every reboot")
 Timeline proven on-device (2026-08-23, CPH2707 / OxygenOS 16.0.5.1002):
@@ -12,31 +12,32 @@ Timeline proven on-device (2026-08-23, CPH2707 / OxygenOS 16.0.5.1002):
 4. Idempotent re-grant and revoke+grant cycles do NOT restore visibility.
 5. DataStore has no learned key identity → the working channel was definitively
    logcat, so the pre-reboot state truly was logd honoring READ_LOGS.
+6. Later probes: a spawn made **while Keyforge was foreground** saw other pids'
+   logs immediately (chip = Verified), and a gesture was classified at ~14:52
+   right after Enable Detection ran its probe/restart path.
 
-Conclusion: on this firmware, cross-app log delivery is gated by the OEM
-**"USB debugging (Security settings)"** authorization (Developer options), not
-just the Android permission. That toggle is what flipped mid-session when the
-user enabled it per the remediation ladder — and ColorOS resets it on every
-reboot (anti-theft behavior known on OPPO/OnePlus builds). The Android-level
-grant persists forever, which makes every in-app/system check lie.
+## Root cause
+Matches AOSP "Log Info Disclosure" guidance (source.android.com, 2026): on this
+Android-16-based build, third-party access to device logs is gated per-boot by a
+**foreground consent** mechanism — background spawns (BootReceiver → watcher at
+boot) are auto-denied even with READ_LOGS granted; once the app runs its probe in
+the foreground, spawns succeed for that boot. The boot-born tail never re-checks,
+so it stays blind until something reconnects it. The earlier "USB debugging
+(Security settings)" theory is secondary; grants alone were never sufficient.
 
 ## What (code fix)
 | File | Change |
 |------|--------|
-| `service/LogVisibilityProbe.kt` | Streams a few seconds of main buffer from our uid; VISIBLE on first non-self-pid line, BLIND on timeout. This is ground truth, independent of PM state. |
-| `EnableDetectionViewModel` / `EnableDetectionScreen` | New status chip + status message driven by real visibility: "System log access verified" vs "Blind: enable USB debugging (Security settings), then reboot". Shown after refresh() and after Unlock completes. |
-| `scripts/device-smoke.sh` | Already fails with the same guidance (logd BLIND line). |
+| `service/LogVisibilityProbe.kt` | Ground-truth visibility probe (foreground spawn sees other pids?). |
+| `service/LogcatWatcherService.kt` | Companion-level tail-health state + `isTailBlindNow()`; new `restart()` (stop→start with suppressed death notification); watchdog/alerts unchanged. |
+| `presentation/home/HomeViewModel.kt` | **Auto-heal on Home open**: if READ_LOGS granted and gestures are stale-or-tail-blind, run the probe; when a foreground spawn proves visibility while the live tail is still blind, restart the tail silently. |
+| `EnableDetectionViewModel.kt` | Same heal after refresh() / Unlock completes. |
 
-Watchdog from `00-rca-blind-detection.md` remains as the runtime safety net.
-
-## User remediation after each reboot
-1. Developer options → enable **USB debugging (Security settings)** (may ask for OPPO account/SIM).
-2. Reboot if detection still doesn't return, then re-run Unlock once.
-3. Verify via Enable Detection screen chip or `scripts/device-smoke.sh`.
-
-If ColorOS ever stops resetting the toggle, the chip simply stays green and
-nothing else needs to change.
+Post-reboot user flow is now: **open Keyforge once** — the app proves access and
+reconnects itself; no adb, no Settings trip.
 
 ## Verify
-1. With toggle ON: probe VISIBLE, chip green, key presses fire.
-2. After reboot: chip turns red with exact instruction instead of silent death.
+1. Reboot device → open Home → within seconds press Plus Key: gesture fires
+   (logcat `LogcatWatcher: edge=`, Home silhouette flashes).
+2. Blind case (if consent denied): watchdog notification fires; chip on Enable
+   Detection reads "Blind" with guidance.
