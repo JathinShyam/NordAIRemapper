@@ -10,6 +10,7 @@ Read this file at the start of every session. Then load the matching skill under
 | [device-testing](.cursor/skills/device-testing/SKILL.md) | ADB, `READ_LOGS`, on-device debug, capturing Plus Key logs |
 | [ship-debug-apk](.cursor/skills/ship-debug-apk/SKILL.md) | Build, install, GitHub `latest-debug` APK, signing mismatch |
 | [nord-compose-ui](.cursor/skills/nord-compose-ui/SKILL.md) | Compose UI polish / rebuild (theme, screens, components); wraps RoninForge Compose skills |
+| [change-safety](.cursor/skills/change-safety/SKILL.md) | Before pushing any app-code change: regression review checklist; after install: `scripts/device-smoke.sh` |
 
 Product/tech truth lives in `docs/PRD.md`, `docs/TRD.md`, `docs/ARCHITECTURE.md`. Do not invent a second architecture.
 
@@ -68,6 +69,33 @@ ADB (often not on PATH):
 Local debug APK: `app/build/outputs/apk/debug/app-debug.apk`.
 
 CI on `main` updates [latest-debug](https://github.com/JathinShyam/NordAIRemapper/releases/tag/latest-debug) and also creates an immutable `debug-<sha>` release so older APKs stay available. Local debug keystore **cannot** overwrite that install (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`). Prefer commit + push for device testing unless the user asks to uninstall.
+
+## Change safety (mandatory)
+
+Every non-trivial app-code change must pass, before push:
+
+```bash
+export JAVA_HOME="$HOME/.jdks/jdk17"
+./gradlew :app:assembleDebug :app:testDebugUnitTest
+```
+
+Then review the diff **against existing behavior**, not just new-code correctness:
+map each touched file to the flows that run through it and confirm they still hold
+(hot files above; detection pipeline rules in plus-key-detection skill). Any new
+failure mode that would be *silent* at runtime needs a visible signal
+(notification or health field) as part of the same change. Full checklist:
+[change-safety](.cursor/skills/change-safety/SKILL.md).
+
+After installing a build on the phone, prove it end-to-end — no exceptions for
+"small" changes:
+
+```bash
+scripts/device-smoke.sh
+```
+
+It verifies install freshness, accessibility bound, grants on user 0, **logd
+visibility from the app uid** (the silent READ_LOGS failure class), watcher FGS,
+and gesture health. All PASS required; see skill for fix ladder.
 
 ## Product tone
 
