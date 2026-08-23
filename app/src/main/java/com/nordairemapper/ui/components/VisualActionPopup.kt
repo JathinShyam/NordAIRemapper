@@ -40,7 +40,7 @@ const val VISUAL_OVERLAY_KEY_HEIGHT_FRACTION = 8.5f / 163.4f
  * Vertical anchor within the key (0 = top, 0.5 = center).
  * Slightly above center so the pill sits flush with the physical key on a full-screen overlay.
  */
-const val VISUAL_OVERLAY_KEY_ANCHOR_IN_KEY = 0.25f
+const val VISUAL_OVERLAY_KEY_ANCHOR_IN_KEY = 0.10f
 
 const val VISUAL_OVERLAY_KEY_Y_FRACTION =
     VISUAL_OVERLAY_KEY_TOP_FRACTION + VISUAL_OVERLAY_KEY_HEIGHT_FRACTION * VISUAL_OVERLAY_KEY_ANCHOR_IN_KEY
