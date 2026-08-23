@@ -18,6 +18,7 @@ interface SettingsRepository {
     suspend fun setLogcatPattern(pattern: String)
     suspend fun setThemeMode(mode: ThemeMode)
     suspend fun setDynamicColor(enabled: Boolean)
+    suspend fun setOledBlack(enabled: Boolean)
     suspend fun setShowServiceNotification(enabled: Boolean)
     suspend fun setHapticFeedback(enabled: Boolean)
     suspend fun setHapticIntensity(intensity: HapticIntensity)

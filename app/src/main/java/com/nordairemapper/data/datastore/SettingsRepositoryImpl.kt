@@ -40,6 +40,7 @@ class SettingsRepositoryImpl @Inject constructor(
         val LOGCAT_PATTERN = stringPreferencesKey("logcat_pattern")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
+        val OLED_BLACK = booleanPreferencesKey("oled_black")
         val SHOW_NOTIFICATION = booleanPreferencesKey("show_service_notification")
         val HAPTIC_FEEDBACK = booleanPreferencesKey("haptic_feedback")
         val HAPTIC_INTENSITY = stringPreferencesKey("haptic_intensity")
@@ -71,6 +72,7 @@ class SettingsRepositoryImpl @Inject constructor(
             themeMode = prefs[Keys.THEME_MODE]?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() }
                 ?: defaults.themeMode,
             dynamicColor = prefs[Keys.DYNAMIC_COLOR] ?: defaults.dynamicColor,
+            oledBlack = prefs[Keys.OLED_BLACK] ?: defaults.oledBlack,
             showServiceNotification = prefs[Keys.SHOW_NOTIFICATION] ?: defaults.showServiceNotification,
             hapticFeedback = prefs[Keys.HAPTIC_FEEDBACK] ?: defaults.hapticFeedback,
             hapticIntensity = prefs[Keys.HAPTIC_INTENSITY]
@@ -125,6 +127,10 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setDynamicColor(enabled: Boolean) {
         context.settingsDataStore.edit { it[Keys.DYNAMIC_COLOR] = enabled }
+    }
+
+    override suspend fun setOledBlack(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.OLED_BLACK] = enabled }
     }
 
     override suspend fun setShowServiceNotification(enabled: Boolean) {

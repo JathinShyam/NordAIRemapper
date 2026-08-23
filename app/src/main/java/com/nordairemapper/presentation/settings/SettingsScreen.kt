@@ -17,8 +17,10 @@ import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material.icons.outlined.Science
+import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.TouchApp
 import androidx.compose.material.icons.outlined.Vibration
 import androidx.compose.material.icons.outlined.Visibility
@@ -59,17 +61,23 @@ fun SettingsScreen(
     onOpenVisualOverlay: () -> Unit,
     onOpenLockScreen: () -> Unit,
     onOpenExclusions: () -> Unit,
+    onOpenAppearance: () -> Unit,
+    onOpenPermissions: () -> Unit,
     onRestartOnboarding: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val batteryExempt by viewModel.batteryExempt.collectAsStateWithLifecycle()
+    val permissionSummary by viewModel.permissionSummary.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshBattery()
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshBattery()
+                viewModel.refreshPermissionSummary()
+            }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
@@ -121,7 +129,7 @@ fun SettingsScreen(
                 title = {
                     NordTopBarTitle(
                         title = "Settings",
-                        subtitle = "Appearance, Reliability & Tools",
+                        subtitle = "Shortcuts, Reliability & Tools",
                     )
                 },
                 navigationIcon = {
@@ -145,23 +153,13 @@ fun SettingsScreen(
         ) {
             SectionLabel("Appearance")
             SettingsHubGroup {
-                ThemeSegmentBlock(
-                    selectedMode = settings.themeMode,
-                    onSelect = viewModel::setThemeMode,
-                )
-                SettingsHubDivider()
-                SettingsHubToggleRow(
-                    title = "Dynamic Color",
-                    subtitle = "Material You From Wallpaper",
-                    checked = settings.dynamicColor,
-                    onCheckedChange = viewModel::setDynamicColor,
-                )
-                SettingsHubDivider()
-                SettingsHubToggleRow(
-                    title = "Service Notification",
-                    subtitle = "Ongoing Status While Remapping",
-                    checked = settings.showServiceNotification,
-                    onCheckedChange = viewModel::setShowServiceNotification,
+                SettingsHubRow(
+                    icon = Icons.Outlined.Palette,
+                    title = "Appearance",
+                    subtitle = "Theme, Dynamic Color, OLED Black, Service Notification",
+                    accentContainer = MaterialTheme.colorScheme.primaryContainer,
+                    accentTint = NordBlue,
+                    onClick = onOpenAppearance,
                 )
             }
 
@@ -242,6 +240,28 @@ fun SettingsScreen(
                     onClick = {
                         viewModel.resetOnboarding()
                         onRestartOnboarding()
+                    },
+                )
+            }
+
+            SectionLabel("Permissions")
+            SettingsHubGroup {
+                SettingsHubRow(
+                    icon = Icons.Outlined.Shield,
+                    title = "Permissions",
+                    subtitle = "Accessibility, Detection, Overlays & More",
+                    accentContainer = MaterialTheme.colorScheme.primaryContainer,
+                    accentTint = NordBlue,
+                    onClick = onOpenPermissions,
+                    titleTrailing = {
+                        SettingsStatusChip(
+                            label = permissionSummary.label,
+                            tone = if (permissionSummary.allOk) {
+                                SettingsStatusTone.Ok
+                            } else {
+                                SettingsStatusTone.Warn
+                            },
+                        )
                     },
                 )
             }

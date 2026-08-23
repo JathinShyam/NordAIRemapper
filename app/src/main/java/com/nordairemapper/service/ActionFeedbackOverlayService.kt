@@ -15,7 +15,10 @@ import android.util.Log
 import android.view.Gravity
 import android.view.WindowManager
 import android.widget.FrameLayout
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.ComposeView
+import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.ViewModelStore
@@ -27,10 +30,12 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.nordairemapper.R
+import com.nordairemapper.domain.model.ActionFeedback
 import com.nordairemapper.domain.model.OverlayConfig
 import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.domain.repository.RemapConfigRepository
 import com.nordairemapper.presentation.MainActivity
+import com.nordairemapper.presentation.common.caption
 import com.nordairemapper.presentation.common.icon
 import com.nordairemapper.ui.components.VisualActionPopupLayer
 import com.nordairemapper.ui.theme.NordAIRemapperTheme
@@ -42,6 +47,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 
@@ -85,7 +91,7 @@ class ActionFeedbackOverlayService :
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
 
         val action = pendingAction.getAndSet(null)
-        if (action == null || action is RemapAction.None) {
+        if (action == null || action.action is RemapAction.None) {
             stopSelf()
             return START_NOT_STICKY
         }
@@ -116,7 +122,8 @@ class ActionFeedbackOverlayService :
         serviceScope.launch {
             runCatching {
                 val config = remapConfigRepository.observeOverlayConfig().first()
-                showPopup(action, config)
+                val appIcon = resolveAppIcon(action.action)
+                showPopup(action, config, appIcon)
                 delay(config.holdDurationMs.coerceIn(300L, 2000L))
             }.onFailure { t ->
                 Log.e(TAG, "Action feedback failed", t)
@@ -126,7 +133,23 @@ class ActionFeedbackOverlayService :
         return START_NOT_STICKY
     }
 
-    private fun showPopup(action: RemapAction, config: OverlayConfig) {
+    private suspend fun resolveAppIcon(action: RemapAction): ImageBitmap? {
+        val packageName = (action as? RemapAction.LaunchApp)?.packageName ?: return null
+        if (packageName.isBlank()) return null
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                packageManager.getApplicationIcon(packageName).toBitmap(96, 96).asImageBitmap()
+            }.onFailure { t ->
+                Log.w(TAG, "App icon load failed for $packageName", t)
+            }.getOrNull()
+        }
+    }
+
+    private fun showPopup(
+        feedback: ActionFeedback,
+        config: OverlayConfig,
+        appIcon: ImageBitmap?,
+    ) {
         dismissOverlay()
         val wm = getSystemService(WindowManager::class.java) ?: return
         windowManager = wm
@@ -145,7 +168,9 @@ class ActionFeedbackOverlayService :
             setContent {
                 NordAIRemapperTheme {
                     VisualActionPopupLayer(
-                        icon = action.icon(),
+                        icon = feedback.icon(),
+                        caption = feedback.caption(),
+                        appIcon = appIcon,
                         accent = androidx.compose.ui.graphics.Color(config.accentColorArgb),
                         visualStyle = config.visualStyle,
                         glowEffects = config.glowEffects,
@@ -226,15 +251,15 @@ class ActionFeedbackOverlayService :
         private const val CHANNEL_ID = "action_feedback"
         private const val NOTIFICATION_ID = 3
 
-        private val pendingAction = AtomicReference<RemapAction?>(null)
+        private val pendingAction = AtomicReference<ActionFeedback?>(null)
 
-        fun show(context: Context, action: RemapAction) {
-            if (action is RemapAction.None || action is RemapAction.ShowOverlay) return
+        fun show(context: Context, feedback: ActionFeedback) {
+            if (feedback.action is RemapAction.None || feedback.action is RemapAction.ShowOverlay) return
             if (!Settings.canDrawOverlays(context)) {
                 Log.d(TAG, "Skipping feedback — no overlay permission")
                 return
             }
-            pendingAction.set(action)
+            pendingAction.set(feedback)
             runCatching {
                 context.applicationContext.startForegroundService(
                     Intent(context.applicationContext, ActionFeedbackOverlayService::class.java),

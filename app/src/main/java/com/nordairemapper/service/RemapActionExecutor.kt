@@ -19,6 +19,8 @@ import android.provider.Settings
 import android.util.Log
 import android.view.KeyEvent
 import android.widget.Toast
+import com.nordairemapper.domain.model.ActionFeedback
+import com.nordairemapper.domain.model.ActionFeedbackState
 import com.nordairemapper.domain.model.HapticIntensity
 import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.domain.repository.SettingsRepository
@@ -71,46 +73,92 @@ class RemapActionExecutor @Inject constructor(
     }
 
     override suspend fun execute(action: RemapAction) {
-        if (action != RemapAction.None) {
-            val settings = settingsRepository.settings.first()
-            if (settings.hapticFeedback) {
-                performHaptic(settings.hapticIntensity)
-            }
-            if (settings.visualOverlayEnabled) {
-                ActionFeedbackOverlayService.show(context, action)
-            }
+        if (action == RemapAction.None) return
+        val settings = settingsRepository.settings.first()
+        if (settings.hapticFeedback) {
+            performHaptic(settings.hapticIntensity)
         }
-        runCatching { dispatch(action) }
+        val feedback = runCatching { dispatch(action) }
             .onFailure {
                 Log.w(TAG, "Failed to execute $action", it)
                 toast("Action failed: ${it.message ?: action.javaClass.simpleName}")
             }
+            .getOrDefault(ActionFeedback(action))
+        if (settings.visualOverlayEnabled) {
+            ActionFeedbackOverlayService.show(context, feedback)
+        }
     }
 
-    private fun dispatch(action: RemapAction) {
-        when (action) {
-            is RemapAction.LaunchApp -> launchApp(action.packageName)
-            is RemapAction.OpenAssistant -> openAssistant()
-            is RemapAction.OpenCamera -> openCamera(action.front)
-            is RemapAction.ToggleFlashlight -> toggleFlashlight()
-            is RemapAction.TakeScreenshot -> globalAction(AccessibilityService.GLOBAL_ACTION_TAKE_SCREENSHOT)
-            is RemapAction.ToggleDoNotDisturb -> toggleDnd()
-            is RemapAction.CycleRingerMode -> cycleRingerMode()
-            is RemapAction.OpenNotificationShade -> globalAction(AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS)
-            is RemapAction.OpenQuickSettings -> globalAction(AccessibilityService.GLOBAL_ACTION_QUICK_SETTINGS)
-            is RemapAction.PlayPauseMedia -> dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
-            is RemapAction.NextTrack -> dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_NEXT)
-            is RemapAction.PreviousTrack -> dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_PREVIOUS)
-            is RemapAction.AdjustMediaVolume -> adjustVolume(action.up)
-            is RemapAction.OpenRecents -> globalAction(AccessibilityService.GLOBAL_ACTION_RECENTS)
-            is RemapAction.GoHome -> globalAction(AccessibilityService.GLOBAL_ACTION_HOME)
-            is RemapAction.GoBack -> globalAction(AccessibilityService.GLOBAL_ACTION_BACK)
-            is RemapAction.LockScreen -> globalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN)
-            is RemapAction.ToggleAutoRotate -> toggleAutoRotate()
-            is RemapAction.OpenUrl -> openUrl(action.url)
-            is RemapAction.ShowOverlay -> FloatingOverlayService.show(context)
-            is RemapAction.None -> Unit
+    private fun dispatch(action: RemapAction): ActionFeedback = when (action) {
+        is RemapAction.LaunchApp -> {
+            launchApp(action.packageName)
+            ActionFeedback(action)
         }
+        is RemapAction.OpenAssistant -> {
+            openAssistant()
+            ActionFeedback(action)
+        }
+        is RemapAction.OpenCamera -> {
+            openCamera(action.front)
+            ActionFeedback(action)
+        }
+        is RemapAction.ToggleFlashlight -> ActionFeedback(action, toggleFlashlight())
+        is RemapAction.TakeScreenshot -> {
+            globalAction(AccessibilityService.GLOBAL_ACTION_TAKE_SCREENSHOT)
+            ActionFeedback(action)
+        }
+        is RemapAction.ToggleDoNotDisturb -> ActionFeedback(action, toggleDnd())
+        is RemapAction.CycleRingerMode -> ActionFeedback(action, cycleRingerMode())
+        is RemapAction.OpenNotificationShade -> {
+            globalAction(AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS)
+            ActionFeedback(action)
+        }
+        is RemapAction.OpenQuickSettings -> {
+            globalAction(AccessibilityService.GLOBAL_ACTION_QUICK_SETTINGS)
+            ActionFeedback(action)
+        }
+        is RemapAction.PlayPauseMedia -> {
+            dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+            ActionFeedback(action)
+        }
+        is RemapAction.NextTrack -> {
+            dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_NEXT)
+            ActionFeedback(action)
+        }
+        is RemapAction.PreviousTrack -> {
+            dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+            ActionFeedback(action)
+        }
+        is RemapAction.AdjustMediaVolume -> {
+            adjustVolume(action.up)
+            ActionFeedback(action)
+        }
+        is RemapAction.OpenRecents -> {
+            globalAction(AccessibilityService.GLOBAL_ACTION_RECENTS)
+            ActionFeedback(action)
+        }
+        is RemapAction.GoHome -> {
+            globalAction(AccessibilityService.GLOBAL_ACTION_HOME)
+            ActionFeedback(action)
+        }
+        is RemapAction.GoBack -> {
+            globalAction(AccessibilityService.GLOBAL_ACTION_BACK)
+            ActionFeedback(action)
+        }
+        is RemapAction.LockScreen -> {
+            globalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN)
+            ActionFeedback(action)
+        }
+        is RemapAction.ToggleAutoRotate -> ActionFeedback(action, toggleAutoRotate())
+        is RemapAction.OpenUrl -> {
+            openUrl(action.url)
+            ActionFeedback(action)
+        }
+        is RemapAction.ShowOverlay -> {
+            FloatingOverlayService.show(context)
+            ActionFeedback(action)
+        }
+        is RemapAction.None -> ActionFeedback(action)
     }
 
     private fun launchApp(packageName: String) {
@@ -153,7 +201,7 @@ class RemapActionExecutor @Inject constructor(
             }
     }
 
-    private fun toggleFlashlight() {
+    private fun toggleFlashlight(): String {
         val backCameraId = cameraManager.cameraIdList.firstOrNull { id ->
             val chars = cameraManager.getCameraCharacteristics(id)
             chars.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true &&
@@ -161,21 +209,27 @@ class RemapActionExecutor @Inject constructor(
         }
         if (backCameraId == null) {
             toast("No flashlight on this device")
-            return
+            return ActionFeedbackState.FLASHLIGHT_OFF
         }
-        runCatching {
+        return runCatching {
             val next = !torchOn
             cameraManager.setTorchMode(backCameraId, next)
             torchOn = next
             toast(if (next) "Flashlight on" else "Flashlight off")
-        }.onFailure {
+            if (next) ActionFeedbackState.FLASHLIGHT_ON else ActionFeedbackState.FLASHLIGHT_OFF
+        }.getOrElse {
             Log.w(TAG, "Torch failed", it)
             toast("Flashlight blocked by system")
+            if (torchOn) ActionFeedbackState.FLASHLIGHT_ON else ActionFeedbackState.FLASHLIGHT_OFF
         }
     }
 
-    private fun toggleDnd() {
-        if (!ensureNotificationPolicyAccess("Do Not Disturb")) return
+    private fun toggleDnd(): String {
+        if (!ensureNotificationPolicyAccess("Do Not Disturb")) {
+            val dndActive =
+                notificationManager.currentInterruptionFilter != NotificationManager.INTERRUPTION_FILTER_ALL
+            return if (dndActive) ActionFeedbackState.DND_ON else ActionFeedbackState.DND_OFF
+        }
         val dndActive =
             notificationManager.currentInterruptionFilter != NotificationManager.INTERRUPTION_FILTER_ALL
         notificationManager.setInterruptionFilter(
@@ -183,6 +237,7 @@ class RemapActionExecutor @Inject constructor(
             else NotificationManager.INTERRUPTION_FILTER_PRIORITY,
         )
         toast(if (dndActive) "DND off" else "DND on")
+        return if (dndActive) ActionFeedbackState.DND_OFF else ActionFeedbackState.DND_ON
     }
 
     /**
@@ -196,12 +251,14 @@ class RemapActionExecutor @Inject constructor(
      * This is intentional and separate from [toggleDnd] (PRIORITY ↔ ALL).
      * Trying to do Silent without Zen on OxygenOS does not stick and lied in the UI.
      */
-    private fun cycleRingerMode() {
+    private fun cycleRingerMode(): String {
         if (audioManager.isVolumeFixed) {
             toast("Ringer is fixed on this device")
-            return
+            return ringerProfileStateKey(readSoundProfile())
         }
-        if (!ensureNotificationPolicyAccess("Ring / vibrate / silent")) return
+        if (!ensureNotificationPolicyAccess("Ring / vibrate / silent")) {
+            return ringerProfileStateKey(readSoundProfile())
+        }
 
         val current = confirmedRingerProfile ?: readSoundProfile()
         val next = when (current) {
@@ -230,6 +287,13 @@ class RemapActionExecutor @Inject constructor(
                 toast("Stuck on ${now.label()}")
             }
         }, 120L)
+        return ringerProfileStateKey(next)
+    }
+
+    private fun ringerProfileStateKey(profile: RingerProfile): String = when (profile) {
+        RingerProfile.RING -> ActionFeedbackState.RINGER_RING
+        RingerProfile.VIBRATE -> ActionFeedbackState.RINGER_VIBRATE
+        RingerProfile.SILENT -> ActionFeedbackState.RINGER_SILENT
     }
 
     private enum class RingerProfile { RING, VIBRATE, SILENT }
@@ -310,7 +374,7 @@ class RemapActionExecutor @Inject constructor(
         )
     }
 
-    private fun toggleAutoRotate() {
+    private fun toggleAutoRotate(): String? {
         if (!Settings.System.canWrite(context)) {
             toast("Allow Modify system settings")
             context.startActivity(
@@ -319,7 +383,16 @@ class RemapActionExecutor @Inject constructor(
                     Uri.parse("package:${context.packageName}"),
                 ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             )
-            return
+            val current = Settings.System.getInt(
+                context.contentResolver,
+                Settings.System.ACCELEROMETER_ROTATION,
+                0,
+            )
+            return if (current == 1) {
+                ActionFeedbackState.AUTO_ROTATE_ON
+            } else {
+                ActionFeedbackState.AUTO_ROTATE_OFF
+            }
         }
         val current = Settings.System.getInt(
             context.contentResolver,
@@ -333,6 +406,7 @@ class RemapActionExecutor @Inject constructor(
             next,
         )
         toast(if (next == 1) "Auto-rotate on" else "Auto-rotate off")
+        return if (next == 1) ActionFeedbackState.AUTO_ROTATE_ON else ActionFeedbackState.AUTO_ROTATE_OFF
     }
 
     private fun openUrl(url: String) {

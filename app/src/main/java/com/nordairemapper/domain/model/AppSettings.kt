@@ -13,6 +13,8 @@ data class AppSettings(
     val logcatPattern: String = DEFAULT_LOGCAT_PATTERN,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = false,
+    /** When true, dark theme uses pure black (#000000) for [androidx.compose.material3.ColorScheme.background]. */
+    val oledBlack: Boolean = false,
     val showServiceNotification: Boolean = true,
     val hapticFeedback: Boolean = true,
     val hapticIntensity: HapticIntensity = HapticIntensity.MEDIUM,

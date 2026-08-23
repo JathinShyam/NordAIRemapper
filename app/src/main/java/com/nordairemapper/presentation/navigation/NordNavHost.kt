@@ -23,9 +23,11 @@ import com.nordairemapper.presentation.onboarding.OnboardingScreen
 import com.nordairemapper.presentation.backup.BackupScreen
 import com.nordairemapper.presentation.overlay.OverlaySettingsScreen
 import com.nordairemapper.presentation.remap.RemapScreen
+import com.nordairemapper.presentation.settings.AppearanceSettingsScreen
 import com.nordairemapper.presentation.settings.ExclusionsScreen
 import com.nordairemapper.presentation.settings.FeedbackScreen
 import com.nordairemapper.presentation.settings.LockScreenSettingsScreen
+import com.nordairemapper.presentation.settings.PermissionsScreen
 import com.nordairemapper.presentation.settings.SettingsScreen
 import com.nordairemapper.presentation.settings.VisualOverlayScreen
 
@@ -42,6 +44,8 @@ object Routes {
     const val VISUAL_OVERLAY = "visual_overlay"
     const val LOCK_SCREEN = "lock_screen"
     const val EXCLUSIONS = "exclusions"
+    const val APPEARANCE = "appearance"
+    const val PERMISSIONS = "permissions"
     const val REMAP = "remap/{pressType}"
 
     fun remap(pressType: PressType) = "remap/${pressType.key}"
@@ -125,6 +129,8 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
                 onOpenVisualOverlay = { navController.navigate(Routes.VISUAL_OVERLAY) },
                 onOpenLockScreen = { navController.navigate(Routes.LOCK_SCREEN) },
                 onOpenExclusions = { navController.navigate(Routes.EXCLUSIONS) },
+                onOpenAppearance = { navController.navigate(Routes.APPEARANCE) },
+                onOpenPermissions = { navController.navigate(Routes.PERMISSIONS) },
                 onRestartOnboarding = {
                     navController.navigate(Routes.ONBOARDING) {
                         popUpTo(Routes.HOME) { inclusive = true }
@@ -143,6 +149,15 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
         }
         composable(Routes.EXCLUSIONS) {
             ExclusionsScreen(
+                onBack = { navController.popBackStack() },
+                onOpenEnableDetection = { navController.navigate(Routes.ENABLE_DETECTION) },
+            )
+        }
+        composable(Routes.APPEARANCE) {
+            AppearanceSettingsScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.PERMISSIONS) {
+            PermissionsScreen(
                 onBack = { navController.popBackStack() },
                 onOpenEnableDetection = { navController.navigate(Routes.ENABLE_DETECTION) },
             )

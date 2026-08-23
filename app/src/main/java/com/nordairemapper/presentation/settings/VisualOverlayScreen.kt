@@ -53,6 +53,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nordairemapper.domain.model.ActionFeedback
+import com.nordairemapper.domain.model.ActionFeedbackState
 import com.nordairemapper.domain.model.AppSettings
 import com.nordairemapper.domain.model.OverlayVisualStyle
 import com.nordairemapper.domain.model.RemapAction
@@ -301,7 +303,13 @@ fun VisualOverlayScreen(
                             ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                         )
                     } else {
-                        ActionFeedbackOverlayService.show(context, RemapAction.ToggleFlashlight)
+                        ActionFeedbackOverlayService.show(
+                            context,
+                            ActionFeedback(
+                                RemapAction.ToggleFlashlight,
+                                ActionFeedbackState.FLASHLIGHT_ON,
+                            ),
+                        )
                     }
                 },
                 modifier = Modifier
@@ -346,6 +354,7 @@ private fun VisualStyleCard(
         ) {
             VisualActionPopupPill(
                 icon = Icons.Outlined.FlashlightOn,
+                caption = "On",
                 accent = accent,
                 visualStyle = visualStyle,
                 glowEffects = glowEffects && visualStyle == OverlayVisualStyle.ONEPLUS,

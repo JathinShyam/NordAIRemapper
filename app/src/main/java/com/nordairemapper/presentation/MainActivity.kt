@@ -34,6 +34,7 @@ class MainActivity : ComponentActivity() {
             NordAIRemapperTheme(
                 darkTheme = darkTheme,
                 dynamicColor = settings.dynamicColor,
+                oledBlack = settings.oledBlack,
             ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),

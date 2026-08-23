@@ -1628,7 +1628,11 @@
         <div class="nav-section">Settings</div>
         <button data-screen="settings">
           Settings hub
-          <small>Appearance, feedback &amp; tools</small>
+          <small>Shortcuts, reliability &amp; tools</small>
+        </button>
+        <button data-screen="appearance">
+          Appearance
+          <small>Theme &amp; dynamic color</small>
         </button>
         <button data-screen="feedback">
           Feedback
@@ -1879,34 +1883,16 @@
             <button class="ico" data-back="stage" type="button" title="Back">‹</button>
             <div>
               <div class="h">Settings</div>
-              <div class="sub">Appearance, Reliability &amp; Tools</div>
+              <div class="sub">Shortcuts, Reliability &amp; Tools</div>
             </div>
           </div>
           <div class="scroll" id="settingsHub">
             <div class="sec-label">Appearance</div>
             <div class="pref-group">
-              <div class="theme-block">
-                <div class="t">Theme</div>
-                <div class="d">Dark, Light, Or Match The System.</div>
-                <div class="seg theme-seg" id="themeSeg" role="group" aria-label="Theme">
-                  <button type="button" class="on" data-v="dark">Dark</button>
-                  <button type="button" data-v="light">Light</button>
-                  <button type="button" data-v="system">System</button>
-                </div>
-              </div>
-              <div class="settings-row">
-                <div class="meta">
-                  <div class="t">Dynamic Color</div>
-                  <div class="d">Material You From Wallpaper</div>
-                </div>
-                <div class="sw off" id="dynColor" role="switch" tabindex="0" aria-checked="false"></div>
-              </div>
-              <div class="settings-row">
-                <div class="meta">
-                  <div class="t">Service Notification</div>
-                  <div class="d">Ongoing Status While Remapping</div>
-                </div>
-                <div class="sw" id="svcNotif" role="switch" tabindex="0" aria-checked="true"></div>
+              <div class="hub-row" data-go="appearance">
+                <div class="hub-ico tone-cyan"><svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9z"/><path d="M12 7v10"/><path d="M7 12h10"/></svg></div>
+                <div><div class="t">Appearance</div><div class="d">Theme, Dynamic Color, OLED Black, Service Notification</div></div>
+                <div class="chev"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
               </div>
             </div>
 
@@ -2043,6 +2029,55 @@
         </section>
 
         <!-- FEEDBACK -->
+        <!-- APPEARANCE -->
+        <section class="screen" id="appearance">
+          <div class="topbar">
+            <button class="ico" data-back="settings" type="button" title="Back">‹</button>
+            <div>
+              <div class="h">Appearance</div>
+              <div class="sub">Theme &amp; Notifications</div>
+            </div>
+          </div>
+          <div class="scroll">
+            <div class="sec-label">Theme</div>
+            <div class="pref-group">
+              <div class="theme-block">
+                <div class="t">Theme</div>
+                <div class="d">Dark, Light, Or Match The System.</div>
+                <div class="seg theme-seg" id="themeSeg" role="group" aria-label="Theme">
+                  <button type="button" class="on" data-v="dark">Dark</button>
+                  <button type="button" data-v="light">Light</button>
+                  <button type="button" data-v="system">System</button>
+                </div>
+              </div>
+            </div>
+            <div class="sec-label">Options</div>
+            <div class="pref-group">
+              <div class="settings-row">
+                <div class="meta">
+                  <div class="t">Dynamic Color</div>
+                  <div class="d">Material You From Wallpaper</div>
+                </div>
+                <div class="sw off" id="dynColor" role="switch" tabindex="0" aria-checked="false"></div>
+              </div>
+              <div class="settings-row">
+                <div class="meta">
+                  <div class="t">OLED Black</div>
+                  <div class="d">Use Pure Black Background In Dark Mode</div>
+                </div>
+                <div class="sw off" id="oledBlack" role="switch" tabindex="0" aria-checked="false"></div>
+              </div>
+              <div class="settings-row">
+                <div class="meta">
+                  <div class="t">Service Notification</div>
+                  <div class="d">Ongoing Status While Remapping</div>
+                </div>
+                <div class="sw" id="svcNotif" role="switch" tabindex="0" aria-checked="true"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section class="screen" id="feedback">
           <div class="topbar">
             <button class="ico" data-back="settings" type="button" title="Back">‹</button>
@@ -2371,7 +2406,7 @@
     const toast = document.getElementById("toast");
     const screens = [
       "onboarding", "unlock", "stage", "remap", "overlay",
-      "settings", "exclusions", "feedback", "visual", "lock",
+      "settings", "appearance", "exclusions", "feedback", "visual", "lock",
       "backup", "overlay-settings", "keysetup", "lab",
     ];
     /* Mirrors RemapActionCatalog + RemapActionUi display strings */

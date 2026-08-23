@@ -9,7 +9,9 @@ import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.Campaign
 import androidx.compose.material.icons.outlined.Crop
+import androidx.compose.material.icons.outlined.DoNotDisturbOff
 import androidx.compose.material.icons.outlined.DoNotDisturbOn
+import androidx.compose.material.icons.outlined.FlashlightOff
 import androidx.compose.material.icons.outlined.FlashlightOn
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Layers
@@ -19,12 +21,17 @@ import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PhotoCameraFront
+import androidx.compose.material.icons.outlined.ScreenLockRotation
 import androidx.compose.material.icons.outlined.ScreenRotation
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.SkipNext
 import androidx.compose.material.icons.outlined.SkipPrevious
 import androidx.compose.material.icons.outlined.Smartphone
+import androidx.compose.material.icons.outlined.Vibration
+import androidx.compose.material.icons.outlined.VolumeOff
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.nordairemapper.domain.model.ActionFeedback
+import com.nordairemapper.domain.model.ActionFeedbackState
 import com.nordairemapper.domain.model.RemapAction
 
 fun RemapAction.displayName(): String = when (this) {
@@ -98,6 +105,33 @@ fun RemapAction.icon(): ImageVector = when (this) {
     is RemapAction.OpenUrl -> Icons.Outlined.Link
     RemapAction.ShowOverlay -> Icons.Outlined.Smartphone
     RemapAction.None -> Icons.Outlined.Block
+}
+
+fun ActionFeedback.icon(): ImageVector = when (stateKey) {
+    ActionFeedbackState.AUTO_ROTATE_ON -> Icons.Outlined.ScreenRotation
+    ActionFeedbackState.AUTO_ROTATE_OFF -> Icons.Outlined.ScreenLockRotation
+    ActionFeedbackState.FLASHLIGHT_ON -> Icons.Outlined.FlashlightOn
+    ActionFeedbackState.FLASHLIGHT_OFF -> Icons.Outlined.FlashlightOff
+    ActionFeedbackState.DND_ON -> Icons.Outlined.DoNotDisturbOn
+    ActionFeedbackState.DND_OFF -> Icons.Outlined.DoNotDisturbOff
+    ActionFeedbackState.RINGER_RING -> Icons.AutoMirrored.Outlined.VolumeUp
+    ActionFeedbackState.RINGER_VIBRATE -> Icons.Outlined.Vibration
+    ActionFeedbackState.RINGER_SILENT -> Icons.Outlined.VolumeOff
+    else -> action.icon()
+}
+
+/** Short label shown under the popup icon for stateful actions. */
+fun ActionFeedback.caption(): String? = when (stateKey) {
+    ActionFeedbackState.AUTO_ROTATE_ON -> "On"
+    ActionFeedbackState.AUTO_ROTATE_OFF -> "Off"
+    ActionFeedbackState.FLASHLIGHT_ON -> "On"
+    ActionFeedbackState.FLASHLIGHT_OFF -> "Off"
+    ActionFeedbackState.DND_ON -> "On"
+    ActionFeedbackState.DND_OFF -> "Off"
+    ActionFeedbackState.RINGER_RING -> "Ring"
+    ActionFeedbackState.RINGER_VIBRATE -> "Vibrate"
+    ActionFeedbackState.RINGER_SILENT -> "Silent"
+    else -> null
 }
 
 /** Stable identity for conflict detection (same action type + params). */

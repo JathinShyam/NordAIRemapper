@@ -13,6 +13,7 @@ import com.nordairemapper.domain.model.ThemeMode
 import com.nordairemapper.domain.repository.SettingsRepository
 import com.nordairemapper.presentation.remap.InstalledAppInfo
 import com.nordairemapper.service.AccessibilityUtils
+import com.nordairemapper.service.AppPermissions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,8 +36,15 @@ class SettingsViewModel @Inject constructor(
     private val _batteryExempt = MutableStateFlow(isBatteryExempt())
     val batteryExempt: StateFlow<Boolean> = _batteryExempt.asStateFlow()
 
+    private val _permissionSummary = MutableStateFlow(readPermissionSummary())
+    val permissionSummary: StateFlow<PermissionHubSummary> = _permissionSummary.asStateFlow()
+
     fun refreshBattery() {
         _batteryExempt.value = isBatteryExempt()
+    }
+
+    fun refreshPermissionSummary() {
+        _permissionSummary.value = readPermissionSummary()
     }
 
     fun setThemeMode(mode: ThemeMode) = viewModelScope.launch {
@@ -45,6 +53,10 @@ class SettingsViewModel @Inject constructor(
 
     fun setDynamicColor(enabled: Boolean) = viewModelScope.launch {
         settingsRepository.setDynamicColor(enabled)
+    }
+
+    fun setOledBlack(enabled: Boolean) = viewModelScope.launch {
+        settingsRepository.setOledBlack(enabled)
     }
 
     fun setShowServiceNotification(enabled: Boolean) = viewModelScope.launch {
@@ -123,4 +135,18 @@ class SettingsViewModel @Inject constructor(
         val pm = context.getSystemService(PowerManager::class.java)
         return pm?.isIgnoringBatteryOptimizations(context.packageName) == true
     }
+
+    private fun readPermissionSummary(): PermissionHubSummary {
+        val items = AppPermissions.snapshot(context)
+        val attention = AppPermissions.hubAttentionCount(items)
+        return PermissionHubSummary(
+            label = AppPermissions.hubSummaryLabel(attention),
+            allOk = attention == 0,
+        )
+    }
 }
+
+data class PermissionHubSummary(
+    val label: String,
+    val allOk: Boolean,
+)

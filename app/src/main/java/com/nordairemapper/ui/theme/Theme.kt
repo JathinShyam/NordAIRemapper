@@ -3,6 +3,7 @@ package com.nordairemapper.ui.theme
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -57,9 +58,10 @@ private val LightColorScheme = lightColorScheme(
 fun NordAIRemapperTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = false,
+    oledBlack: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
+    val baseScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
@@ -67,6 +69,7 @@ fun NordAIRemapperTheme(
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
+    val colorScheme = if (darkTheme && oledBlack) baseScheme.withOledBlackBackground() else baseScheme
 
     MaterialTheme(
         colorScheme = colorScheme,
@@ -75,3 +78,6 @@ fun NordAIRemapperTheme(
         content = content,
     )
 }
+
+/** Pure black scaffold background for OLED dark mode; surfaces stay elevated for card contrast. */
+internal fun ColorScheme.withOledBlackBackground(): ColorScheme = copy(background = Color.Black)
