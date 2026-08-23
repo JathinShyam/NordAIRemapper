@@ -25,7 +25,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -118,12 +117,10 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             ServiceNotifications.clearOpenAfterBoot(context)
             if (!LogcatWatcherService.hasReadLogsPermission(context)) return@launch
-            val seenAt = settingsRepository.settings.first().lastPlusKeySeenAtMs
-            val recentlyWorking = System.currentTimeMillis() - seenAt < STALE_GESTURE_MS
-            if (recentlyWorking && !LogcatWatcherService.isTailBlindNow()) return@launch
+            if (LogcatWatcherService.hasTailSeenNonSelf()) return@launch // tail healthy
             val visible = LogVisibilityProbe.probe() == LogVisibilityProbe.Result.VISIBLE
-            if (visible && LogcatWatcherService.isTailBlindNow()) {
-                Log.i("HomeHeal", "Foreground spawn sees logs; restarting blind tail")
+            if (visible) {
+                Log.i("HomeHeal", "Foreground spawn sees logs; reconnecting consent-blind tail")
                 LogcatWatcherService.restart(context)
                 ServiceNotifications.clearLogsBlind(context)
             }
@@ -149,9 +146,6 @@ class HomeViewModel @Inject constructor(
     )
 
     companion object {
-        /** Probe/re-heal at most this often while gestures keep flowing. */
-        private const val STALE_GESTURE_MS = 60_000L
-
         fun conflictPressTypes(actions: Map<PressType, RemapAction>): Set<PressType> {
             val groups = actions.entries
                 .filter { it.value !is RemapAction.None }

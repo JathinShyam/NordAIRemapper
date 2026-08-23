@@ -72,8 +72,8 @@ class EnableDetectionViewModel @Inject constructor(
             } else {
                 null
             }
-            if (visible == true && LogcatWatcherService.isTailBlindNow()) {
-                // Foreground spawn proved access; reconnect the boot-born blind tail.
+            if (visible == true && !LogcatWatcherService.hasTailSeenNonSelf()) {
+                // Foreground spawn proved access; reconnect the consent-blind tail.
                 LogcatWatcherService.restart(context)
             }
             _uiState.update {
@@ -208,7 +208,7 @@ class EnableDetectionViewModel @Inject constructor(
                 -> {
                     val banking = ElevatedPermissions.canAutoResumeAccessibility(context)
                     val visible = LogVisibilityProbe.probe() == LogVisibilityProbe.Result.VISIBLE
-                    if (visible && LogcatWatcherService.isTailBlindNow()) {
+                    if (visible && !LogcatWatcherService.hasTailSeenNonSelf()) {
                         LogcatWatcherService.restart(context)
                     }
                     _uiState.update {

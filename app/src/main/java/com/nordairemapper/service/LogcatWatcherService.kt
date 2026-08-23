@@ -76,10 +76,17 @@ class LogcatWatcherService : Service() {
         @Volatile private var sBlindNotified = false
         @Volatile private var sRestarting = false
 
-        /** True when the live tail has not seen another pid's lines recently. */
+        /**
+         * True once the CURRENT tail has delivered any line from another pid.
+         * A tail spawned under per-boot background denial never sets this —
+         * that is the exact signal UI flows use to decide a reconnect is
+         * needed, independent of any timed blind window.
+         */
+        @Volatile private var sTailSawNonSelf = false
+
+        /** False ⇒ this tail can NEVER see Plus Key lines and must reconnect. */
         @JvmStatic
-        fun isTailBlindNow(): Boolean =
-            sLastNonSelfLineAtMs in 1..(System.currentTimeMillis() - BLIND_AFTER_MS)
+        fun hasTailSeenNonSelf(): Boolean = sTailSawNonSelf
 
         /**
          * Stop + start so a tail born under denied log access reconnects after
@@ -183,6 +190,7 @@ class LogcatWatcherService : Service() {
         val pid = PID_REGEX.find(line)?.groupValues?.get(1)?.toIntOrNull() ?: return
         if (pid != selfPid) {
             sLastNonSelfLineAtMs = System.currentTimeMillis()
+            sTailSawNonSelf = true
         }
     }
 
@@ -233,6 +241,7 @@ class LogcatWatcherService : Service() {
             .start()
         logcatProcess = process
         sLastNonSelfLineAtMs = System.currentTimeMillis()
+        sTailSawNonSelf = false
         Log.i(TAG, "tail started pattern=$pattern selfPid=$selfPid")
         try {
             val coalescer = LogcatKeyEdgeCoalescer()

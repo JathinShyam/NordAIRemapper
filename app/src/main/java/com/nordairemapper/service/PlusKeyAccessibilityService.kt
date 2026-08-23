@@ -2,6 +2,7 @@ package com.nordairemapper.service
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
+import android.os.SystemClock
 import android.util.Log
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
@@ -57,6 +58,7 @@ class PlusKeyAccessibilityService : AccessibilityService() {
             strategy = remapEngine.currentStrategy(),
             serviceEnabled = remapEngine.isServiceEnabled(),
         )
+        maybeNudgeOpenAfterBoot()
         settingsJob?.cancel()
         settingsJob = scope.launch {
             settingsRepository.settings.collectLatest { settings ->
@@ -64,6 +66,24 @@ class PlusKeyAccessibilityService : AccessibilityService() {
                 excludedApps = settings.excludedApps
             }
         }
+    }
+
+    /**
+     * The system binds enabled accessibility services at boot regardless of the
+     * OEM Auto-start switch, so this is the reliable post-boot moment. If we
+     * bound within minutes of boot and logcat detection is active, nudge the
+     * user: per-boot log consent keeps the watcher tail blind until Keyforge
+     * is opened once in the foreground. Posted once per process.
+     */
+    private fun maybeNudgeOpenAfterBoot() {
+        if (!LogcatWatcherService.hasReadLogsPermission(this)) return
+        val sinceBootMs = SystemClock.elapsedRealtime()
+        if (sinceBootMs > POST_BOOT_NUDGE_WINDOW_MS) return
+        synchronized(nudgeLock) {
+            if (bootNudged) return
+            bootNudged = true
+        }
+        ServiceNotifications.notifyOpenAfterBoot(this)
     }
 
     override fun onKeyEvent(event: KeyEvent): Boolean {
@@ -129,6 +149,11 @@ class PlusKeyAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val TAG = "PlusKeyA11y"
+
+        /** Only nudge when this bind happened shortly after boot. */
+        private const val POST_BOOT_NUDGE_WINDOW_MS = 2 * 60_000L
+        private val nudgeLock = Any()
+        private var bootNudged = false
     }
 }
 
