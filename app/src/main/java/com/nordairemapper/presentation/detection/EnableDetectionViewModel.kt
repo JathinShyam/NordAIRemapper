@@ -6,6 +6,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nordairemapper.service.ElevatedPermissions
+import com.nordairemapper.service.LogVisibilityProbe
 import com.nordairemapper.service.LogcatWatcherService
 import com.nordairemapper.service.ReadLogsGrantHelper
 import com.nordairemapper.service.adb.ReadLogsGrantViaWirelessAdb
@@ -21,6 +22,12 @@ import javax.inject.Inject
 
 data class EnableDetectionUiState(
     val readLogsGranted: Boolean = false,
+    /**
+     * Null until probed. False = logd filters cross-app logs despite the
+     * grant (OxygenOS "USB debugging (Security settings)" reset at boot):
+     * detection is dead even though every Android-level check is green.
+     */
+    val logAccessVisible: Boolean? = null,
     /** WRITE_SECURE_SETTINGS + usage access for hands-free banking Accessibility pause. */
     val bankingAutoResumeReady: Boolean = false,
     val pairingCode: String = "",
@@ -60,11 +67,19 @@ class EnableDetectionViewModel @Inject constructor(
         viewModelScope.launch {
             val ok = grantViaWirelessAdb.verifyAndSyncWatcher()
             val banking = ElevatedPermissions.canAutoResumeAccessibility(context)
+            val visible = if (ok) {
+                LogVisibilityProbe.probe() == LogVisibilityProbe.Result.VISIBLE
+            } else {
+                null
+            }
             _uiState.update {
                 it.copy(
                     readLogsGranted = ok,
+                    logAccessVisible = visible,
                     bankingAutoResumeReady = banking,
                     statusMessage = when {
+                        ok && visible == false ->
+                            "Grants look fine but system logs are blocked. Enable Developer options → USB debugging (Security settings), then reboot."
                         ok && banking ->
                             "Unlocked — Plus Key detection and hands-free banking pause are ready."
                         ok ->
@@ -188,12 +203,16 @@ class EnableDetectionViewModel @Inject constructor(
                 ReadLogsGrantViaWirelessAdb.GrantResult.Success,
                 -> {
                     val banking = ElevatedPermissions.canAutoResumeAccessibility(context)
+                    val visible = LogVisibilityProbe.probe() == LogVisibilityProbe.Result.VISIBLE
                     _uiState.update {
                         it.copy(
                             isGranting = false,
                             readLogsGranted = true,
+                            logAccessVisible = visible,
                             bankingAutoResumeReady = banking,
-                            statusMessage = if (banking) {
+                            statusMessage = if (visible == false) {
+                                "Grants look fine but system logs are blocked. Enable Developer options → USB debugging (Security settings), then reboot."
+                            } else if (banking) {
                                 "Done. You can turn Wireless debugging off — grants stay."
                             } else {
                                 "READ_LOGS granted. If banking auto-pause still fails, re-run Unlock."

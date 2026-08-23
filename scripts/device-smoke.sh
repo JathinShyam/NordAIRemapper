@@ -55,7 +55,7 @@ if [ -n "${SYS_PID:-}" ]; then
   if [ "${VIS:-0}" -gt 0 ]; then
     ok "logd visibility OK ($VIS system_server lines visible to app uid)"
   else
-    bad "logd BLIND: app uid sees none of system_server's logs — READ_LOGS not honored. Fix: reboot phone; if persists enable 'USB debugging (Security settings)', reboot, re-run Unlock. See docs/changes/2026-08-23-readlogs-logd-blind/"
+    bad "logd BLIND: app uid sees none of system_server's logs — READ_LOGS granted but not honored. ColorOS resets 'USB debugging (Security settings)' on every reboot: enable it, reboot, re-run Unlock. See docs/changes/2026-08-23-readlogs-logd-blind/"
   fi
 else
   warn "could not resolve system_server pid; skipped visibility probe"

@@ -142,6 +142,16 @@ fun EnableDetectionScreen(
                 label = if (state.readLogsGranted) "READ_LOGS granted" else "READ_LOGS needed",
                 tone = if (state.readLogsGranted) StatusTone.Active else StatusTone.Warning,
             )
+            state.logAccessVisible?.let { visible ->
+                StatusChip(
+                    label = if (visible) {
+                        "System log access verified"
+                    } else {
+                        "Blind: enable USB debugging (Security settings), then reboot"
+                    },
+                    tone = if (visible) StatusTone.Active else StatusTone.Warning,
+                )
+            }
             if (state.readLogsGranted) {
                 StatusChip(
                     label = if (state.bankingAutoResumeReady) {
