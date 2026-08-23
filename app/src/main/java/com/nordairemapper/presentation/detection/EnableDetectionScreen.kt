@@ -147,7 +147,7 @@ fun EnableDetectionScreen(
                     label = if (visible) {
                         "System log access verified"
                     } else {
-                        "Blind: enable USB debugging (Security settings), then reboot"
+                        "Blocked: allow log access when prompted, then reopen"
                     },
                     tone = if (visible) StatusTone.Active else StatusTone.Warning,
                 )

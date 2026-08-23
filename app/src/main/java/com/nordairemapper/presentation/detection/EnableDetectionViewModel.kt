@@ -72,8 +72,10 @@ class EnableDetectionViewModel @Inject constructor(
             } else {
                 null
             }
-            if (visible == true && !LogcatWatcherService.hasTailSeenNonSelf()) {
-                // Foreground spawn proved access; reconnect the consent-blind tail.
+            if (!LogcatWatcherService.hasTailSeenNonSelf()) {
+                // Probe above already surfaced the consent prompt. Allow only
+                // applies to future connections, so reconnect unconditionally
+                // — the fresh tail inherits whatever consent is registered.
                 LogcatWatcherService.restart(context)
             }
             _uiState.update {
@@ -83,7 +85,7 @@ class EnableDetectionViewModel @Inject constructor(
                     bankingAutoResumeReady = banking,
                     statusMessage = when {
                         ok && visible == false ->
-                            "Grants look fine but system logs are blocked. Enable Developer options → USB debugging (Security settings), then reboot."
+                            "System logs are still blocked. Allow log access when Keyforge asks, then leave and reopen this screen."
                         ok && banking ->
                             "Unlocked — Plus Key detection and hands-free banking pause are ready."
                         ok ->
@@ -208,7 +210,9 @@ class EnableDetectionViewModel @Inject constructor(
                 -> {
                     val banking = ElevatedPermissions.canAutoResumeAccessibility(context)
                     val visible = LogVisibilityProbe.probe() == LogVisibilityProbe.Result.VISIBLE
-                    if (visible && !LogcatWatcherService.hasTailSeenNonSelf()) {
+                    if (!LogcatWatcherService.hasTailSeenNonSelf()) {
+                        // Same deterministic reconnect: probe surfaced the
+                        // consent prompt; the fresh tail inherits the Allow.
                         LogcatWatcherService.restart(context)
                     }
                     _uiState.update {
@@ -218,7 +222,7 @@ class EnableDetectionViewModel @Inject constructor(
                             logAccessVisible = visible,
                             bankingAutoResumeReady = banking,
                             statusMessage = if (visible == false) {
-                                "Grants look fine but system logs are blocked. Enable Developer options → USB debugging (Security settings), then reboot."
+                                "System logs are still blocked. Allow log access when Keyforge asks, then leave and reopen this screen."
                             } else if (banking) {
                                 "Done. You can turn Wireless debugging off — grants stay."
                             } else {

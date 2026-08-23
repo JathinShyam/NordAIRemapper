@@ -92,7 +92,7 @@ object ServiceNotifications {
         val notification = Notification.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("Plus Key detection can’t see key presses")
-            .setContentText("Keyforge lost access to system logs. Reboot the phone, then run Unlock again in the app.")
+            .setContentText("Open Keyforge and tap Allow on the log-access prompt. If it keeps failing, run Unlock again in the app.")
             .setContentIntent(intent)
             .setAutoCancel(true)
             .setOngoing(false)

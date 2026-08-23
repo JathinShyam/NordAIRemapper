@@ -117,13 +117,20 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             ServiceNotifications.clearOpenAfterBoot(context)
             if (!LogcatWatcherService.hasReadLogsPermission(context)) return@launch
-            if (LogcatWatcherService.hasTailSeenNonSelf()) return@launch // tail healthy
-            val visible = LogVisibilityProbe.probe() == LogVisibilityProbe.Result.VISIBLE
-            if (visible) {
-                Log.i("HomeHeal", "Foreground spawn sees logs; reconnecting consent-blind tail")
-                LogcatWatcherService.restart(context)
+            if (LogcatWatcherService.hasTailSeenNonSelf()) {
                 ServiceNotifications.clearLogsBlind(context)
+                return@launch
             }
+            // Tail never saw another app's line: per-boot consent is missing,
+            // or it was granted only after this connection already existed.
+            // ColorOS applies Allow to FUTURE connections, so probe once to
+            // surface the prompt, then reconnect unconditionally — the fresh
+            // tail inherits whatever consent is now registered. Deterministic:
+            // no timed windows, at most one extra open after an Allow.
+            LogVisibilityProbe.probe(CONSENT_PROBE_MS)
+            Log.i("HomeHeal", "Reconnecting consent-blind tail")
+            LogcatWatcherService.restart(context)
+            ServiceNotifications.clearLogsBlind(context)
         }
     }
 
@@ -146,6 +153,9 @@ class HomeViewModel @Inject constructor(
     )
 
     companion object {
+        /** Long enough for the consent prompt to be surfaced by the spawn. */
+        private const val CONSENT_PROBE_MS = 1_500L
+
         fun conflictPressTypes(actions: Map<PressType, RemapAction>): Set<PressType> {
             val groups = actions.entries
                 .filter { it.value !is RemapAction.None }
