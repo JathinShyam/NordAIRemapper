@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.IBinder
+import android.os.PowerManager
 import android.util.Log
 import com.nordairemapper.R
 import com.nordairemapper.domain.model.DetectionStrategy
@@ -53,6 +54,18 @@ class LogcatWatcherService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var logcatProcess: Process? = null
 
+    private val selfPid = android.os.Process.myPid()
+
+    /**
+     * Epoch ms of the last streamed line originating from a pid other than
+     * ours. OxygenOS builds have been observed to serve an app only its own
+     * logs even with READ_LOGS granted (logd-side enforcement); then every
+     * Plus Key line from system_server is invisible and detection dies
+     * silently. The watchdog turns that into a visible, actionable alert.
+     */
+    @Volatile private var lastNonSelfLineAtMs = 0L
+    @Volatile private var blindNotified = false
+
     /**
      * The one active tail loop. Every settings write used to call [start] again,
      * which spawned an additional concurrent `logcat` process per call; this job
@@ -76,7 +89,7 @@ class LogcatWatcherService : Service() {
             return START_NOT_STICKY
         }
 
-        // Exactly one tail loop regardless of how many times start() is called.
+        // Exactly one tail loop (and one watchdog) regardless of start() calls.
         if (watchJob?.isActive != true) {
             watchJob = scope.launch {
                 val showDetails = settingsRepository.settings.first().showServiceNotification
@@ -84,10 +97,47 @@ class LogcatWatcherService : Service() {
                     getSystemService(NotificationManager::class.java)
                         .notify(NOTIFICATION_ID, buildNotification(showDetails = false))
                 }
-                watchLogcat()
+                launch { watchLogcat() }
+                blindWatchdog()
             }
         }
         return START_STICKY
+    }
+
+    /**
+     * Fails loudly when logd stops delivering other apps' logs. A healthy tail
+     * always sees system noise (SurfaceFlinger, system_server, …) within
+     * minutes while the screen is on; only READ_LOGS enforcement failures
+     * leave the stream all-self.
+     */
+    private suspend fun blindWatchdog() {
+        lastNonSelfLineAtMs = System.currentTimeMillis()
+        while (scope.isActive) {
+            delay(BLIND_CHECK_MS)
+            val now = System.currentTimeMillis()
+            val interactive = runCatching {
+                getSystemService(PowerManager::class.java)?.isInteractive == true
+            }.getOrDefault(false)
+            val blind = now - lastNonSelfLineAtMs > BLIND_AFTER_MS
+            when {
+                interactive && blind && !blindNotified -> {
+                    Log.w(TAG, "Tail is blind: no non-self lines for ${now - lastNonSelfLineAtMs}ms")
+                    blindNotified = true
+                    ServiceNotifications.notifyLogsBlind(this)
+                }
+                !blind && blindNotified -> {
+                    blindNotified = false
+                    ServiceNotifications.clearLogsBlind(this)
+                }
+            }
+        }
+    }
+
+    private fun noteLineOrigin(line: String) {
+        val pid = PID_REGEX.find(line)?.groupValues?.get(1)?.toIntOrNull() ?: return
+        if (pid != selfPid) {
+            lastNonSelfLineAtMs = System.currentTimeMillis()
+        }
     }
 
     /**
@@ -136,11 +186,14 @@ class LogcatWatcherService : Service() {
             .redirectErrorStream(true)
             .start()
         logcatProcess = process
+        lastNonSelfLineAtMs = System.currentTimeMillis()
+        Log.i(TAG, "tail started pattern=$pattern selfPid=$selfPid")
         try {
             val coalescer = LogcatKeyEdgeCoalescer()
             BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
                 while (scope.isActive) {
                     val line = reader.readLine() ?: return
+                    noteLineOrigin(line)
                     if (LogcatKeyParser.isSelfLog(line)) continue
                     if (!line.contains(pattern, ignoreCase = true)) continue
 
@@ -176,6 +229,11 @@ class LogcatWatcherService : Service() {
         private const val RECONNECT_DELAY_MS = 2_000L
         private const val MAX_RECONNECT_DELAY_MS = 30_000L
         private const val STABLE_RUN_MS = 60_000L
+
+        /** Watchdog cadence and how much silence (screen on) means "blind". */
+        private const val BLIND_CHECK_MS = 30_000L
+        private const val BLIND_AFTER_MS = 3 * 60_000L
+        private val PID_REGEX = Regex("\\(\\s*(\\d+)\\)")
 
         /** USB paste block: detection + hands-free banking Accessibility pause/resume. */
         val ADB_GRANT_COMMAND: String =
