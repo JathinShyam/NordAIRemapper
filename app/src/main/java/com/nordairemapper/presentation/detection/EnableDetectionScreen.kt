@@ -133,7 +133,7 @@ fun UnlockMethodsSection(
             DetectionMethod.BUILTIN -> BuiltInChecklistPanel(
                 state = state,
                 onOpenAboutDevice = viewModel::openAboutDevice,
-                onOpenDeveloperOptions = viewModel::openDeveloperOptions,
+                onOpenWirelessDebugging = viewModel::openWirelessDebugging,
                 onPairNow = { requestNearbyThenStartPairing() },
             )
             DetectionMethod.SHIZUKU -> ShizukuMethodPanel(
@@ -355,7 +355,7 @@ fun EnableDetectionScreen(
 private fun BuiltInChecklistPanel(
     state: EnableDetectionUiState,
     onOpenAboutDevice: () -> Unit,
-    onOpenDeveloperOptions: () -> Unit,
+    onOpenWirelessDebugging: () -> Unit,
     onPairNow: () -> Unit,
 ) {
     val prerequisitesOk = state.devOptionsEnabled && state.wifiDebugEnabled
@@ -380,10 +380,10 @@ private fun BuiltInChecklistPanel(
             body = when {
                 state.wifiDebugEnabled -> "Done."
                 !state.devOptionsEnabled -> "Available after step 1."
-                else -> "Open Developer options and flip the Wireless debugging toggle on."
+                else -> "Flip the Wireless debugging toggle on this page, then come back."
             },
-            actionLabel = if (!state.devOptionsEnabled || state.wifiDebugEnabled) null else "Open Developer options",
-            onAction = onOpenDeveloperOptions,
+            actionLabel = if (!state.devOptionsEnabled || state.wifiDebugEnabled) null else "Open Wireless debugging",
+            onAction = onOpenWirelessDebugging,
         )
         ChecklistStep(
             stepNumber = 3,

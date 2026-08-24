@@ -252,8 +252,13 @@ class EnableDetectionViewModel @Inject constructor(
         }
     }
 
-    fun openDeveloperOptions() {
-        ReadLogsGrantHelper.openDeveloperOptions(context)
+    /**
+     * Deep link to the Wireless debugging sub-screen itself (not the whole
+     * Developer options list). Falls back to Developer options on ROMs that
+     * don't resolve the OEM intent.
+     */
+    fun openWirelessDebugging() {
+        ReadLogsGrantHelper.openWirelessDebugging(context)
     }
 
     /** Opens the Shizuku manager app so the user can start the service. */
@@ -271,7 +276,8 @@ class EnableDetectionViewModel @Inject constructor(
     }
 
     /**
-     * Step 3: opens the Wireless debugging page and watches for the temporary
+     * Step 3: lands the user on the Wireless debugging page (exactly where
+     * "Pair device with pairing code" lives), then watches for the temporary
      * pairing service. When mDNS finds it, the floating notification upgrades
      * from "listening" to "enter the 6-digit code".
      */
@@ -286,6 +292,8 @@ class EnableDetectionViewModel @Inject constructor(
             )
         }
         PairingNotifier.postWaiting(context)
+        // Drop the user on the exact page with the pairing entry point.
+        ReadLogsGrantHelper.openWirelessDebugging(context)
         pairingWatchJob = viewModelScope.launch {
             while (isActive && !_uiState.value.readLogsGranted) {
                 val endpoint = grantViaWirelessAdb.discoverPairingEndpoint(timeoutMs = 8_000L)

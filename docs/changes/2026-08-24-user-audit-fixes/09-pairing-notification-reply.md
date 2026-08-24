@@ -75,3 +75,14 @@ Developer options → **"USB debugging (Security settings)"** is ON.
 `canAutoResumeAccessibility()` afterwards. Partial success returns a Failed
 result whose message names the exact OEM toggle to enable and says to tap
 Pair now again. Old code verified only READ_LOGS and reported false success.
+
+
+## Follow-up — deep-link each checklist step
+
+Every Built-In step now lands on its respective page:
+1. About device (`DEVICE_INFO_SETTINGS`) for Build number taps
+2. The Wireless debugging sub-screen itself (`ADB_WIRELESS_SETTINGS`, with
+   Developer-options fallback) for the toggle
+3. Pair now opens the same Wireless debugging page automatically before the
+   watch starts, so "Pair device with pairing code" is right in front of the
+   user while the heads-up upgrades to a code box.
