@@ -388,9 +388,11 @@ private fun BuiltInChecklistPanel(
         ChecklistStep(
             stepNumber = 3,
             title = "Tap Pair now, then open “Pair device with pairing code”",
-            done = state.discoveredPort != null,
+            done = state.readLogsGranted,
             enabled = prerequisitesOk,
             body = when {
+                state.readLogsGranted ->
+                    "Done — you're unlocked."
                 state.discoveredPort != null ->
                     "Port ${state.discoveredPort} detected — enter the 6-digit code in the Keyforge notification."
                 state.isWatchingForPairing ->
@@ -399,7 +401,12 @@ private fun BuiltInChecklistPanel(
                     "Keyforge posts a floating notification — you'll type the code there, never here. No forms."
                 else -> "Complete steps 1–2 first."
             },
-            actionLabel = if (!prerequisitesOk || state.isWatchingForPairing || state.discoveredPort != null) null else "Pair now",
+            actionLabel = when {
+                state.readLogsGranted -> null
+                state.isWatchingForPairing -> null
+                prerequisitesOk -> if (state.discoveredPort != null) "Pair now (new code)" else "Pair now"
+                else -> null
+            },
             primary = true,
             onAction = onPairNow,
         )

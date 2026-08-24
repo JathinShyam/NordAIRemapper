@@ -58,6 +58,9 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
 
     fun hasReadLogs(): Boolean = LogcatWatcherService.hasReadLogsPermission(context)
 
+    /** This phone's Wi-Fi IPv4, used to reject foreign pairing advertisements. */
+    fun ownWifiIpv4(): String? = resolveWifiIpv4()
+
     suspend fun discoverPairingEndpoint(
         timeoutMs: Long = PAIRING_DISCOVERY_TIMEOUT_MS,
     ): DiscoveredEndpoint? = discoverMdnsEndpoint(AdbMdns.SERVICE_TYPE_TLS_PAIRING, timeoutMs)

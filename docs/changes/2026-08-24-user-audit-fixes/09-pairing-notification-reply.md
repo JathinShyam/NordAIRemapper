@@ -116,3 +116,24 @@ already executed command #1 — commands #2 (WRITE_SECURE_SETTINGS) and #3
 **Fix**: bounded non-blocking read window per command
 (`SHELL_OUTPUT_WINDOW_MS=300`, poll via available()), never waits for EOF.
 Output capture is best-effort; in-process verification remains authoritative.
+
+
+## Bug fix — step 3 flipped to done without pairing
+
+**Report**: user left mid-watch to enable notifications, returned, and step 3
+showed success although nothing paired.
+
+**Causes (three stacked)**:
+1. Watch loop ran forever in background (`viewModelScope` outlives screen) —
+   no timeout.
+2. It accepted ANY `_adb-tls-pairing` advertisement on the LAN — including
+   this phone's own page state or a neighbour's device — instantly setting
+   `discoveredPort`.
+3. Step 3 treated "port seen" as done, when done must mean UNLOCKED.
+
+**Fix**: 4-minute hard cap on the watch (timeout clears the heads-up and asks
+for a retry); discovered endpoints are accepted only when host == this
+phone's Wi-Fi IPv4 (or loopback), foreign advertisements logged + ignored;
+step-3 `done` is now `readLogsGranted`, with "Pair now (new code)" retry
+label while port is known but unlock hasn't happened. `stopPairingWatch`
+also cancels the abandoned ongoing notification.

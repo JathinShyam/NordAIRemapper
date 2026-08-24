@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.provider.Settings
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nordairemapper.service.ElevatedPermissions
@@ -280,10 +281,16 @@ class EnableDetectionViewModel @Inject constructor(
      * "Pair device with pairing code" lives), then watches for the temporary
      * pairing service. When mDNS finds it, the floating notification upgrades
      * from "listening" to "enter the 6-digit code".
+     *
+     * Guards (RCA: step 3 flipped to done without pairing):
+     * - bounded total watch time — the loop dies after [PAIRING_WATCH_TIMEOUT_MS]
+     * - only accepts endpoints advertised by THIS phone (host must equal our
+     *   Wi-Fi IPv4 / loopback); other devices' pairing services are ignored
      */
     fun startPairingWatch() {
         if (_uiState.value.readLogsGranted) return
         pairingWatchJob?.cancel()
+        val startedAt = android.os.SystemClock.elapsedRealtime()
         _uiState.update {
             it.copy(
                 isWatchingForPairing = true,
@@ -296,8 +303,30 @@ class EnableDetectionViewModel @Inject constructor(
         ReadLogsGrantHelper.openWirelessDebugging(context)
         pairingWatchJob = viewModelScope.launch {
             while (isActive && !_uiState.value.readLogsGranted) {
+                val timedOut = android.os.SystemClock.elapsedRealtime() - startedAt >
+                    PAIRING_WATCH_TIMEOUT_MS
+                if (timedOut) {
+                    stopPairingWatch()
+                    _uiState.update {
+                        it.copy(
+                            statusMessage = "Didn't catch the pairing dialog in time — tap Pair now to retry.",
+                        )
+                    }
+                    return@launch
+                }
                 val endpoint = grantViaWirelessAdb.discoverPairingEndpoint(timeoutMs = 8_000L)
                 if (endpoint == null) {
+                    if (isActive) delay(1_500L)
+                    continue
+                }
+                val ownIp = grantViaWirelessAdb.ownWifiIpv4()
+                val ours = endpoint.host == "127.0.0.1" ||
+                    (ownIp != null && endpoint.host == ownIp)
+                if (!ours) {
+                    Log.i(
+                        TAG_VM,
+                        "Ignoring foreign _adb-tls-pairing service @${endpoint.host}:${endpoint.port}",
+                    )
                     if (isActive) delay(1_500L)
                     continue
                 }
@@ -324,6 +353,10 @@ class EnableDetectionViewModel @Inject constructor(
         pairingWatchJob = null
         if (_uiState.value.isWatchingForPairing) {
             _uiState.update { it.copy(isWatchingForPairing = false) }
+        }
+        // An abandoned watch leaves an ONGOING heads-up behind.
+        if (!_uiState.value.readLogsGranted) {
+            PairingNotifier.cancel(context)
         }
     }
 
@@ -363,4 +396,10 @@ class EnableDetectionViewModel @Inject constructor(
         // Hidden-ish global setting; present since Android 11 (API 30).
         Settings.Global.getInt(context.contentResolver, "adb_wifi_enabled", 0) == 1
     }.getOrDefault(false)
+
+    private companion object {
+        /** Hard cap so a forgotten watch can't flap forever in background. */
+        const val PAIRING_WATCH_TIMEOUT_MS = 4 * 60_000L
+        const val TAG_VM = "EnableDetection"
+    }
 }
