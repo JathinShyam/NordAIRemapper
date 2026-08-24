@@ -17,9 +17,13 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import java.io.File
 import java.net.Inet4Address
 import java.net.InetAddress
 import java.nio.charset.StandardCharsets
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -260,25 +264,57 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
     }
 
     /**
-     * Runs every Unlock command independently — one OEM-blocked command must
-     * not skip the rest — then the caller verifies what actually stuck.
+     * Runs each Unlock command independently and VERIFIES it took effect
+     * in-process (all three are readable via CheckSelfPermission/AppOps),
+     * retrying up to [GRANT_VERIFY_ATTEMPTS] times. Every attempt is appended
+     * to filesDir/unlock_grants.log so an OEM that silently drops security-
+     * sensitive ops over Wireless adb leaves hard evidence behind.
      */
     private fun runGrantsVerifying(manager: NordAdbConnectionManager) {
+        val logFile = File(context.filesDir, "unlock_grants.log")
+        fun log(s: String) = runCatching {
+            logFile.appendText("${SimpleDateFormat("HH:mm:ss.SSS", Locale.US).format(Date())} $s\n")
+        }
+
         for (command in ReadLogsGrantHelper.ON_DEVICE_SHELL_COMMANDS) {
             Log.i(TAG, "Running: $command")
-            runCatching {
-                manager.openStream("shell:$command").use { stream ->
-                    val input = stream.openInputStream()
-                    val buffer = ByteArray(4096)
-                    while (true) {
-                        val read = input.read(buffer)
-                        if (read <= 0) break
-                        val chunk = String(buffer, 0, read, StandardCharsets.UTF_8)
-                        Log.d(TAG, "shell: $chunk")
+            log("RUN $command")
+            var verified = false
+            for (attempt in 1..GRANT_VERIFY_ATTEMPTS) {
+                runCatching {
+                    manager.openStream("shell:$command").use { stream ->
+                        val input = stream.openInputStream()
+                        val buffer = ByteArray(4096)
+                        val out = StringBuilder()
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read <= 0) break
+                            out.append(String(buffer, 0, read, StandardCharsets.UTF_8))
+                        }
+                        if (out.isNotBlank()) log("OUT $out")
                     }
+                }.onFailure {
+                    log("ERR attempt=$attempt ${it.message}")
+                    Log.w(TAG, "Command failed (continuing): $command", it)
                 }
-            }.onFailure { Log.w(TAG, "Command failed (continuing): $command", it) }
+                Thread.sleep(GRANT_VERIFY_DELAY_MS)
+                verified = verifyCommand(command)
+                log("attempt=$attempt verified=$verified")
+                if (verified) break
+            }
+            if (!verified) log("NOT APPLIED: $command")
         }
+    }
+
+    /** In-process truth for whichever permission a given shell command grants. */
+    private fun verifyCommand(command: String): Boolean = when {
+        command.contains("READ_LOGS") ->
+            hasReadLogs()
+        command.contains("WRITE_SECURE") ->
+            ElevatedPermissions.hasWriteSecureSettings(context)
+        command.contains("GET_USAGE_STATS") ->
+            ElevatedPermissions.hasUsageAccess(context)
+        else -> true
     }
 
     private suspend fun syncWatcherAfterGrant() {
@@ -298,6 +334,8 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
         private const val CONNECT_TIMEOUT_MS = 8_000L
         private const val POST_PAIR_DELAY_MS = 1_200L
         private const val CONNECT_ATTEMPTS = 3
+        private const val GRANT_VERIFY_ATTEMPTS = 3
+        private const val GRANT_VERIFY_DELAY_MS = 400L
         private val PAIRING_CODE_REGEX = Regex("^\\d{6}$")
 
         fun normalizeHost(host: String?): String =

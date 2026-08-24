@@ -86,3 +86,17 @@ Every Built-In step now lands on its respective page:
 3. Pair now opens the same Wireless debugging page automatically before the
    watch starts, so "Pair device with pairing code" is right in front of the
    user while the heads-up upgrades to a code box.
+
+
+## RCA instrumentation — per-command verify/retry + transcript file
+
+`runGrantsVerifying` now checks each command's effect IN-PROCESS
+(READ_LOGS via checkSelfPermission, WRITE_SECURE same, usage via AppOps),
+retries up to 3× (400ms apart), drains and logs command output, and appends
+every RUN/OUT/ERR/attempt line to `filesDir/unlock_grants.log`. Pull with:
+
+    adb shell run-as com.nordairemapper cat files/unlock_grants.log
+
+Rationale: logcat's 256KB ring rotates within minutes on ColorOS WM spam, so
+file evidence is the only durable trace of what `pm grant` actually printed
+over Wireless adb when the OEM drops security-sensitive ops.
