@@ -59,3 +59,19 @@ reply action; expired session → asks to restart in-app).
 | No heads-up while app in background | POST_NOTIFICATIONS denied (check Permissions screen) or channel disabled |
 | Reply does nothing | receiver skipped — check `dumpsys activity broadcasts` for policy skips; PendingIntent must be created by our own uid (it is) |
 | "Session expired" right away | process restarted between discovery and reply — just tap Find pairing port again |
+
+
+## RCA follow-up — banking grants dropped over Wireless (OPlus)
+
+**Symptom**: Built-In pairing "succeeded" but the Banking auto-pause chip stayed
+red; `WRITE_SECURE_SETTINGS` + usage access were missing while READ_LOGS was fine.
+
+**Cause**: OxygenOS permits `pm grant READ_LOGS` over WIRELESS adb but silently
+drops security-sensitive ops (`WRITE_SECURE_SETTINGS`, `appops set`) unless
+Developer options → **"USB debugging (Security settings)"** is ON.
+
+**Fix**: `pairAndGrant` now runs each command independently
+(`runGrantsVerifying`) and verifies BOTH READ_LOGS and
+`canAutoResumeAccessibility()` afterwards. Partial success returns a Failed
+result whose message names the exact OEM toggle to enable and says to tap
+Pair now again. Old code verified only READ_LOGS and reported false success.

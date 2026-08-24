@@ -160,16 +160,30 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
                 )
             }
 
-            runGrantCommand(manager)
+            runGrantsVerifying(manager)
 
-            if (!hasReadLogs()) {
-                return@withContext GrantResult.Failed(
-                    "ADB ran the grant command, but READ_LOGS is still missing. Retry or use USB ADB.",
+            val readOk = hasReadLogs()
+            val bankingOk = ElevatedPermissions.canAutoResumeAccessibility(context)
+            when {
+                readOk && bankingOk -> {
+                    syncWatcherAfterGrant()
+                    GrantResult.Success
+                }
+                readOk -> {
+                    // Detection works, but OxygenOS silently drops the
+                    // security-sensitive grants over WIRELESS adb unless
+                    // "USB debugging (Security settings)" is on.
+                    syncWatcherAfterGrant()
+                    GrantResult.Failed(
+                        "Detection unlocked — but OxygenOS blocked the banking permissions over " +
+                            "Wireless debugging. In Developer options turn ON “USB debugging " +
+                            "(Security settings)” (confirm if asked), then tap Pair now again.",
+                    )
+                }
+                else -> GrantResult.Failed(
+                    "ADB ran the grant command, but READ_LOGS is still missing. Retry or use Manual ADB.",
                 )
             }
-
-            syncWatcherAfterGrant()
-            GrantResult.Success
         } catch (e: Exception) {
             Log.w(TAG, "Wireless ADB grant failed", e)
             val detail = e.message?.takeIf { it.isNotBlank() } ?: e.javaClass.simpleName
@@ -245,19 +259,25 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
         ok
     }
 
-    private fun runGrantCommand(manager: NordAdbConnectionManager) {
+    /**
+     * Runs every Unlock command independently — one OEM-blocked command must
+     * not skip the rest — then the caller verifies what actually stuck.
+     */
+    private fun runGrantsVerifying(manager: NordAdbConnectionManager) {
         for (command in ReadLogsGrantHelper.ON_DEVICE_SHELL_COMMANDS) {
             Log.i(TAG, "Running: $command")
-            manager.openStream("shell:$command").use { stream ->
-                val input = stream.openInputStream()
-                val buffer = ByteArray(4096)
-                while (true) {
-                    val read = input.read(buffer)
-                    if (read <= 0) break
-                    val chunk = String(buffer, 0, read, StandardCharsets.UTF_8)
-                    Log.d(TAG, "shell: $chunk")
+            runCatching {
+                manager.openStream("shell:$command").use { stream ->
+                    val input = stream.openInputStream()
+                    val buffer = ByteArray(4096)
+                    while (true) {
+                        val read = input.read(buffer)
+                        if (read <= 0) break
+                        val chunk = String(buffer, 0, read, StandardCharsets.UTF_8)
+                        Log.d(TAG, "shell: $chunk")
+                    }
                 }
-            }
+            }.onFailure { Log.w(TAG, "Command failed (continuing): $command", it) }
         }
     }
 
