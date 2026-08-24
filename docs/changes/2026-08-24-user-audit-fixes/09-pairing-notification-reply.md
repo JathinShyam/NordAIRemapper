@@ -100,3 +100,19 @@ every RUN/OUT/ERR/attempt line to `filesDir/unlock_grants.log`. Pull with:
 Rationale: logcat's 256KB ring rotates within minutes on ColorOS WM spam, so
 file evidence is the only durable trace of what `pm grant` actually printed
 over Wireless adb when the OEM drops security-sensitive ops.
+
+
+## RCA CONFIRMED — blocking drain hung the grant flow (fixed)
+
+`unlock_grants.log` from the user's run contained ONLY
+`RUN pm grant …READ_LOGS` — no OUT, no attempt lines, no command #2/#3.
+
+**Cause**: `pm grant` prints nothing on success and adbd-over-TLS doesn't send
+EOF promptly; the drain loop (`read()` until EOF) blocked forever. Android's
+broadcast timeout then killed the process. READ_LOGS applied because adbd had
+already executed command #1 — commands #2 (WRITE_SECURE_SETTINGS) and #3
+(appops) were never sent. Not an OEM policy block at all.
+
+**Fix**: bounded non-blocking read window per command
+(`SHELL_OUTPUT_WINDOW_MS=300`, poll via available()), never waits for EOF.
+Output capture is best-effort; in-process verification remains authoritative.

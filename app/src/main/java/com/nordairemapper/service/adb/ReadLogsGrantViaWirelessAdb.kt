@@ -283,13 +283,25 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
             for (attempt in 1..GRANT_VERIFY_ATTEMPTS) {
                 runCatching {
                     manager.openStream("shell:$command").use { stream ->
+                        // RCA: silent commands (pm grant prints nothing) never
+                        // deliver EOF promptly over TLS — a blocking drain hung
+                        // forever and killed the grant flow after command #1.
+                        // Bounded non-blocking read instead; output is optional,
+                        // verification below is authoritative.
                         val input = stream.openInputStream()
                         val buffer = ByteArray(4096)
                         val out = StringBuilder()
-                        while (true) {
-                            val read = input.read(buffer)
-                            if (read <= 0) break
-                            out.append(String(buffer, 0, read, StandardCharsets.UTF_8))
+                        val deadline = android.os.SystemClock.elapsedRealtime() +
+                            SHELL_OUTPUT_WINDOW_MS
+                        while (android.os.SystemClock.elapsedRealtime() < deadline) {
+                            val n = runCatching { input.available() }.getOrDefault(0)
+                            if (n > 0) {
+                                val r = input.read(buffer, 0, minOf(n, buffer.size))
+                                if (r <= 0) break
+                                out.append(String(buffer, 0, r, StandardCharsets.UTF_8))
+                            } else {
+                                Thread.sleep(SHELL_OUTPUT_POLL_MS)
+                            }
                         }
                         if (out.isNotBlank()) log("OUT $out")
                     }
@@ -336,6 +348,8 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
         private const val CONNECT_ATTEMPTS = 3
         private const val GRANT_VERIFY_ATTEMPTS = 3
         private const val GRANT_VERIFY_DELAY_MS = 400L
+        private const val SHELL_OUTPUT_WINDOW_MS = 300L
+        private const val SHELL_OUTPUT_POLL_MS = 40L
         private val PAIRING_CODE_REGEX = Regex("^\\d{6}$")
 
         fun normalizeHost(host: String?): String =
