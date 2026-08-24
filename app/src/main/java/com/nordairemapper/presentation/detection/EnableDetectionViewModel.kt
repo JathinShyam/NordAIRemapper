@@ -3,7 +3,9 @@ package com.nordairemapper.presentation.detection
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nordairemapper.service.ElevatedPermissions
@@ -17,19 +19,21 @@ import com.nordairemapper.service.adb.ReadLogsGrantViaWirelessAdb
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import rikka.shizuku.Shizuku
 import javax.inject.Inject
 
 /** Which Unlock route the user picked on the Enable detection screen. */
-enum class DetectionMethod(val label: String, val description: String) {
-    BUILTIN("Built-in", "Pair with Wireless debugging right in the app — no PC"),
-    SHIZUKU("Shizuku", "One tap if you already run Shizuku"),
-    MANUAL_ADB("Manual ADB", "Copy one command and run it from a computer"),
+enum class DetectionMethod(val label: String) {
+    BUILTIN("Built-in"),
+    SHIZUKU("Shizuku"),
+    MANUAL_ADB("Manual ADB"),
 }
 
 data class EnableDetectionUiState(
@@ -43,24 +47,18 @@ data class EnableDetectionUiState(
     /** WRITE_SECURE_SETTINGS + usage access for hands-free banking Accessibility pause. */
     val bankingAutoResumeReady: Boolean = false,
     val method: DetectionMethod = DetectionMethod.BUILTIN,
+    /** Heads-up pairing replies need POST_NOTIFICATIONS. */
+    val notificationsGranted: Boolean = false,
+    // Built-in wireless pairing path
+    val devOptionsEnabled: Boolean = false,
+    val wifiDebugEnabled: Boolean = false,
+    val isWatchingForPairing: Boolean = false,
+    val discoveredPort: Int? = null,
     // Shizuku path
     val shizukuInstalled: Boolean = false,
     val shizukuRunning: Boolean = false,
     val shizukuGranted: Boolean = false,
     val isGrantingViaShizuku: Boolean = false,
-    // Built-in wireless pairing path
-    val pairingCode: String = "",
-    /** Pairing dialog port only (under the 6-digit code). */
-    val pairingPort: String = "",
-    /**
-     * Wireless debugging page “IP address & port” — different from [pairingPort].
-     * Needed when mDNS cannot find the TLS connect service after pairing.
-     */
-    val connectPort: String = "",
-    val discoveredPort: Int? = null,
-    val discoveredHost: String? = null,
-    val isDiscovering: Boolean = false,
-    val isGranting: Boolean = false,
     val statusMessage: String? = null,
     val errorMessage: String? = null,
 )
@@ -76,11 +74,14 @@ class EnableDetectionViewModel @Inject constructor(
             readLogsGranted = grantViaWirelessAdb.hasReadLogs(),
             bankingAutoResumeReady = ElevatedPermissions.canAutoResumeAccessibility(context),
             shizukuInstalled = ShizukuGrant.isInstalled(context),
+            notificationsGranted = areNotificationsEnabled(),
+            devOptionsEnabled = isDevOptionsEnabled(),
+            wifiDebugEnabled = isWifiDebugEnabled(),
         ),
     )
     val uiState: StateFlow<EnableDetectionUiState> = _uiState.asStateFlow()
 
-    private var discoverJob: Job? = null
+    private var pairingWatchJob: Job? = null
 
     private val shizukuPermissionListener =
         Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
@@ -101,6 +102,7 @@ class EnableDetectionViewModel @Inject constructor(
 
     override fun onCleared() {
         Shizuku.removeRequestPermissionResultListener(shizukuPermissionListener)
+        pairingWatchJob?.cancel()
         PairingSession.clear()
         PairingNotifier.cancel(context)
         super.onCleared()
@@ -127,6 +129,9 @@ class EnableDetectionViewModel @Inject constructor(
                     readLogsGranted = ok,
                     logAccessVisible = visible,
                     bankingAutoResumeReady = banking,
+                    notificationsGranted = areNotificationsEnabled(),
+                    devOptionsEnabled = isDevOptionsEnabled(),
+                    wifiDebugEnabled = isWifiDebugEnabled(),
                     statusMessage = when {
                         ok && visible == false ->
                             "System logs are still blocked. Allow log access when Keyforge asks, then leave and reopen this screen."
@@ -143,8 +148,14 @@ class EnableDetectionViewModel @Inject constructor(
     }
 
     fun setMethod(method: DetectionMethod) {
+        if (_uiState.value.method == method) return
+        if (method != DetectionMethod.BUILTIN) stopPairingWatch()
         _uiState.update { it.copy(method = method, errorMessage = null) }
         if (method == DetectionMethod.SHIZUKU) refreshShizukuState()
+    }
+
+    fun setNotificationsGranted() {
+        _uiState.update { it.copy(notificationsGranted = true) }
     }
 
     fun refreshShizukuState() {
@@ -203,11 +214,12 @@ class EnableDetectionViewModel @Inject constructor(
 
     /** Shared verification + watcher reconnect after any successful grant path. */
     private suspend fun afterGrantSucceeded(extraStatus: String) {
+        stopPairingWatch()
+        PairingSession.clear()
+        PairingNotifier.cancel(context)
         val banking = ElevatedPermissions.canAutoResumeAccessibility(context)
         val visible = LogVisibilityProbe.probe() == LogVisibilityProbe.Result.VISIBLE
         if (!LogcatWatcherService.hasTailSeenNonSelf()) {
-            // Same deterministic reconnect: probe surfaced the
-            // consent prompt; the fresh tail inherits the Allow.
             LogcatWatcherService.restart(context)
         }
         _uiState.update {
@@ -227,46 +239,21 @@ class EnableDetectionViewModel @Inject constructor(
         }
     }
 
-    fun onPairingCodeChange(value: String) {
-        val digits = value.filter { it.isDigit() }.take(6)
-        _uiState.update { it.copy(pairingCode = digits, errorMessage = null) }
-    }
+    // ── Built-In checklist ────────────────────────────────────────────────
 
-    fun onPairingPortChange(value: String) {
-        val parsed = parseHostPortOrPort(value)
-        PairingSession.set(
-            host = parsed.host ?: _uiState.value.discoveredHost,
-            pairingPort = parsed.portText.toIntOrNull(),
-            connectPort = _uiState.value.connectPort.toIntOrNull(),
-        )
-        _uiState.update {
-            it.copy(
-                pairingPort = parsed.portText,
-                discoveredHost = parsed.host ?: it.discoveredHost,
-                errorMessage = null,
+    fun openAboutDevice() {
+        runCatching {
+            context.startActivity(
+                Intent(Settings.ACTION_DEVICE_INFO_SETTINGS)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             )
+        }.onFailure {
+            ReadLogsGrantHelper.openDeveloperOptions(context)
         }
     }
 
-    fun onConnectPortChange(value: String) {
-        val parsed = parseHostPortOrPort(value)
-        PairingSession.set(
-            host = _uiState.value.discoveredHost,
-            pairingPort = _uiState.value.pairingPort.toIntOrNull()
-                ?: _uiState.value.discoveredPort,
-            connectPort = parsed.portText.toIntOrNull(),
-        )
-        _uiState.update {
-            it.copy(
-                connectPort = parsed.portText,
-                discoveredHost = parsed.host ?: it.discoveredHost,
-                errorMessage = null,
-            )
-        }
-    }
-
-    fun openWirelessDebugging() {
-        ReadLogsGrantHelper.openWirelessDebugging(context)
+    fun openDeveloperOptions() {
+        ReadLogsGrantHelper.openDeveloperOptions(context)
     }
 
     /** Opens the Shizuku manager app so the user can start the service. */
@@ -274,7 +261,7 @@ class EnableDetectionViewModel @Inject constructor(
         runCatching {
             val intent = context.packageManager.getLaunchIntentForPackage(ShizukuGrant.SHIZUKU_PACKAGE)
             if (intent != null) {
-                context.startActivity(intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             } else {
                 _uiState.update {
                     it.copy(errorMessage = "Shizuku manager not installed. Install it from Play Store or GitHub.")
@@ -283,125 +270,89 @@ class EnableDetectionViewModel @Inject constructor(
         }
     }
 
-    fun openDeveloperOptions() {
-        ReadLogsGrantHelper.openDeveloperOptions(context)
+    /**
+     * Step 3: opens the Wireless debugging page and watches for the temporary
+     * pairing service. When mDNS finds it, the floating notification upgrades
+     * from "listening" to "enter the 6-digit code".
+     */
+    fun startPairingWatch() {
+        if (_uiState.value.readLogsGranted) return
+        pairingWatchJob?.cancel()
         _uiState.update {
             it.copy(
-                statusMessage = "Wireless debugging → Pair device with pairing code for the 6-digit " +
-                    "code. After that, the main Wireless debugging page shows a different IP:port for connection.",
+                isWatchingForPairing = true,
+                errorMessage = null,
+                statusMessage = null,
             )
+        }
+        PairingNotifier.postWaiting(context)
+        pairingWatchJob = viewModelScope.launch {
+            while (isActive && !_uiState.value.readLogsGranted) {
+                val endpoint = grantViaWirelessAdb.discoverPairingEndpoint(timeoutMs = 8_000L)
+                if (endpoint == null) {
+                    if (isActive) delay(1_500L)
+                    continue
+                }
+                PairingSession.set(
+                    host = endpoint.host,
+                    pairingPort = endpoint.port,
+                    connectPort = null,
+                )
+                PairingNotifier.postPrompt(context, endpoint.port)
+                _uiState.update {
+                    it.copy(
+                        isWatchingForPairing = false,
+                        discoveredPort = endpoint.port,
+                        statusMessage = "Port ${endpoint.port} detected — enter the code in the notification.",
+                    )
+                }
+                return@launch
+            }
+        }
+    }
+
+    fun stopPairingWatch() {
+        pairingWatchJob?.cancel()
+        pairingWatchJob = null
+        if (_uiState.value.isWatchingForPairing) {
+            _uiState.update { it.copy(isWatchingForPairing = false) }
         }
     }
 
     fun onNearbyWifiDenied() {
         _uiState.update {
             it.copy(
-                isDiscovering = false,
-                statusMessage = "Nearby Wi‑Fi permission denied — enter pairing port and connection port manually.",
+                statusMessage = "Allow the Nearby devices permission so Keyforge can detect the pairing port automatically.",
             )
         }
     }
 
-    fun startDiscovery() {
-        if (_uiState.value.readLogsGranted || _uiState.value.isGranting) return
-        discoverJob?.cancel()
-        discoverJob = viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isDiscovering = true,
-                    statusMessage = "Looking for pairing port… Keep “Pair device with pairing code” open.",
-                    errorMessage = null,
-                )
-            }
-            val endpoint = grantViaWirelessAdb.discoverPairingEndpoint()
-            _uiState.update {
-                if (endpoint != null) {
-                    // Arm the notification-reply path: the user can finish
-                    // pairing from the heads-up without leaving the system dialog.
-                    PairingSession.set(
-                        host = endpoint.host,
-                        pairingPort = endpoint.port,
-                        connectPort = it.connectPort.toIntOrNull(),
-                    )
-                    PairingNotifier.postPrompt(context, endpoint.port)
-                    it.copy(
-                        isDiscovering = false,
-                        discoveredHost = endpoint.host,
-                        discoveredPort = endpoint.port,
-                        pairingPort = endpoint.port.toString(),
-                        statusMessage = "Found pairing port ${endpoint.port}. Enter the 6-digit code — " +
-                            "in the app or straight in the notification.",
-                    )
-                } else {
-                    it.copy(
-                        isDiscovering = false,
-                        statusMessage = "Port not found automatically. Enter pairing port from under the code, " +
-                            "and Connection port from the Wireless debugging page IP address & port.",
-                    )
-                }
-            }
-        }
-    }
-
-    fun pairAndGrant() {
-        val state = _uiState.value
-        if (state.isGranting) return
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isGranting = true,
-                    errorMessage = null,
-                    statusMessage = "Pairing, then connecting (uses a different port)…",
-                )
-            }
-            val pairingPort = state.pairingPort.toIntOrNull() ?: state.discoveredPort
-            val connectPort = state.connectPort.toIntOrNull()
-            val result = grantViaWirelessAdb.pairAndGrant(
-                pairingCode = state.pairingCode,
-                host = state.discoveredHost,
-                pairingPort = pairingPort,
-                connectPort = connectPort,
-            )
-            when (result) {
-                ReadLogsGrantViaWirelessAdb.GrantResult.AlreadyGranted,
-                ReadLogsGrantViaWirelessAdb.GrantResult.Success,
-                -> {
-                    _uiState.update { it.copy(isGranting = false) }
-                    PairingSession.clear()
-                    PairingNotifier.cancel(context)
-                    afterGrantSucceeded(
-                        extraStatus = "Done. You can turn Wireless debugging off — grants stay.",
-                    )
-                }
-                is ReadLogsGrantViaWirelessAdb.GrantResult.Failed -> _uiState.update {
-                    it.copy(
-                        isGranting = false,
-                        errorMessage = result.message,
-                        statusMessage = null,
-                    )
-                }
-            }
-        }
-    }
+    // ── Manual ADB ─────────────────────────────────────────────────────────
 
     fun copyUsbAdbCommand() {
         val clipboard = context.getSystemService(ClipboardManager::class.java)
         clipboard.setPrimaryClip(
             ClipData.newPlainText("adb command", LogcatWatcherService.ADB_GRANT_COMMAND),
         )
-        _uiState.update { it.copy(statusMessage = "USB ADB command copied.") }
+        _uiState.update { it.copy(statusMessage = "ADB commands copied.") }
     }
 
-    private data class HostPortParse(val host: String?, val portText: String)
+    // ── System-state probes ────────────────────────────────────────────────
 
-    /** Accepts "37123" or "192.168.1.5:37123". */
-    private fun parseHostPortOrPort(raw: String): HostPortParse {
-        val trimmed = raw.trim()
-        if (trimmed.contains(':')) {
-            val host = trimmed.substringBeforeLast(':').trim().ifEmpty { null }
-            val port = trimmed.substringAfterLast(':').filter { it.isDigit() }.take(5)
-            return HostPortParse(host, port)
-        }
-        return HostPortParse(null, trimmed.filter { it.isDigit() }.take(5))
-    }
+    private fun areNotificationsEnabled(): Boolean =
+        context.getSystemService(android.app.NotificationManager::class.java)
+            ?.areNotificationsEnabled() ?: true
+
+    private fun isDevOptionsEnabled(): Boolean = runCatching {
+        Settings.Global.getInt(
+            context.contentResolver,
+            Settings.Global.DEVELOPMENT_SETTINGS_ENABLED,
+            0,
+        ) == 1
+    }.getOrDefault(false)
+
+    private fun isWifiDebugEnabled(): Boolean = runCatching {
+        // Hidden-ish global setting; present since Android 11 (API 30).
+        Settings.Global.getInt(context.contentResolver, "adb_wifi_enabled", 0) == 1
+    }.getOrDefault(false)
 }

@@ -18,14 +18,25 @@ WhatsApp-style direct-reply notifications solve.
 | `presentation/detection/EnableDetectionScreen.kt` | Built-In panel tells the user they can answer from the notification |
 | `AndroidManifest.xml` | `PairingReplyReceiver`, exported=false |
 
-## Flow after this change
+## Flow after this change (v2 — formless checklist)
 
-1. Open Wireless debugging → Pair dialog open.
-2. Tap **Find pairing port** → app discovers port → **heads-up appears:
-   "Finish pairing right here — type the 6-digit code"**.
-3. Pull down / tap "Enter pairing code", type the code, send.
-4. Notification flips to "Pairing…" then "Paired and unlocked" (auto-expires);
-   grants run and the watcher reconnects exactly like the in-app path.
+**Selector**: three equal-width segments in ONE row, single-select
+(Built-In / Shizuku / Manual ADB). A notifications-permission card sits above
+the selector until POST_NOTIFICATIONS is granted.
+
+**Built-In = 3-step checklist, zero forms:**
+1. Developer options — probed via `Settings.Global.DEVELOPMENT_SETTINGS_ENABLED`;
+   unchecked opens About device ("tap Build number 5–7×").
+2. Wireless debugging — probed via `Settings.Global.adb_wifi_enabled`;
+   unchecked opens Developer options.
+3. **Pair now** (gated on 1–2) — opens the Wireless debugging page AND starts a
+   continuous mDNS watch + posts a "Watching for the pairing dialog…"
+   heads-up. When the pairing service appears, the SAME notification upgrades
+   to an inline 6-digit code box. Reply → pairs, grants, and relaunches Keyforge
+   automatically. No port/code fields anywhere in the app.
+
+Old `pairAndGrant()` in-app form path, its fields, and the one-shot discovery
+were removed; the reply receiver is now the only Built-In completion path.
 
 Failure paths surface in the same banner (wrong code → re-prompt keeps the
 reply action; expired session → asks to restart in-app).
@@ -35,6 +46,7 @@ reply action; expired session → asks to restart in-app).
 1. Run the flow end to end on-device with the pairing dialog in front —
    complete it entirely from the notification.
 2. Type 5 digits → notification re-prompts ("That wasn't 6 digits").
+3. Steps 1–2 auto-recheck every ON_RESUME (returning from Settings updates the checks instantly).
 3. Let the code expire → failure banner suggests generating a new one;
    in-app fields still work.
 4. Deny notifications for Keyforge → prompt silently skipped; in-app flow

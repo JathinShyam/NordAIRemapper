@@ -5,7 +5,9 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -29,7 +30,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -45,7 +45,6 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -62,11 +61,10 @@ import com.nordairemapper.ui.components.StatusChip
 import com.nordairemapper.ui.components.StatusTone
 
 /**
- * Shared Unlock UI: three method cards (Built-In / Shizuku / Manual ADB) and
- * the panel of the selected one, plus status/error lines. Used by the full
- * Unlock screen and embedded in Lab.
+ * Shared Unlock UI: notification gate → one-row method selector
+ * (Built-In / Shizuku / Manual ADB) → the selected method's flow.
+ * Used by the full Unlock screen and embedded in Lab.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UnlockMethodsSection(
     viewModel: EnableDetectionViewModel,
@@ -78,14 +76,14 @@ fun UnlockMethodsSection(
     val nearbyWifiLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
-        if (granted) {
-            viewModel.startDiscovery()
-        } else {
-            viewModel.onNearbyWifiDenied()
-        }
+        if (granted) viewModel.startPairingWatch() else viewModel.onNearbyWifiDenied()
     }
 
-    fun requestNearbyWifiThenDiscover() {
+    val notificationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { viewModel.setNotificationsGranted() }
+
+    fun requestNearbyThenStartPairing() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val granted = ContextCompat.checkSelfPermission(
                 context,
@@ -96,36 +94,47 @@ fun UnlockMethodsSection(
                 return
             }
         }
-        viewModel.startDiscovery()
+        viewModel.startPairingWatch()
     }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionLabel("Choose a method")
-        DetectionMethod.entries.forEach { method ->
-            MethodOptionCard(
-                method = method,
-                selected = state.method == method,
-                subStatus = when (method) {
-                    DetectionMethod.SHIZUKU -> shizukuStatusLabel(state)
-                    else -> null
-                },
-                onSelect = { viewModel.setMethod(method) },
-            )
+        if (!state.notificationsGranted) {
+            NordSurfaceCard {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = "Allow notifications first",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                    )
+                    Text(
+                        text = "Built-In pairing finishes inside a heads-up notification. Without it you'd have to switch apps mid-dialog.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        NordPrimaryButton(
+                            text = "Allow notifications",
+                            onClick = { notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
+                        )
+                    }
+                }
+            }
         }
 
+        MethodSelectorRow(
+            selected = state.method,
+            onSelect = viewModel::setMethod,
+            enabled = true,
+        )
+
         when (state.method) {
-            DetectionMethod.BUILTIN -> BuiltInMethodPanel(
+            DetectionMethod.BUILTIN -> BuiltInChecklistPanel(
                 state = state,
-                onPairingCodeChange = viewModel::onPairingCodeChange,
-                onPairingPortChange = viewModel::onPairingPortChange,
-                onConnectPortChange = viewModel::onConnectPortChange,
-                onOpenWirelessDebugging = {
-                    viewModel.openWirelessDebugging()
-                    requestNearbyWifiThenDiscover()
-                },
+                onOpenAboutDevice = viewModel::openAboutDevice,
                 onOpenDeveloperOptions = viewModel::openDeveloperOptions,
-                onFindPort = { requestNearbyWifiThenDiscover() },
-                onPairAndGrant = viewModel::pairAndGrant,
+                onPairNow = { requestNearbyThenStartPairing() },
             )
             DetectionMethod.SHIZUKU -> ShizukuMethodPanel(
                 state = state,
@@ -158,6 +167,62 @@ fun UnlockMethodsSection(
                     text = msg,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MethodSelectorRow(
+    selected: DetectionMethod,
+    onSelect: (DetectionMethod) -> Unit,
+    enabled: Boolean,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        DetectionMethod.entries.forEach { method ->
+            val on = selected == method
+            val shape = MaterialTheme.shapes.small
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .selectable(
+                        selected = on,
+                        enabled = enabled,
+                        role = Role.RadioButton,
+                        onClick = { onSelect(method) },
+                    )
+                    .background(
+                        color = if (on) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                        } else {
+                            MaterialTheme.colorScheme.surface
+                        },
+                        shape = shape,
+                    )
+                    .border(
+                        BorderStroke(
+                            1.dp,
+                            if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                        ),
+                        shape,
+                    )
+                    .padding(horizontal = 4.dp, vertical = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = method.label,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium,
+                    color = if (on) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    maxLines = 1,
                 )
             }
         }
@@ -284,186 +349,120 @@ fun EnableDetectionScreen(
     }
 }
 
-private fun shizukuStatusLabel(state: EnableDetectionUiState): String = when {
-    !state.shizukuInstalled -> "Shizuku app not installed"
-    !state.shizukuRunning -> "Shizuku not running"
-    !state.shizukuGranted -> "Tap to allow Keyforge in Shizuku"
-    else -> "Ready"
+// ─── Built-In checklist ─────────────────────────────────────────────────────
+
+@Composable
+private fun BuiltInChecklistPanel(
+    state: EnableDetectionUiState,
+    onOpenAboutDevice: () -> Unit,
+    onOpenDeveloperOptions: () -> Unit,
+    onPairNow: () -> Unit,
+) {
+    val prerequisitesOk = state.devOptionsEnabled && state.wifiDebugEnabled
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        ChecklistStep(
+            stepNumber = 1,
+            title = "Enable developer options",
+            done = state.devOptionsEnabled,
+            body = if (state.devOptionsEnabled) {
+                "Done."
+            } else {
+                "Open About device, scroll to Build number, and tap it 5–7 times until “You are now a developer” appears."
+            },
+            actionLabel = if (state.devOptionsEnabled) null else "Open About device",
+            onAction = onOpenAboutDevice,
+        )
+        ChecklistStep(
+            stepNumber = 2,
+            title = "Turn on Wireless debugging",
+            done = state.wifiDebugEnabled,
+            enabled = state.devOptionsEnabled,
+            body = when {
+                state.wifiDebugEnabled -> "Done."
+                !state.devOptionsEnabled -> "Available after step 1."
+                else -> "Open Developer options and flip the Wireless debugging toggle on."
+            },
+            actionLabel = if (!state.devOptionsEnabled || state.wifiDebugEnabled) null else "Open Developer options",
+            onAction = onOpenDeveloperOptions,
+        )
+        ChecklistStep(
+            stepNumber = 3,
+            title = "Tap Pair now, then open “Pair device with pairing code”",
+            done = state.discoveredPort != null,
+            enabled = prerequisitesOk,
+            body = when {
+                state.discoveredPort != null ->
+                    "Port ${state.discoveredPort} detected — enter the 6-digit code in the Keyforge notification."
+                state.isWatchingForPairing ->
+                    "Watching for the pairing dialog… open “Pair device with pairing code” now; the notification will turn into a code box."
+                prerequisitesOk ->
+                    "Keyforge posts a floating notification — you'll type the code there, never here. No forms."
+                else -> "Complete steps 1–2 first."
+            },
+            actionLabel = if (!prerequisitesOk || state.isWatchingForPairing || state.discoveredPort != null) null else "Pair now",
+            primary = true,
+            onAction = onPairNow,
+        )
+    }
 }
 
 @Composable
-private fun MethodOptionCard(
-    method: DetectionMethod,
-    selected: Boolean,
-    subStatus: String?,
-    onSelect: () -> Unit,
+private fun ChecklistStep(
+    stepNumber: Int,
+    title: String,
+    done: Boolean,
+    body: String,
+    actionLabel: String?,
+    onAction: () -> Unit,
+    enabled: Boolean = true,
+    primary: Boolean = false,
 ) {
-    val shape = MaterialTheme.shapes.medium
-    Card(
-        onClick = onSelect,
-        modifier = Modifier
-            .fillMaxWidth()
-            .selectable(selected = selected, role = Role.RadioButton, onClick = onSelect),
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) {
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-            } else {
-                MaterialTheme.colorScheme.surface
-            },
-        ),
-        border = BorderStroke(
-            1.dp,
-            if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = shape,
-    ) {
+    val accent = when {
+        done -> StatusActiveGreen
+        !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+        else -> MaterialTheme.colorScheme.primary
+    }
+    NordSurfaceCard {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(14.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Icon(
+                imageVector = Icons.Outlined.CheckCircle,
+                contentDescription = if (done) "Done" else "Not done yet",
+                tint = accent,
+                modifier = Modifier.size(22.dp),
+            )
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = method.label,
+                    text = "$stepNumber · $title",
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    color = if (enabled) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                 )
                 Text(
-                    text = method.description,
+                    text = body,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                subStatus?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Medium,
-                        color = if (it == "Ready") {
-                            MaterialTheme.colorScheme.tertiary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                        modifier = Modifier.padding(top = 2.dp),
-                    )
+                actionLabel?.let { label ->
+                    if (primary) {
+                        NordPrimaryButton(text = label, onClick = onAction)
+                    } else {
+                        NordGhostButton(text = label, onClick = onAction)
+                    }
                 }
-            }
-            if (selected) {
-                Icon(
-                    imageVector = Icons.Outlined.CheckCircle,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                )
             }
         }
     }
 }
 
-@Composable
-private fun BuiltInMethodPanel(
-    state: EnableDetectionUiState,
-    onPairingCodeChange: (String) -> Unit,
-    onPairingPortChange: (String) -> Unit,
-    onConnectPortChange: (String) -> Unit,
-    onOpenWirelessDebugging: () -> Unit,
-    onOpenDeveloperOptions: () -> Unit,
-    onFindPort: () -> Unit,
-    onPairAndGrant: () -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        NordSurfaceCard {
-            Column(
-                modifier = Modifier.padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(
-                    text = "If you see a screen with your Wi‑Fi name (SSID) and Cancel / Allow — that is not the pairing code. Tap Allow.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = "Then open Wireless debugging → Pair device with pairing code. Leave that dialog open.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                NordPrimaryButton(text = "Open Wireless debugging", onClick = onOpenWirelessDebugging)
-                NordGhostButton(
-                    text = "Open Developer options instead",
-                    onClick = onOpenDeveloperOptions,
-                )
-                NordGhostButton(
-                    text = if (state.isDiscovering) "Searching for port…" else "Find pairing port",
-                    onClick = onFindPort,
-                    enabled = !state.isDiscovering && !state.isGranting,
-                    loading = state.isDiscovering,
-                )
-                if (state.discoveredPort != null) {
-                    Text(
-                        text = "Discovered port ${state.discoveredPort}" +
-                            (state.discoveredHost?.let { " @ $it" } ?: ""),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = "Heads-up: you can type the 6-digit code straight into the Keyforge notification while the pairing dialog is open.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
+private val StatusActiveGreen @Composable get() = MaterialTheme.colorScheme.tertiary
 
-        NordSurfaceCard {
-            Column(
-                modifier = Modifier.padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(
-                    text = "Pairing port and Connection port are different. Pairing uses the port under the 6-digit code. Connection uses “IP address & port” on the main Wireless debugging page.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                OutlinedTextField(
-                    value = state.pairingCode,
-                    onValueChange = onPairingCodeChange,
-                    label = { Text("6-digit pairing code") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !state.isGranting,
-                )
-                OutlinedTextField(
-                    value = state.pairingPort,
-                    onValueChange = onPairingPortChange,
-                    label = { Text("Pairing port") },
-                    supportingText = { Text("Under the code: 192.168.x.x:PAIRING_PORT") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !state.isGranting,
-                )
-                OutlinedTextField(
-                    value = state.connectPort,
-                    onValueChange = onConnectPortChange,
-                    label = { Text("Connection port (if connect fails)") },
-                    supportingText = { Text("Wireless debugging page → IP address & port") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !state.isGranting,
-                )
-                NordPrimaryButton(
-                    text = if (state.isGranting) "Granting…" else "Pair and grant Unlock",
-                    onClick = onPairAndGrant,
-                    enabled = !state.isGranting && state.pairingCode.length == 6,
-                    loading = state.isGranting,
-                )
-            }
-        }
-    }
-}
+// ─── Shizuku ─────────────────────────────────────────────────────────────────
 
 @Composable
 private fun ShizukuMethodPanel(
@@ -521,6 +520,8 @@ private fun ShizukuStatusRow(label: String, ok: Boolean) {
         )
     }
 }
+
+// ─── Manual ADB ──────────────────────────────────────────────────────────────
 
 @Composable
 private fun ManualAdbMethodPanel(

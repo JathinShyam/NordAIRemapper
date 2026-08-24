@@ -22,6 +22,25 @@ object PairingNotifier {
     const val NOTIFICATION_ID = 2001
     const val KEY_CODE = "pairing_code"
 
+    /** Step-3 state before the port is found: keep the heads-up alive. */
+    fun postWaiting(context: Context) {
+        if (!notificationsEnabled(context)) return
+        ensureChannel(context)
+        notify(
+            context,
+            Notification.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentTitle("Watching for the pairing dialog…")
+                .setContentText(
+                    "Open Wireless debugging → Pair device with pairing code. " +
+                        "This turns into a code box the moment the dialog appears.",
+                )
+                .setCategory(Notification.CATEGORY_PROGRESS)
+                .setOngoing(true)
+                .build(),
+        )
+    }
+
     fun postPrompt(context: Context, port: Int?, errorLine: String? = null) {
         Log.i("PairingNotifier", "postPrompt port=$port error=$errorLine enabled=${notificationsEnabled(context)}")
         if (!notificationsEnabled(context)) return

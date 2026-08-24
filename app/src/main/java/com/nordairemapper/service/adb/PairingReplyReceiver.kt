@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.nordairemapper.presentation.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -64,11 +65,22 @@ class PairingReplyReceiver : BroadcastReceiver() {
                 when (result) {
                     is ReadLogsGrantViaWirelessAdb.GrantResult.AlreadyGranted,
                     is ReadLogsGrantViaWirelessAdb.GrantResult.Success,
-                    -> PairingNotifier.postResult(
-                        appContext,
-                        ok = true,
-                        "You're all set — back to Keyforge to assign presses.",
-                    )
+                    -> {
+                        // Bring the user back into the app — allowed here
+                        // because Keyforge usually holds SYSTEM_ALERT_WINDOW;
+                        // if the system blocks it, the result banner taps through.
+                        runCatching {
+                            appContext.startActivity(
+                                Intent(appContext, MainActivity::class.java)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                            )
+                        }
+                        PairingNotifier.postResult(
+                            appContext,
+                            ok = true,
+                            "You're all set — assign presses on Home.",
+                        )
+                    }
                     is ReadLogsGrantViaWirelessAdb.GrantResult.Failed ->
                         PairingNotifier.postResult(appContext, ok = false, result.message)
                 }
