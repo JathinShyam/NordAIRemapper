@@ -24,7 +24,7 @@ TalkBack, missing empty states, a URL sheet that could save a prefilled
 | `ui/components/NordHeading.kt` | heading overflow ellipsis; top-bar subtitle maxLines+ellipsis |
 | `ui/components/StatusChip.kt` | interactive chips expose selected state via `selectable(Role.RadioButton)` |
 | `presentation/developer/KeyLearningScreen.kt` | "Listening…" empty state; shared time formatter; ticking last-seen |
-| `presentation/onboarding/OnboardingScreen.kt` | step content scrolls so stacked buttons can't clip |
+| `presentation/onboarding/OnboardingScreen.kt` | ~~step content scrolls~~ **reverted same day**: scroll wrapper broke the centered layout (content jumped to top); original `weight(1f)` placement restored |
 
 ## Verify
 
@@ -37,6 +37,8 @@ TalkBack, missing empty states, a URL sheet that could save a prefilled
 4. URL flow: fresh sheet is empty; Save disabled until text entered;
    keyboard Done saves.
 5. Exclusions with many apps scrolls without jank.
+6. Onboarding pages keep the original centered layout (scroll experiment
+   reverted — see file table).
 
 ## Debug tips
 
