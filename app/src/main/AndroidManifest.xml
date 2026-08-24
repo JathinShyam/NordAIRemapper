@@ -124,6 +124,11 @@
             </intent-filter>
         </receiver>
 
+        <!-- Direct-reply target for the Built-In pairing notification -->
+        <receiver
+            android:name=".service.adb.PairingReplyReceiver"
+            android:exported="false" />
+
         <!-- Shizuku binder bridge (only used when the user picks the Shizuku path) -->
         <provider
             android:name="rikka.shizuku.ShizukuProvider"

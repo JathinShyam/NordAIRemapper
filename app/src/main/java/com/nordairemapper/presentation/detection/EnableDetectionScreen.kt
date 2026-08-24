@@ -406,6 +406,11 @@ private fun BuiltInMethodPanel(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                     )
+                    Text(
+                        text = "Heads-up: you can type the 6-digit code straight into the Keyforge notification while the pairing dialog is open.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }

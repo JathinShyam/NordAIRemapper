@@ -11,6 +11,8 @@ import com.nordairemapper.service.LogVisibilityProbe
 import com.nordairemapper.service.LogcatWatcherService
 import com.nordairemapper.service.ReadLogsGrantHelper
 import com.nordairemapper.service.ShizukuGrant
+import com.nordairemapper.service.adb.PairingNotifier
+import com.nordairemapper.service.adb.PairingSession
 import com.nordairemapper.service.adb.ReadLogsGrantViaWirelessAdb
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -99,6 +101,8 @@ class EnableDetectionViewModel @Inject constructor(
 
     override fun onCleared() {
         Shizuku.removeRequestPermissionResultListener(shizukuPermissionListener)
+        PairingSession.clear()
+        PairingNotifier.cancel(context)
         super.onCleared()
     }
 
@@ -230,6 +234,11 @@ class EnableDetectionViewModel @Inject constructor(
 
     fun onPairingPortChange(value: String) {
         val parsed = parseHostPortOrPort(value)
+        PairingSession.set(
+            host = parsed.host ?: _uiState.value.discoveredHost,
+            pairingPort = parsed.portText.toIntOrNull(),
+            connectPort = _uiState.value.connectPort.toIntOrNull(),
+        )
         _uiState.update {
             it.copy(
                 pairingPort = parsed.portText,
@@ -241,6 +250,12 @@ class EnableDetectionViewModel @Inject constructor(
 
     fun onConnectPortChange(value: String) {
         val parsed = parseHostPortOrPort(value)
+        PairingSession.set(
+            host = _uiState.value.discoveredHost,
+            pairingPort = _uiState.value.pairingPort.toIntOrNull()
+                ?: _uiState.value.discoveredPort,
+            connectPort = parsed.portText.toIntOrNull(),
+        )
         _uiState.update {
             it.copy(
                 connectPort = parsed.portText,
@@ -301,13 +316,21 @@ class EnableDetectionViewModel @Inject constructor(
             val endpoint = grantViaWirelessAdb.discoverPairingEndpoint()
             _uiState.update {
                 if (endpoint != null) {
+                    // Arm the notification-reply path: the user can finish
+                    // pairing from the heads-up without leaving the system dialog.
+                    PairingSession.set(
+                        host = endpoint.host,
+                        pairingPort = endpoint.port,
+                        connectPort = it.connectPort.toIntOrNull(),
+                    )
+                    PairingNotifier.postPrompt(context, endpoint.port)
                     it.copy(
                         isDiscovering = false,
                         discoveredHost = endpoint.host,
                         discoveredPort = endpoint.port,
                         pairingPort = endpoint.port.toString(),
-                        statusMessage = "Found pairing port ${endpoint.port}. Enter the 6-digit code. " +
-                            "Also note the Wireless debugging page IP:port for Connection port if connect fails.",
+                        statusMessage = "Found pairing port ${endpoint.port}. Enter the 6-digit code — " +
+                            "in the app or straight in the notification.",
                     )
                 } else {
                     it.copy(
@@ -344,6 +367,8 @@ class EnableDetectionViewModel @Inject constructor(
                 ReadLogsGrantViaWirelessAdb.GrantResult.Success,
                 -> {
                     _uiState.update { it.copy(isGranting = false) }
+                    PairingSession.clear()
+                    PairingNotifier.cancel(context)
                     afterGrantSucceeded(
                         extraStatus = "Done. You can turn Wireless debugging off — grants stay.",
                     )

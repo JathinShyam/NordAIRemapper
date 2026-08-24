@@ -17,6 +17,7 @@ fixed (deliberate scope) are listed at the end.
 | 06 | [06-compose-a11y-polish.md](./06-compose-a11y-polish.md) | Saveable sheets/dialogs, 48dp targets, semantics, empty states, URL sheet, IO off main |
 | 07 | [07-launchapp-icons.md](./07-launchapp-icons.md) | Real launcher logos on Home cards, Floating Menu slots + tiles |
 | 08 | [08-unlock-methods-shizuku.md](./08-unlock-methods-shizuku.md) | Unlock screen: Built-In / Shizuku / Manual ADB method cards; Shizuku tap-to-grant via user service |
+| 09 | [09-pairing-notification-reply.md](./09-pairing-notification-reply.md) | Built-In pairing: WhatsApp-style direct-reply notification — enter the 6-digit code without leaving the system dialog |
 
 ## Known gaps (audit found, not fixed here)
 
