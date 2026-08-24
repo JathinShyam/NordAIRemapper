@@ -15,6 +15,7 @@ fixed (deliberate scope) are listed at the end.
 | 04 | [04-action-failure-honesty.md](./04-action-failure-honesty.md) | Failed system actions render "Failed", haptic gating, overlay-grant hint |
 | 05 | [05-light-theme-window.md](./05-light-theme-window.md) | Light theme no longer flashes black / hides status icons |
 | 06 | [06-compose-a11y-polish.md](./06-compose-a11y-polish.md) | Saveable sheets/dialogs, 48dp targets, semantics, empty states, URL sheet, IO off main |
+| 07 | [07-launchapp-icons.md](./07-launchapp-icons.md) | Real launcher logos on Home cards, Floating Menu slots + tiles |
 
 ## Known gaps (audit found, not fixed here)
 

@@ -50,6 +50,7 @@ import com.nordairemapper.domain.model.PressType
 import com.nordairemapper.domain.model.RemapAction
 import com.nordairemapper.presentation.common.categoryAccent
 import com.nordairemapper.presentation.common.relativeLastSeen
+import com.nordairemapper.presentation.common.rememberAppIcon
 import com.nordairemapper.presentation.common.categoryFor
 import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.presentation.common.icon
@@ -299,6 +300,8 @@ fun HomeScreen(
                 val action = state.actions[pressType] ?: RemapAction.None
                 val empty = action is RemapAction.None
                 val accent = categoryAccent(categoryFor(action))
+                // LaunchApp shows the real launcher logo; null → generic glyph.
+                val appIcon = rememberAppIcon((action as? RemapAction.LaunchApp)?.packageName)
                 ActionCard(
                     title = when (pressType) {
                         PressType.SINGLE -> "Single"
@@ -307,6 +310,7 @@ fun HomeScreen(
                     },
                     subtitle = action.displayName(),
                     icon = action.icon(),
+                    appIcon = appIcon,
                     iconContainer = accent.container,
                     iconTint = accent.tint,
                     badge = when (pressType) {

@@ -65,6 +65,7 @@ import com.nordairemapper.presentation.common.categoryFor
 import com.nordairemapper.presentation.common.displayDescription
 import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.presentation.common.icon
+import com.nordairemapper.presentation.common.rememberAppIcon
 import com.nordairemapper.presentation.remap.AppPickerSheet
 import com.nordairemapper.presentation.remap.UrlInputSheet
 import com.nordairemapper.ui.components.ActionCard
@@ -169,10 +170,12 @@ fun OverlaySettingsScreen(
             repeat(OverlayConfig.MAX_SLOTS) { index ->
                 val action = config.slots.getOrNull(index) ?: RemapAction.None
                 val empty = action is RemapAction.None
+                val appIcon = rememberAppIcon((action as? RemapAction.LaunchApp)?.packageName)
                 ActionCard(
                     title = "Slot ${index + 1}",
                     subtitle = action.displayName(),
                     icon = if (empty) null else action.icon(),
+                    appIcon = appIcon,
                     iconContainer = if (empty) null else categoryAccent(categoryFor(action)).container,
                     iconTint = if (empty) null else categoryAccent(categoryFor(action)).tint,
                     badge = (index + 1).toString(),

@@ -18,6 +18,7 @@ import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -84,6 +85,7 @@ import com.nordairemapper.domain.repository.RemapConfigRepository
 import com.nordairemapper.presentation.MainActivity
 import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.presentation.common.icon
+import com.nordairemapper.presentation.common.rememberAppIcon
 import com.nordairemapper.ui.components.NordTopBarHeading
 import com.nordairemapper.ui.theme.NordAIRemapperTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -643,6 +645,7 @@ private fun OverlayTile(
     modifier: Modifier = Modifier,
 ) {
     val appear = remember { Animatable(0f) }
+    val appIcon = rememberAppIcon((action as? RemapAction.LaunchApp)?.packageName)
     LaunchedEffect(index) {
         delay(index * 50L)
         appear.animateTo(
@@ -689,12 +692,20 @@ private fun OverlayTile(
                     .border(1.dp, accent.copy(alpha = 0.22f), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    imageVector = action.icon(),
-                    contentDescription = action.displayName(),
-                    tint = accent,
-                    modifier = Modifier.size(iconSizeDp(iconSize)),
-                )
+                if (appIcon != null) {
+                    Image(
+                        bitmap = appIcon,
+                        contentDescription = action.displayName(),
+                        modifier = Modifier.size(iconSizeDp(iconSize)),
+                    )
+                } else {
+                    Icon(
+                        imageVector = action.icon(),
+                        contentDescription = action.displayName(),
+                        tint = accent,
+                        modifier = Modifier.size(iconSizeDp(iconSize)),
+                    )
+                }
             }
             Text(
                 text = action.displayName(),
@@ -722,6 +733,7 @@ private fun PillTile(
     onClick: () -> Unit,
 ) {
     val appear = remember { Animatable(0f) }
+    val appIcon = rememberAppIcon((action as? RemapAction.LaunchApp)?.packageName)
     LaunchedEffect(index) {
         delay(index * 45L)
         appear.animateTo(
@@ -766,12 +778,20 @@ private fun PillTile(
                 .border(1.dp, accent.copy(alpha = 0.22f), RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = action.icon(),
-                contentDescription = action.displayName(),
-                tint = accent,
-                modifier = Modifier.size(iconSizeDp(iconSize)),
-            )
+            if (appIcon != null) {
+                Image(
+                    bitmap = appIcon,
+                    contentDescription = action.displayName(),
+                    modifier = Modifier.size(iconSizeDp(iconSize)),
+                )
+            } else {
+                Icon(
+                    imageVector = action.icon(),
+                    contentDescription = action.displayName(),
+                    tint = accent,
+                    modifier = Modifier.size(iconSizeDp(iconSize)),
+                )
+            }
         }
         Spacer(Modifier.height(4.dp))
         Text(

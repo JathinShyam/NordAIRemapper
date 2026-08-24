@@ -3,6 +3,11 @@
 | Path | Change | Doc |
 |------|--------|-----|
 | `service/LearningMode.kt` (new) | learning-mode flag | 03 |
+| `presentation/common/AppIcon.kt` (new) | rememberAppIcon loader | 07 |
+| `ui/components/ActionCard.kt` | appIcon support | 07 |
+| `presentation/home/HomeScreen.kt` | press-card app icons | 07 |
+| `presentation/overlay/OverlaySettingsScreen.kt` | slot app icons | 07 |
+| `service/FloatingOverlayService.kt` | tile app icons | 07 |
 | `service/LogcatWatcherService.kt` | suppress death alarm on deliberate stop | 01 |
 | `service/DetectionCoordinator.kt` | set suppression only for master-off stops | 01 |
 | `service/RemapEngine.kt` | learning gate on consume + dispatch | 03 |

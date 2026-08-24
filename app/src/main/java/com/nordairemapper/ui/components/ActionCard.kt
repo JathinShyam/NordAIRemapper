@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,9 +31,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -49,6 +52,8 @@ fun ActionCard(
     modifier: Modifier = Modifier,
     badge: String? = null,
     icon: ImageVector? = null,
+    /** Real launcher icon (LaunchApp) — wins over the generic [icon] glyph. */
+    appIcon: ImageBitmap? = null,
     iconContainer: Color? = null,
     iconTint: Color? = null,
     showConflict: Boolean = false,
@@ -115,14 +120,23 @@ fun ActionCard(
         ) {
             Box {
                 AnimatedContent(
-                    targetState = empty to icon,
+                    targetState = Triple(empty, icon, appIcon),
                     transitionSpec = {
                         (fadeIn() + scaleIn(initialScale = 0.92f)) togetherWith
                             (fadeOut() + scaleOut(targetScale = 0.92f))
                     },
                     label = "actionCardIcon",
-                ) { (isEmpty, currentIcon) ->
+                ) { (isEmpty, currentIcon, currentAppIcon) ->
                     when {
+                        currentAppIcon != null -> {
+                            Image(
+                                bitmap = currentAppIcon,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(10.dp)),
+                            )
+                        }
                         currentIcon != null -> {
                             Box(
                                 modifier = Modifier
