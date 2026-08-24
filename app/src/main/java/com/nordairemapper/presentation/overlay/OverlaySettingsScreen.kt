@@ -319,9 +319,15 @@ fun OverlaySettingsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 4.dp),
                     )
+                    // Drag locally, commit once — a DataStore write per tick
+                    // starved everything else sharing the flow.
+                    var pendingOpacity by remember(config.opacity) {
+                        mutableStateOf(config.opacity)
+                    }
                     Slider(
-                        value = config.opacity,
-                        onValueChange = viewModel::setOpacity,
+                        value = pendingOpacity,
+                        onValueChange = { pendingOpacity = it },
+                        onValueChangeFinished = { viewModel.setOpacity(pendingOpacity) },
                         valueRange = 0.3f..1f,
                         modifier = Modifier.semantics {
                             stateDescription = "${(config.opacity * 100).toInt()}%"

@@ -18,6 +18,7 @@ fixed (deliberate scope) are listed at the end.
 | 07 | [07-launchapp-icons.md](./07-launchapp-icons.md) | Real launcher logos on Home cards, Floating Menu slots + tiles |
 | 08 | [08-unlock-methods-shizuku.md](./08-unlock-methods-shizuku.md) | Unlock screen: Built-In / Shizuku / Manual ADB method cards; Shizuku tap-to-grant via user service |
 | 09 | [09-pairing-notification-reply.md](./09-pairing-notification-reply.md) | Built-In pairing: WhatsApp-style direct-reply notification — enter the 6-digit code without leaving the system dialog |
+| 10 | [10-audit2-fixes.md](./10-audit2-fixes.md) | End-to-end audit #2: zombie tail, reply grace window, Shizuku fan-out, suppression race, restore crash guard, watchdog clock, Auto-Pause trace instrumentation (+ deferred list) |
 
 ## Known gaps (audit found, not fixed here)
 

@@ -52,7 +52,7 @@ fun AppPickerSheet(
     errorMessage: String? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var query by remember { mutableStateOf("") }
+    var query by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
     val filtered = remember(apps, query) {
         val q = query.trim()
         if (q.isEmpty()) apps
@@ -189,7 +189,7 @@ fun UrlInputSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     // Placeholder, not a prefilled value: an untouched field must not save "https://".
-    var url by remember { mutableStateOf(initialUrl) }
+    var url by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(initialUrl) }
     val valid = url.trim().isNotEmpty()
 
     fun save() {

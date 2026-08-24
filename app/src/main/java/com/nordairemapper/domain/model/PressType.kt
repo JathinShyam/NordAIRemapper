@@ -6,6 +6,7 @@ enum class PressType(val key: String, val label: String) {
     LONG("long", "Long Press");
 
     companion object {
-        fun fromKey(key: String): PressType = entries.first { it.key == key }
+        /** Malformed nav args fall back to SINGLE instead of crashing. */
+        fun fromKey(key: String): PressType = entries.firstOrNull { it.key == key } ?: SINGLE
     }
 }

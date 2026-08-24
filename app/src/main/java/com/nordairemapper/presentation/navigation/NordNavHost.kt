@@ -115,6 +115,12 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
         composable(Routes.ENABLE_DETECTION) {
             EnableDetectionScreen(
                 onBack = { navController.popBackStack() },
+                onContinue = {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.HOME) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
             )
         }
         composable(Routes.DEVELOPER) {

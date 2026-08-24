@@ -63,7 +63,16 @@ fun KeyLearningScreen(
     val logcatPlusKeySeen by viewModel.logcatPlusKeySeen.collectAsStateWithLifecycle()
     val nowMs = rememberNowTicker()
 
-    LaunchedEffect(Unit) { viewModel.refreshServiceState() }
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshServiceState()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     Scaffold(
         topBar = {

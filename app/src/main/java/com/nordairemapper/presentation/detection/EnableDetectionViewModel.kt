@@ -84,25 +84,11 @@ class EnableDetectionViewModel @Inject constructor(
 
     private var pairingWatchJob: Job? = null
 
-    private val shizukuPermissionListener =
-        Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
-            if (requestCode != ShizukuGrant.PERMISSION_REQUEST_CODE) return@OnRequestPermissionResultListener
-            if (grantResult == PackageManager.PERMISSION_GRANTED) {
-                grantViaShizuku()
-            } else {
-                _uiState.update {
-                    it.copy(errorMessage = "Shizuku permission denied — pick another method.")
-                }
-            }
-        }
-
     init {
-        Shizuku.addRequestPermissionResultListener(shizukuPermissionListener)
         refreshShizukuState()
     }
 
     override fun onCleared() {
-        Shizuku.removeRequestPermissionResultListener(shizukuPermissionListener)
         pairingWatchJob?.cancel()
         PairingSession.clear()
         PairingNotifier.cancel(context)
@@ -155,8 +141,8 @@ class EnableDetectionViewModel @Inject constructor(
         if (method == DetectionMethod.SHIZUKU) refreshShizukuState()
     }
 
-    fun setNotificationsGranted() {
-        _uiState.update { it.copy(notificationsGranted = true) }
+    fun setNotificationsGranted(granted: Boolean) {
+        _uiState.update { it.copy(notificationsGranted = granted) }
     }
 
     fun refreshShizukuState() {
@@ -180,12 +166,15 @@ class EnableDetectionViewModel @Inject constructor(
                 )
             }
             state.shizukuGranted -> grantViaShizuku()
-            else -> runCatching { Shizuku.requestPermission(ShizukuGrant.PERMISSION_REQUEST_CODE) }
-                .onFailure { t ->
-                    _uiState.update {
-                        it.copy(errorMessage = "Could not ask Shizuku for permission: ${t.message}")
+            else -> ShizukuGrant.requestPermission { granted ->
+                // Shizuku invokes on a binder thread; hop to main for state.
+                viewModelScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                    if (granted) grantViaShizuku()
+                    else _uiState.update {
+                        it.copy(errorMessage = "Shizuku permission denied — pick another method.")
                     }
                 }
+            }
         }
     }
 
@@ -294,6 +283,9 @@ class EnableDetectionViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 isWatchingForPairing = true,
+                // RCA: a stale port from a failed attempt made the checklist
+                // claim "Port X detected" while the new watch was still searching.
+                discoveredPort = null,
                 errorMessage = null,
                 statusMessage = null,
             )

@@ -15,6 +15,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
@@ -98,13 +100,18 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
      * @param pairingPort temporary port under the pairing code
      * @param connectPort port from Wireless debugging main page “IP address & port”
      *   (different from [pairingPort])
+     * @param quick when true (notification-reply path), bounds the connect
+     *   phase so the whole flow fits the broadcast grace window: shorter mDNS
+     *   timeouts and a single connect attempt.
      */
     suspend fun pairAndGrant(
         pairingCode: String,
         host: String? = null,
         pairingPort: Int? = null,
         connectPort: Int? = null,
-    ): GrantResult = withContext(Dispatchers.IO) {
+        quick: Boolean = false,
+    ): GrantResult = grantMutex.withLock {
+        withContext(Dispatchers.IO) {
         // Re-run Unlock when READ_LOGS exists but banking auto-resume grants are still missing.
         if (hasReadLogs() && ElevatedPermissions.canAutoResumeAccessibility(context)) {
             syncWatcherAfterGrant()
@@ -158,6 +165,7 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
                 preferredHost = pairingEndpoint.host,
                 wifiIp = wifiIp,
                 connectPort = connectPort,
+                quick = quick,
             )
             if (!connected) {
                 return@withContext GrantResult.Failed(
@@ -201,6 +209,7 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
         } finally {
             runCatching { manager.disconnect() }
         }
+        }
     }
 
     private suspend fun connectAfterPair(
@@ -208,6 +217,7 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
         preferredHost: String,
         wifiIp: String?,
         connectPort: Int?,
+        quick: Boolean,
     ): Boolean {
         // 1) Manual connection port from Wireless debugging detail page.
         if (connectPort != null && connectPort > 0) {
@@ -218,13 +228,16 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
         }
 
         // 2) mDNS TLS connect (adb-tls-connect) — different service from pairing.
-        val discovered = discoverConnectEndpoint()
+        val discovered = discoverConnectEndpoint(
+            timeoutMs = if (quick) CONNECT_DISCOVERY_TIMEOUT_QUICK_MS else CONNECT_DISCOVERY_TIMEOUT_MS,
+        )
         if (discovered != null && tryConnect(manager, discovered.host, discovered.port)) {
             return true
         }
 
         // 3) Library helpers (also mDNS-based).
-        for (attempt in 1..CONNECT_ATTEMPTS) {
+        val attempts = if (quick) 1 else CONNECT_ATTEMPTS
+        for (attempt in 1..attempts) {
             Log.i(TAG, "connectTls/autoConnect attempt $attempt")
             val ok = runCatching {
                 manager.connectTls(context, CONNECT_TIMEOUT_MS) ||
@@ -273,10 +286,14 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
      * to filesDir/unlock_grants.log so an OEM that silently drops security-
      * sensitive ops over Wireless adb leaves hard evidence behind.
      */
+    private val grantMutex = Mutex()
+
     private fun runGrantsVerifying(manager: NordAdbConnectionManager) {
         val logFile = File(context.filesDir, "unlock_grants.log")
+        // Keep the transcript bounded; it is a diagnostic, not a ledger.
+        if (logFile.length() > MAX_GRANT_LOG_BYTES) runCatching { logFile.delete() }
         fun log(s: String) = runCatching {
-            logFile.appendText("${SimpleDateFormat("HH:mm:ss.SSS", Locale.US).format(Date())} $s\n")
+            logFile.appendText("${TS.format(Date())} $s\n")
         }
 
         for (command in ReadLogsGrantHelper.ON_DEVICE_SHELL_COMMANDS) {
@@ -346,6 +363,7 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
         private const val DEFAULT_HOST = "127.0.0.1"
         private const val PAIRING_DISCOVERY_TIMEOUT_MS = 12_000L
         private const val CONNECT_DISCOVERY_TIMEOUT_MS = 12_000L
+        private const val CONNECT_DISCOVERY_TIMEOUT_QUICK_MS = 5_000L
         private const val CONNECT_TIMEOUT_MS = 8_000L
         private const val POST_PAIR_DELAY_MS = 1_200L
         private const val CONNECT_ATTEMPTS = 3
@@ -353,6 +371,8 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
         private const val GRANT_VERIFY_DELAY_MS = 400L
         private const val SHELL_OUTPUT_WINDOW_MS = 300L
         private const val SHELL_OUTPUT_POLL_MS = 40L
+        private const val MAX_GRANT_LOG_BYTES = 256 * 1024L
+        private val TS = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
         private val PAIRING_CODE_REGEX = Regex("^\\d{6}$")
 
         fun normalizeHost(host: String?): String =

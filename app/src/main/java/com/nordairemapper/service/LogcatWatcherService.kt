@@ -30,6 +30,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -73,6 +75,7 @@ class LogcatWatcherService : Service() {
         private val PID_REGEX = Regex("\\(\\s*(\\d+)\\)")
 
         @Volatile private var sLastNonSelfLineAtMs = 0L
+        @Volatile private var sLastNonSelfElapsedMs = 0L
         @Volatile private var sBlindNotified = false
         @Volatile private var sRestarting = false
 
@@ -142,8 +145,11 @@ class LogcatWatcherService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // A fresh start re-arms the outage alarm.
-        sSuppressDeathNotify = false
+        // A fresh EXPLICIT start re-arms the outage alarm. Null intent = system
+        // restart (START_STICKY): never clears a pending deliberate-stop mark.
+        // Clearing unconditionally here raced rapid off/on toggles into a false
+        // "detection stopped" alarm for a user-initiated stop.
+        if (intent != null) sSuppressDeathNotify = false
         startForeground(
             NOTIFICATION_ID,
             buildNotification(showDetails = true),
@@ -160,7 +166,15 @@ class LogcatWatcherService : Service() {
         // Exactly one tail loop (and one watchdog) regardless of start() calls.
         if (watchJob?.isActive != true) {
             watchJob = scope.launch {
-                val showDetails = settingsRepository.settings.first().showServiceNotification
+                val settings = settingsRepository.settings.first()
+                // Heal/restart paths can call start() while remapping is off —
+                // the special-use FGS must not run then.
+                if (!settings.serviceEnabled) {
+                    Log.i(TAG, "serviceEnabled=false; stopping watcher")
+                    stopSelf()
+                    return@launch
+                }
+                val showDetails = settings.showServiceNotification
                 if (!showDetails) {
                     getSystemService(NotificationManager::class.java)
                         .notify(NOTIFICATION_ID, buildNotification(showDetails = false))
@@ -179,17 +193,20 @@ class LogcatWatcherService : Service() {
      * leave the stream all-self.
      */
     private suspend fun blindWatchdog() {
-        sLastNonSelfLineAtMs = System.currentTimeMillis()
+        // Monotonic clock: wall-clock jumps (NTP) fired false BLIND alarms.
+        var lastNonSelfElapsed = android.os.SystemClock.elapsedRealtime()
         while (scope.isActive) {
             delay(BLIND_CHECK_MS)
-            val now = System.currentTimeMillis()
+            if (sLastNonSelfElapsedMs > 0L) {
+                lastNonSelfElapsed = sLastNonSelfElapsedMs
+            }
             val interactive = runCatching {
                 getSystemService(PowerManager::class.java)?.isInteractive == true
             }.getOrDefault(false)
-            val blind = now - sLastNonSelfLineAtMs > BLIND_AFTER_MS
+            val blind = android.os.SystemClock.elapsedRealtime() - lastNonSelfElapsed > BLIND_AFTER_MS
             when {
                 interactive && blind && !sBlindNotified -> {
-                    Log.w(TAG, "Tail is blind: no non-self lines for ${now - sLastNonSelfLineAtMs}ms")
+                    Log.w(TAG, "Tail is blind: no non-self lines for a while")
                     sBlindNotified = true
                     ServiceNotifications.notifyLogsBlind(this)
                 }
@@ -205,6 +222,7 @@ class LogcatWatcherService : Service() {
         val pid = PID_REGEX.find(line)?.groupValues?.get(1)?.toIntOrNull() ?: return
         if (pid != selfPid) {
             sLastNonSelfLineAtMs = System.currentTimeMillis()
+            sLastNonSelfElapsedMs = android.os.SystemClock.elapsedRealtime()
             sTailSawNonSelf = true
         }
     }
@@ -257,11 +275,17 @@ class LogcatWatcherService : Service() {
         logcatProcess = process
         sLastNonSelfLineAtMs = System.currentTimeMillis()
         sTailSawNonSelf = false
+        // RCA: collectLatest cancels THIS job on pattern change, but the old
+        // code only checked the SERVICE scope and blocked in readLine() — so a
+        // cancelled tail kept running and emitting forever. Checking this job's
+        // context per line makes the cancelled tail exit (and the outer
+        // finally destroy the process) on the first line that arrives after
+        // cancellation.
         Log.i(TAG, "tail started pattern=$pattern selfPid=$selfPid")
         try {
             val coalescer = LogcatKeyEdgeCoalescer()
             BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
-                while (scope.isActive) {
+                while (currentCoroutineContext().isActive) {
                     val line = reader.readLine() ?: return
                     noteLineOrigin(line)
                     if (LogcatKeyParser.isSelfLog(line)) continue

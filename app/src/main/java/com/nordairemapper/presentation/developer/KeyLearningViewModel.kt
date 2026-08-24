@@ -99,8 +99,9 @@ class KeyLearningViewModel @Inject constructor(
 
     init {
         // While Key setup is open, the engine must not dispatch actions for
-        // presses (or consume keys) — learning is a setup flow.
-        LearningMode.active = true
+        // presses (or consume keys) — learning is a setup flow. Token-based:
+        // a recreated instance's end() can't disable a newer instance's gate.
+        LearningMode.begin(this)
         refreshServiceState()
         viewModelScope.launch {
             keyEventBus.rawEvents.collect(::onRawEvent)
@@ -108,7 +109,7 @@ class KeyLearningViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        LearningMode.active = false
+        LearningMode.end(this)
         super.onCleared()
     }
 

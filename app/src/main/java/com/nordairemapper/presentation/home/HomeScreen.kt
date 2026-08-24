@@ -337,15 +337,20 @@ private fun StatusRibbon(
     onClick: (() -> Unit)?,
     lastUsedLabel: String,
 ) {
-    val pulseAlpha by rememberInfiniteTransition(label = "statusPulse").animateFloat(
-        initialValue = 0.45f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1100),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "pulseAlpha",
-    )
+    // Only run the animator while pulsing — an idle Home shouldn't tick frames.
+    val pulseAlpha: Float = if (pulse) {
+        rememberInfiniteTransition(label = "statusPulse").animateFloat(
+            initialValue = 0.45f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1100),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "pulseAlpha",
+        ).value
+    } else {
+        1f
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()

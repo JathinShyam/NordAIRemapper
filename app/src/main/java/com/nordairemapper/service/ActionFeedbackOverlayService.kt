@@ -90,12 +90,8 @@ class ActionFeedbackOverlayService :
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
 
-        val action = pendingAction.getAndSet(null)
-        if (action == null || action.action is RemapAction.None) {
-            stopSelf()
-            return START_NOT_STICKY
-        }
-
+        // FGS contract first: every startForegroundService() must be followed
+        // by startForeground(), even on the null-action early-exit path.
         try {
             val notification = buildNotification()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -109,6 +105,12 @@ class ActionFeedbackOverlayService :
             }
         } catch (t: Throwable) {
             Log.e(TAG, "startForeground failed", t)
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
+        val action = pendingAction.getAndSet(null)
+        if (action == null || action.action is RemapAction.None) {
             stopSelf()
             return START_NOT_STICKY
         }

@@ -120,16 +120,25 @@ class PlusKeyAccessibilityService : AccessibilityService() {
             packageManager.getApplicationLabel(packageManager.getApplicationInfo(pkg, 0)).toString()
         }.getOrDefault(pkg)
         Log.i(TAG, "Pausing Accessibility for excluded app: $pkg")
+        DebugTrace.log(
+            applicationContext,
+            TRACE,
+            "pause-trigger pkg=$pkg canAutoResume=${ElevatedPermissions.canAutoResumeAccessibility(this)}",
+        )
 
         // Hands-free path: soft-disable + Usage-Stats watcher restores us when the
-        // banking app leaves. Requires one-time Wireless Unlock (WRITE_SECURE_SETTINGS
+        // user leaves. Requires one-time Wireless Unlock (WRITE_SECURE_SETTINGS
         // + usage access). Fallback: disableSelf + tap notification to re-enable.
         if (ElevatedPermissions.canAutoResumeAccessibility(this)) {
+            DebugTrace.log(applicationContext, TRACE, "hands-free path: starting auto-resume watch")
             AccessibilityAutoResumeService.start(this, pausedPackage = pkg, appLabel = label)
             val disabled = AccessibilitySecureToggle.setEnabled(this, enabled = false)
+            DebugTrace.log(applicationContext, TRACE, "secure-toggle off result=$disabled")
             if (disabled) return
             Log.w(TAG, "Secure toggle failed; falling back to disableSelf()")
             AccessibilityAutoResumeService.stop(this)
+        } else {
+            DebugTrace.log(applicationContext, TRACE, "fallback path: disableSelf (no elevated grants)")
         }
         ServiceNotifications.notifyAccessibilityPaused(this, label)
         disableSelf()
@@ -149,6 +158,7 @@ class PlusKeyAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val TAG = "PlusKeyA11y"
+        private const val TRACE = "auto_pause"
 
         /** Only nudge when this bind happened shortly after boot. */
         private const val POST_BOOT_NUDGE_WINDOW_MS = 2 * 60_000L

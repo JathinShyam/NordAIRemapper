@@ -68,6 +68,7 @@ class AccessibilityAutoResumeService : Service() {
 
     private suspend fun watchUntilLeft(initialPkg: String) {
         var pausedPkg = initialPkg
+        DebugTrace.log(applicationContext, TRACE, "watch start pkg=$pausedPkg")
         // Let the banking app settle as the reported foreground package.
         delay(INITIAL_GRACE_MS)
         var leftStreak = 0
@@ -76,6 +77,7 @@ class AccessibilityAutoResumeService : Service() {
         while (scope.isActive) {
             if (System.currentTimeMillis() > deadline) {
                 Log.w(TAG, "Watch timeout; asking user to re-enable manually")
+                DebugTrace.log(applicationContext, TRACE, "watch timeout -> manual nudge")
                 ServiceNotifications.notifyAccessibilityPaused(this, pausedPkg)
                 stopSelf()
                 return
@@ -92,13 +94,16 @@ class AccessibilityAutoResumeService : Service() {
                     // Landed straight in another excluded app — keep Accessibility off
                     // and watch that one instead. No restore flicker between them.
                     Log.i(TAG, "Handoff $pausedPkg -> $foreground (also excluded)")
+                    DebugTrace.log(applicationContext, TRACE, "handoff $pausedPkg -> $foreground")
                     pausedPkg = foreground
                     updatePausedNotification(appLabelFor(pausedPkg))
                     leftStreak = 0
                     delay(INITIAL_GRACE_MS)
                 } else {
                     Log.i(TAG, "Left $pausedPkg (now=$foreground); restoring Accessibility")
+                    DebugTrace.log(applicationContext, TRACE, "restore attempt (left=$foreground)")
                     val ok = AccessibilitySecureToggle.setEnabled(this, enabled = true)
+                    DebugTrace.log(applicationContext, TRACE, "restore secure-toggle result=$ok")
                     if (!ok) {
                         ServiceNotifications.notifyAccessibilityPaused(this, pausedPkg)
                     } else {
@@ -187,6 +192,7 @@ class AccessibilityAutoResumeService : Service() {
 
     companion object {
         private const val TAG = "A11yAutoResume"
+        private const val TRACE = "auto_pause"
         private const val CHANNEL_ID = "accessibility_auto_resume"
         private const val NOTIFICATION_ID = 101
         private const val EXTRA_PAUSED_PACKAGE = "paused_package"

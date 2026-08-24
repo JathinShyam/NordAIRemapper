@@ -12,6 +12,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import com.nordairemapper.service.LogVisibilityProbe
 
 /**
  * Receives the 6-digit pairing code typed into the heads-up notification and
@@ -54,32 +55,50 @@ class PairingReplyReceiver : BroadcastReceiver() {
         val appContext = context.applicationContext
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
+                val session = PairingSession.current()
                 PairingNotifier.postProgress(appContext, "Pairing with the code you entered…")
                 Log.i(TAG, "Notification reply: attempting pair+grant")
+                // quick=true bounds connect attempts so the whole flow fits
+                // the broadcast grace window.
                 val result = grantViaWirelessAdb.pairAndGrant(
                     pairingCode = code,
-                    host = PairingSession.host,
-                    pairingPort = PairingSession.pairingPort,
-                    connectPort = PairingSession.connectPort,
+                    host = session?.host,
+                    pairingPort = session?.pairingPort,
+                    connectPort = session?.connectPort,
+                    quick = true,
                 )
                 when (result) {
                     is ReadLogsGrantViaWirelessAdb.GrantResult.AlreadyGranted,
                     is ReadLogsGrantViaWirelessAdb.GrantResult.Success,
                     -> {
-                        // Bring the user back into the app — allowed here
-                        // because Keyforge usually holds SYSTEM_ALERT_WINDOW;
-                        // if the system blocks it, the result banner taps through.
-                        runCatching {
-                            appContext.startActivity(
-                                Intent(appContext, MainActivity::class.java)
-                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        // Honest success: verify logd delivers other apps' logs
+                        // (post-boot consent can leave a fresh tail blind).
+                        val blind = runCatching {
+                            LogVisibilityProbe.probe() == LogVisibilityProbe.Result.BLIND
+                        }.getOrDefault(false)
+                        if (blind) {
+                            PairingNotifier.postResult(
+                                appContext,
+                                ok = false,
+                                "Grants applied, but OxygenOS is still filtering system logs. " +
+                                    "Open Keyforge and allow log access when prompted.",
+                            )
+                        } else {
+                            // Bring the user back into the app — allowed here
+                            // because Keyforge usually holds SYSTEM_ALERT_WINDOW;
+                            // if blocked, the result banner taps through.
+                            runCatching {
+                                appContext.startActivity(
+                                    Intent(appContext, MainActivity::class.java)
+                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                                )
+                            }
+                            PairingNotifier.postResult(
+                                appContext,
+                                ok = true,
+                                "You're all set — assign presses on Home.",
                             )
                         }
-                        PairingNotifier.postResult(
-                            appContext,
-                            ok = true,
-                            "You're all set — assign presses on Home.",
-                        )
                     }
                     is ReadLogsGrantViaWirelessAdb.GrantResult.Failed ->
                         PairingNotifier.postResult(appContext, ok = false, result.message)

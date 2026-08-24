@@ -74,10 +74,10 @@ fun ExclusionsScreen(
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    var showAppPicker by remember { mutableStateOf(false) }
+    var showAppPicker by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var installedApps by remember { mutableStateOf<List<InstalledAppInfo>>(emptyList()) }
-    var loadingApps by remember { mutableStateOf(false) }
-    var loadFailed by remember { mutableStateOf(false) }
+    var loadingApps by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var loadFailed by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var handsFreeReady by remember {
         mutableStateOf(ElevatedPermissions.canAutoResumeAccessibility(context))
     }

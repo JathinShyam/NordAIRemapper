@@ -44,8 +44,11 @@ class BackupViewModel @Inject constructor(
 
     fun restoreSnapshot(id: Long) {
         viewModelScope.launch {
-            backupRepository.restoreSnapshot(id)
-            _messages.emit("Snapshot restored")
+            // Corrupt/truncated snapshot payloads throw on decode — surface as
+            // a message like imports do, never crash.
+            runCatching { backupRepository.restoreSnapshot(id) }
+                .onSuccess { _messages.emit("Snapshot restored") }
+                .onFailure { _messages.emit("Restore failed: ${it.message}") }
         }
     }
 

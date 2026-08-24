@@ -5,27 +5,44 @@ package com.nordairemapper.service.adb
  * screen's Built-In flow is active, so [PairingReplyReceiver] can complete
  * pairing straight from the notification reply — even while a system dialog
  * covers the app.
+ *
+ * State is one immutable snapshot swapped atomically: a concurrent re-arm
+ * (watch found a newer port while a reply was in flight) can never yield a
+ * torn host/port mix.
  */
 object PairingSession {
 
-    @Volatile var host: String? = null
-        private set
-    @Volatile var pairingPort: Int? = null
-        private set
-    @Volatile var connectPort: Int? = null
-        private set
+    data class Snapshot(
+        val host: String?,
+        val pairingPort: Int?,
+        val connectPort: Int?,
+    )
 
-    val isActive: Boolean get() = pairingPort != null || host != null
+    @Volatile
+    private var snapshot: Snapshot? = null
+
+    val isActive: Boolean get() = snapshot != null
+
+    /** Point-in-time view for the reply path. */
+    fun current(): Snapshot? = snapshot
 
     fun set(host: String?, pairingPort: Int?, connectPort: Int?) {
-        this.host = host?.let { ReadLogsGrantViaWirelessAdb.normalizeHost(it) }?.ifEmpty { null }
-        this.pairingPort = pairingPort?.takeIf { it > 0 }
-        this.connectPort = connectPort?.takeIf { it > 0 }
+        val normalizedHost = host
+            ?.let { ReadLogsGrantViaWirelessAdb.normalizeHost(it) }
+            ?.ifEmpty { null }
+        snapshot = Snapshot(
+            host = normalizedHost,
+            pairingPort = pairingPort?.takeIf { it > 0 },
+            connectPort = connectPort?.takeIf { it > 0 },
+        )
     }
 
     fun clear() {
-        host = null
-        pairingPort = null
-        connectPort = null
+        snapshot = null
     }
+
+    // Convenience views (read together via current() where atomicity matters).
+    val host: String? get() = snapshot?.host
+    val pairingPort: Int? get() = snapshot?.pairingPort
+    val connectPort: Int? get() = snapshot?.connectPort
 }

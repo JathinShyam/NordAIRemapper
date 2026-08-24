@@ -12,7 +12,9 @@
 | `service/shizuku/*` (new), `service/ShizukuGrant.kt` (new) | Shizuku user-service grant runner | 08 |
 | `service/adb/PairingSession.kt`, `PairingNotifier.kt`, `PairingReplyReceiver.kt` (new) | direct-reply pairing notification | 09 |
 | `presentation/detection/EnableDetectionViewModel.kt` | method state machine, shared post-grant verify, pairing session wiring | 08, 09 |
-| `presentation/detection/EnableDetectionScreen.kt` | three-method Unlock UI | 08 |
+| `service/DebugTrace.kt` (new) | file-based diagnostic traces (auto_pause.log) | 10 |
+| `LogcatWatcherService.kt` / `ReadLogsGrantViaWirelessAdb.kt` / `ShizukuGrant*.kt` / `PairingSession.kt` / `PairingReplyReceiver.kt` / `ActionFeedbackOverlayService.kt` / `BootReceiver.kt` / `AccessibilityAutoResumeService.kt` / `PlusKeyAccessibilityService.kt` / `LearningMode.kt` | audit #2 fixes | 09, 10 |
+| `EnableDetectionViewModel/Screen`, `DeveloperScreen`, `KeyLearning*`, `Home*`, `Remap*`, `AppPickerSheet`, `Exclusions*`, `OverlaySettings*`, `Backup*`, `NordNavHost`, `OnboardingScreen`, `PressType` | presentation audit #2 fixes | 08–10 |
 | `service/LogcatWatcherService.kt` | suppress death alarm on deliberate stop | 01 |
 | `service/DetectionCoordinator.kt` | set suppression only for master-off stops | 01 |
 | `service/RemapEngine.kt` | learning gate on consume + dispatch | 03 |

@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.nordairemapper.domain.model.DetectionStrategy
 import com.nordairemapper.domain.repository.SettingsRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -30,7 +31,7 @@ class BootReceiver : BroadcastReceiver() {
                     DetectionCoordinator.syncLogcatWatcher(
                         context = context,
                         strategy = settings.detectionStrategy,
-                        serviceEnabled = true,
+                        serviceEnabled = settings.serviceEnabled,
                     )
                     if (!AccessibilityUtils.isServiceEnabled(context)) {
                         ServiceNotifications.notifyDetectionStopped(context)
@@ -38,7 +39,7 @@ class BootReceiver : BroadcastReceiver() {
                     // Per-boot log consent: the boot-time watcher tail is blind
                     // until Keyforge is opened once in the foreground. Nudge.
                     if (LogcatWatcherService.hasReadLogsPermission(context) &&
-                        DetectionCoordinator.needsLogcatWatcher(settings.detectionStrategy)
+                        settings.detectionStrategy != DetectionStrategy.ACCESSIBILITY
                     ) {
                         ServiceNotifications.notifyOpenAfterBoot(context)
                     }

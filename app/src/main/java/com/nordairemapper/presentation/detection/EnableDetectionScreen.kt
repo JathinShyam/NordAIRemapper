@@ -81,7 +81,11 @@ fun UnlockMethodsSection(
 
     val notificationLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
-    ) { viewModel.setNotificationsGranted() }
+    ) { granted ->
+        // Trust the re-probe, not the callback: refresh() also re-reads the
+        // other step checks in one pass.
+        viewModel.setNotificationsGranted(granted)
+    }
 
     fun requestNearbyThenStartPairing() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -389,10 +393,14 @@ private fun BuiltInChecklistPanel(
             stepNumber = 3,
             title = "Tap Pair now, then open “Pair device with pairing code”",
             done = state.readLogsGranted,
-            enabled = prerequisitesOk,
+            // The whole completion path lives in a notification — without
+            // POST_NOTIFICATIONS this step can never succeed.
+            enabled = prerequisitesOk && state.notificationsGranted,
             body = when {
                 state.readLogsGranted ->
                     "Done — you're unlocked."
+                !state.notificationsGranted ->
+                    "Allow notifications above first — the code box lives there."
                 state.discoveredPort != null ->
                     "Port ${state.discoveredPort} detected — enter the 6-digit code in the Keyforge notification."
                 state.isWatchingForPairing ->
@@ -404,8 +412,9 @@ private fun BuiltInChecklistPanel(
             actionLabel = when {
                 state.readLogsGranted -> null
                 state.isWatchingForPairing -> null
-                prerequisitesOk -> if (state.discoveredPort != null) "Pair now (new code)" else "Pair now"
-                else -> null
+                !prerequisitesOk || !state.notificationsGranted -> null
+                state.discoveredPort != null -> "Pair now (new code)"
+                else -> "Pair now"
             },
             primary = true,
             onAction = onPairNow,

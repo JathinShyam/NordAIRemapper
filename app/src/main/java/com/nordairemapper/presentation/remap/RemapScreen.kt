@@ -96,7 +96,9 @@ fun RemapScreen(
     var sheet by rememberSaveable { mutableStateOf(RemapSheet.None) }
     var query by rememberSaveable { mutableStateOf("") }
     var categoryFilter by rememberSaveable { mutableStateOf<RemapActionCategory?>(null) }
-    var tryNowLoading by rememberSaveable { mutableStateOf(false) }
+    // Transient loader: restoring true after process death would strand the
+    // button spinning forever — plain remember is correct here.
+    var tryNowLoading by remember { mutableStateOf(false) }
     val grouped = remember { RemapActionCatalog.grouped().toList() }
     val filtered = remember(query, grouped, categoryFilter) {
         val base = if (categoryFilter == null || query.isNotBlank()) {

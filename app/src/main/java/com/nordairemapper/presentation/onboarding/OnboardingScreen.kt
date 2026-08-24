@@ -21,10 +21,13 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -259,13 +262,22 @@ private fun StepContent(
     onTertiary: (() -> Unit)? = null,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        Column(
+        // Centered when content is short, scrollable when it overflows:
+        // BoxWithConstraints lends the viewport height as minHeight so
+        // Arrangement.Center still works inside the scroll.
+        androidx.compose.foundation.layout.BoxWithConstraints(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = maxHeight)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
             Box(
                 modifier = Modifier
                     .size(64.dp)
@@ -304,6 +316,7 @@ private fun StepContent(
                     label = statusLabel,
                     tone = statusTone,
                 )
+            }
             }
         }
 
