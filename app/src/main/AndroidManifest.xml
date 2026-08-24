@@ -8,6 +8,8 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+        <!-- Optional Unlock path: detect the Shizuku manager app -->
+        <package android:name="moe.shizuku.manager" />
     </queries>
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -121,6 +123,15 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <!-- Shizuku binder bridge (only used when the user picks the Shizuku path) -->
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:multiprocess="false"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
 
     </application>
 

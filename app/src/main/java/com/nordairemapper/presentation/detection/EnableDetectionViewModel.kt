@@ -3,12 +3,14 @@ package com.nordairemapper.presentation.detection
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.pm.PackageManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nordairemapper.service.ElevatedPermissions
 import com.nordairemapper.service.LogVisibilityProbe
 import com.nordairemapper.service.LogcatWatcherService
 import com.nordairemapper.service.ReadLogsGrantHelper
+import com.nordairemapper.service.ShizukuGrant
 import com.nordairemapper.service.adb.ReadLogsGrantViaWirelessAdb
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -18,7 +20,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import rikka.shizuku.Shizuku
 import javax.inject.Inject
+
+/** Which Unlock route the user picked on the Enable detection screen. */
+enum class DetectionMethod(val label: String, val description: String) {
+    BUILTIN("Built-in", "Pair with Wireless debugging right in the app — no PC"),
+    SHIZUKU("Shizuku", "One tap if you already run Shizuku"),
+    MANUAL_ADB("Manual ADB", "Copy one command and run it from a computer"),
+}
 
 data class EnableDetectionUiState(
     val readLogsGranted: Boolean = false,
@@ -30,6 +40,13 @@ data class EnableDetectionUiState(
     val logAccessVisible: Boolean? = null,
     /** WRITE_SECURE_SETTINGS + usage access for hands-free banking Accessibility pause. */
     val bankingAutoResumeReady: Boolean = false,
+    val method: DetectionMethod = DetectionMethod.BUILTIN,
+    // Shizuku path
+    val shizukuInstalled: Boolean = false,
+    val shizukuRunning: Boolean = false,
+    val shizukuGranted: Boolean = false,
+    val isGrantingViaShizuku: Boolean = false,
+    // Built-in wireless pairing path
     val pairingCode: String = "",
     /** Pairing dialog port only (under the 6-digit code). */
     val pairingPort: String = "",
@@ -44,7 +61,6 @@ data class EnableDetectionUiState(
     val isGranting: Boolean = false,
     val statusMessage: String? = null,
     val errorMessage: String? = null,
-    val showAdvanced: Boolean = false,
 )
 
 @HiltViewModel
@@ -57,14 +73,38 @@ class EnableDetectionViewModel @Inject constructor(
         EnableDetectionUiState(
             readLogsGranted = grantViaWirelessAdb.hasReadLogs(),
             bankingAutoResumeReady = ElevatedPermissions.canAutoResumeAccessibility(context),
+            shizukuInstalled = ShizukuGrant.isInstalled(context),
         ),
     )
     val uiState: StateFlow<EnableDetectionUiState> = _uiState.asStateFlow()
 
     private var discoverJob: Job? = null
 
+    private val shizukuPermissionListener =
+        Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
+            if (requestCode != ShizukuGrant.PERMISSION_REQUEST_CODE) return@OnRequestPermissionResultListener
+            if (grantResult == PackageManager.PERMISSION_GRANTED) {
+                grantViaShizuku()
+            } else {
+                _uiState.update {
+                    it.copy(errorMessage = "Shizuku permission denied — pick another method.")
+                }
+            }
+        }
+
+    init {
+        Shizuku.addRequestPermissionResultListener(shizukuPermissionListener)
+        refreshShizukuState()
+    }
+
+    override fun onCleared() {
+        Shizuku.removeRequestPermissionResultListener(shizukuPermissionListener)
+        super.onCleared()
+    }
+
     fun refresh() {
         viewModelScope.launch {
+            refreshShizukuState()
             val ok = grantViaWirelessAdb.verifyAndSyncWatcher()
             val banking = ElevatedPermissions.canAutoResumeAccessibility(context)
             val visible = if (ok) {
@@ -98,6 +138,91 @@ class EnableDetectionViewModel @Inject constructor(
         }
     }
 
+    fun setMethod(method: DetectionMethod) {
+        _uiState.update { it.copy(method = method, errorMessage = null) }
+        if (method == DetectionMethod.SHIZUKU) refreshShizukuState()
+    }
+
+    fun refreshShizukuState() {
+        _uiState.update {
+            it.copy(
+                shizukuInstalled = ShizukuGrant.isInstalled(context),
+                shizukuRunning = ShizukuGrant.isServiceRunning(),
+                shizukuGranted = ShizukuGrant.hasPermission(),
+            )
+        }
+    }
+
+    fun requestShizukuThenGrant() {
+        refreshShizukuState()
+        val state = _uiState.value
+        when {
+            !state.shizukuRunning -> _uiState.update {
+                it.copy(
+                    errorMessage = "Shizuku isn't running. Open the Shizuku app and start it " +
+                        "(wireless debugging or a one-time PC start), then come back.",
+                )
+            }
+            state.shizukuGranted -> grantViaShizuku()
+            else -> runCatching { Shizuku.requestPermission(ShizukuGrant.PERMISSION_REQUEST_CODE) }
+                .onFailure { t ->
+                    _uiState.update {
+                        it.copy(errorMessage = "Could not ask Shizuku for permission: ${t.message}")
+                    }
+                }
+        }
+    }
+
+    private fun grantViaShizuku() {
+        if (_uiState.value.isGrantingViaShizuku) return
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(isGrantingViaShizuku = true, errorMessage = null, statusMessage = "Granting via Shizuku…")
+            }
+            ShizukuGrant.runGrants(context)
+                .onSuccess {
+                    afterGrantSucceeded(
+                        extraStatus = "Done via Shizuku. You can stop Shizuku — grants stay.",
+                    )
+                }
+                .onFailure { t ->
+                    _uiState.update {
+                        it.copy(
+                            isGrantingViaShizuku = false,
+                            statusMessage = null,
+                            errorMessage = "Shizuku grant failed: ${t.message}",
+                        )
+                    }
+                }
+        }
+    }
+
+    /** Shared verification + watcher reconnect after any successful grant path. */
+    private suspend fun afterGrantSucceeded(extraStatus: String) {
+        val banking = ElevatedPermissions.canAutoResumeAccessibility(context)
+        val visible = LogVisibilityProbe.probe() == LogVisibilityProbe.Result.VISIBLE
+        if (!LogcatWatcherService.hasTailSeenNonSelf()) {
+            // Same deterministic reconnect: probe surfaced the
+            // consent prompt; the fresh tail inherits the Allow.
+            LogcatWatcherService.restart(context)
+        }
+        _uiState.update {
+            it.copy(
+                isGrantingViaShizuku = false,
+                readLogsGranted = true,
+                logAccessVisible = visible,
+                bankingAutoResumeReady = banking,
+                statusMessage = when {
+                    visible == false ->
+                        "System logs are still blocked. Allow log access when Keyforge asks, then leave and reopen this screen."
+                    banking -> extraStatus
+                    else -> "Granted. If banking auto-pause still fails, re-run Unlock."
+                },
+                errorMessage = null,
+            )
+        }
+    }
+
     fun onPairingCodeChange(value: String) {
         val digits = value.filter { it.isDigit() }.take(6)
         _uiState.update { it.copy(pairingCode = digits, errorMessage = null) }
@@ -125,12 +250,22 @@ class EnableDetectionViewModel @Inject constructor(
         }
     }
 
-    fun setShowAdvanced(show: Boolean) {
-        _uiState.update { it.copy(showAdvanced = show) }
-    }
-
     fun openWirelessDebugging() {
         ReadLogsGrantHelper.openWirelessDebugging(context)
+    }
+
+    /** Opens the Shizuku manager app so the user can start the service. */
+    fun openShizukuApp() {
+        runCatching {
+            val intent = context.packageManager.getLaunchIntentForPackage(ShizukuGrant.SHIZUKU_PACKAGE)
+            if (intent != null) {
+                context.startActivity(intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+            } else {
+                _uiState.update {
+                    it.copy(errorMessage = "Shizuku manager not installed. Install it from Play Store or GitHub.")
+                }
+            }
+        }
     }
 
     fun openDeveloperOptions() {
@@ -208,29 +343,10 @@ class EnableDetectionViewModel @Inject constructor(
                 ReadLogsGrantViaWirelessAdb.GrantResult.AlreadyGranted,
                 ReadLogsGrantViaWirelessAdb.GrantResult.Success,
                 -> {
-                    val banking = ElevatedPermissions.canAutoResumeAccessibility(context)
-                    val visible = LogVisibilityProbe.probe() == LogVisibilityProbe.Result.VISIBLE
-                    if (!LogcatWatcherService.hasTailSeenNonSelf()) {
-                        // Same deterministic reconnect: probe surfaced the
-                        // consent prompt; the fresh tail inherits the Allow.
-                        LogcatWatcherService.restart(context)
-                    }
-                    _uiState.update {
-                        it.copy(
-                            isGranting = false,
-                            readLogsGranted = true,
-                            logAccessVisible = visible,
-                            bankingAutoResumeReady = banking,
-                            statusMessage = if (visible == false) {
-                                "System logs are still blocked. Allow log access when Keyforge asks, then leave and reopen this screen."
-                            } else if (banking) {
-                                "Done. You can turn Wireless debugging off — grants stay."
-                            } else {
-                                "READ_LOGS granted. If banking auto-pause still fails, re-run Unlock."
-                            },
-                            errorMessage = null,
-                        )
-                    }
+                    _uiState.update { it.copy(isGranting = false) }
+                    afterGrantSucceeded(
+                        extraStatus = "Done. You can turn Wireless debugging off — grants stay.",
+                    )
                 }
                 is ReadLogsGrantViaWirelessAdb.GrantResult.Failed -> _uiState.update {
                     it.copy(

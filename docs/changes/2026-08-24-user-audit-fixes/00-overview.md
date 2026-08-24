@@ -16,6 +16,7 @@ fixed (deliberate scope) are listed at the end.
 | 05 | [05-light-theme-window.md](./05-light-theme-window.md) | Light theme no longer flashes black / hides status icons |
 | 06 | [06-compose-a11y-polish.md](./06-compose-a11y-polish.md) | Saveable sheets/dialogs, 48dp targets, semantics, empty states, URL sheet, IO off main |
 | 07 | [07-launchapp-icons.md](./07-launchapp-icons.md) | Real launcher logos on Home cards, Floating Menu slots + tiles |
+| 08 | [08-unlock-methods-shizuku.md](./08-unlock-methods-shizuku.md) | Unlock screen: Built-In / Shizuku / Manual ADB method cards; Shizuku tap-to-grant via user service |
 
 ## Known gaps (audit found, not fixed here)
 

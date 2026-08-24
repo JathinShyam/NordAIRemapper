@@ -41,6 +41,7 @@ android {
 
     buildFeatures {
         compose = true
+        aidl = true
     }
 }
 
@@ -73,10 +74,14 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
 
-    // In-app Wireless ADB pairing to grant READ_LOGS (no Shizuku / no laptop)
+    // In-app Wireless ADB pairing to grant READ_LOGS (no laptop needed)
     implementation(libs.libadb.android)
     implementation(libs.sun.security.android)
     implementation(libs.conscrypt.android)
+
+    // Optional Unlock path for users already running Shizuku
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
 
     testImplementation("junit:junit:4.13.2")
     testImplementation(libs.kotlinx.coroutines.test)

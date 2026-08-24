@@ -16,6 +16,7 @@ kotlinxCoroutines = "1.9.0"
 libAdbAndroid = "3.1.1"
 sunSecurityAndroid = "1.1"
 conscryptAndroid = "2.5.3"
+shizuku = "13.1.5"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -51,6 +52,8 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 libadb-android = { group = "com.github.MuntashirAkon", name = "libadb-android", version.ref = "libAdbAndroid" }
 sun-security-android = { group = "com.github.MuntashirAkon", name = "sun-security-android", version.ref = "sunSecurityAndroid" }
 conscrypt-android = { group = "org.conscrypt", name = "conscrypt-android", version.ref = "conscryptAndroid" }
+shizuku-api = { group = "dev.rikka.shizuku", name = "api", version.ref = "shizuku" }
+shizuku-provider = { group = "dev.rikka.shizuku", name = "provider", version.ref = "shizuku" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

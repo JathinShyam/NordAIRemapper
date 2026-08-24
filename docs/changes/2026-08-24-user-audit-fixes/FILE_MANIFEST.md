@@ -8,6 +8,10 @@
 | `presentation/home/HomeScreen.kt` | press-card app icons | 07 |
 | `presentation/overlay/OverlaySettingsScreen.kt` | slot app icons | 07 |
 | `service/FloatingOverlayService.kt` | tile app icons | 07 |
+| `gradle/libs.versions.toml`, `app/build.gradle.kts`, `AndroidManifest.xml` | Shizuku deps + provider + queries + aidl flag | 08 |
+| `service/shizuku/*` (new), `service/ShizukuGrant.kt` (new) | Shizuku user-service grant runner | 08 |
+| `presentation/detection/EnableDetectionViewModel.kt` | method state machine, shared post-grant verify | 08 |
+| `presentation/detection/EnableDetectionScreen.kt` | three-method Unlock UI | 08 |
 | `service/LogcatWatcherService.kt` | suppress death alarm on deliberate stop | 01 |
 | `service/DetectionCoordinator.kt` | set suppression only for master-off stops | 01 |
 | `service/RemapEngine.kt` | learning gate on consume + dispatch | 03 |
