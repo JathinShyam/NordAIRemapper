@@ -62,20 +62,17 @@ import com.nordairemapper.ui.components.StatusChip
 import com.nordairemapper.ui.components.StatusTone
 
 /**
- * Unlock Plus Key detection (READ_LOGS) and optional hands-free banking
- * Accessibility pause (WRITE_SECURE_SETTINGS + usage access).
- * Three routes, one shared grant set: Built-in wireless pairing, Shizuku,
- * or Manual ADB from a computer.
+ * Shared Unlock UI: three method cards (Built-In / Shizuku / Manual ADB) and
+ * the panel of the selected one, plus status/error lines. Used by the full
+ * Unlock screen and embedded in Lab.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EnableDetectionScreen(
-    onBack: () -> Unit,
-    onContinue: (() -> Unit)? = null,
-    viewModel: EnableDetectionViewModel = hiltViewModel(),
+fun UnlockMethodsSection(
+    viewModel: EnableDetectionViewModel,
+    modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
 
     val nearbyWifiLauncher = rememberLauncherForActivityResult(
@@ -101,6 +98,82 @@ fun EnableDetectionScreen(
         }
         viewModel.startDiscovery()
     }
+
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        SectionLabel("Choose a method")
+        DetectionMethod.entries.forEach { method ->
+            MethodOptionCard(
+                method = method,
+                selected = state.method == method,
+                subStatus = when (method) {
+                    DetectionMethod.SHIZUKU -> shizukuStatusLabel(state)
+                    else -> null
+                },
+                onSelect = { viewModel.setMethod(method) },
+            )
+        }
+
+        when (state.method) {
+            DetectionMethod.BUILTIN -> BuiltInMethodPanel(
+                state = state,
+                onPairingCodeChange = viewModel::onPairingCodeChange,
+                onPairingPortChange = viewModel::onPairingPortChange,
+                onConnectPortChange = viewModel::onConnectPortChange,
+                onOpenWirelessDebugging = {
+                    viewModel.openWirelessDebugging()
+                    requestNearbyWifiThenDiscover()
+                },
+                onOpenDeveloperOptions = viewModel::openDeveloperOptions,
+                onFindPort = { requestNearbyWifiThenDiscover() },
+                onPairAndGrant = viewModel::pairAndGrant,
+            )
+            DetectionMethod.SHIZUKU -> ShizukuMethodPanel(
+                state = state,
+                onGrant = viewModel::requestShizukuThenGrant,
+                onOpenShizukuApp = viewModel::openShizukuApp,
+                onRecheck = viewModel::refreshShizukuState,
+            )
+            DetectionMethod.MANUAL_ADB -> ManualAdbMethodPanel(
+                state = state,
+                onCopy = viewModel::copyUsbAdbCommand,
+                onRecheck = viewModel::refresh,
+            )
+        }
+
+        state.statusMessage?.let { msg ->
+            Text(
+                text = msg,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        state.errorMessage?.let { msg ->
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Icon(
+                    imageVector = Icons.Outlined.ErrorOutline,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                )
+                Text(
+                    text = msg,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+    }
+}
+
+/** Full-screen wrapper around [UnlockMethodsSection] with status header. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EnableDetectionScreen(
+    onBack: () -> Unit,
+    onContinue: (() -> Unit)? = null,
+    viewModel: EnableDetectionViewModel = hiltViewModel(),
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -204,67 +277,7 @@ fun EnableDetectionScreen(
                 }
             }
 
-            SectionLabel("Choose a method")
-            DetectionMethod.entries.forEach { method ->
-                MethodOptionCard(
-                    method = method,
-                    selected = state.method == method,
-                    subStatus = when (method) {
-                        DetectionMethod.SHIZUKU -> shizukuStatusLabel(state)
-                        else -> null
-                    },
-                    onSelect = { viewModel.setMethod(method) },
-                )
-            }
-
-            when (state.method) {
-                DetectionMethod.BUILTIN -> BuiltInMethodPanel(
-                    state = state,
-                    onPairingCodeChange = viewModel::onPairingCodeChange,
-                    onPairingPortChange = viewModel::onPairingPortChange,
-                    onConnectPortChange = viewModel::onConnectPortChange,
-                    onOpenWirelessDebugging = {
-                        viewModel.openWirelessDebugging()
-                        requestNearbyWifiThenDiscover()
-                    },
-                    onOpenDeveloperOptions = viewModel::openDeveloperOptions,
-                    onFindPort = { requestNearbyWifiThenDiscover() },
-                    onPairAndGrant = viewModel::pairAndGrant,
-                )
-                DetectionMethod.SHIZUKU -> ShizukuMethodPanel(
-                    state = state,
-                    onGrant = viewModel::requestShizukuThenGrant,
-                    onOpenShizukuApp = viewModel::openShizukuApp,
-                    onRecheck = viewModel::refreshShizukuState,
-                )
-                DetectionMethod.MANUAL_ADB -> ManualAdbMethodPanel(
-                    state = state,
-                    onCopy = viewModel::copyUsbAdbCommand,
-                    onRecheck = viewModel::refresh,
-                )
-            }
-
-            state.statusMessage?.let { msg ->
-                Text(
-                    text = msg,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-            state.errorMessage?.let { msg ->
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Icon(
-                        imageVector = Icons.Outlined.ErrorOutline,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                    )
-                    Text(
-                        text = msg,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-            }
+            UnlockMethodsSection(viewModel)
 
             Spacer(modifier = Modifier.height(24.dp))
         }

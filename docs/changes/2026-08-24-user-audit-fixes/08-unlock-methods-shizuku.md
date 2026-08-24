@@ -17,6 +17,7 @@ tap-to-grant option at all and were forced through pairing or a PC.
 | `presentation/detection/EnableDetectionViewModel.kt` | `DetectionMethod {BUILTIN, SHIZUKU, MANUAL_ADB}` selector state; Shizuku state machine (installed → running → permission → granting); permission-result listener registered/cleared in VM lifecycle; shared `afterGrantSucceeded()` verification for all paths; removed dead `showAdvanced` |
 | `presentation/detection/EnableDetectionScreen.kt` | Restructured into three selectable method cards (radio semantics, selected border + check), each expanding only its own panel: Built-In = full wireless pairing flow; Shizuku = status checklist + "Unlock via Shizuku" + open-app/recheck; Manual ADB = copy-command card + recheck. Error rows now carry an icon |
 | `presentation/onboarding/OnboardingScreen.kt` | Detection step copy now names the three options |
+| `EnableDetectionScreen.kt` follow-up | Extracted public `UnlockMethodsSection(viewModel)`; full screen = status header + section. Lab embeds the same section (own `EnableDetectionViewModel` instance) in its READ_LOGS card when not granted, replacing the old copy-command block |
 
 ## Security notes
 
