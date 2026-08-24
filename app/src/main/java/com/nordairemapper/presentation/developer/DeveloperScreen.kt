@@ -24,6 +24,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,8 +32,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.AppSettings
 import com.nordairemapper.domain.model.DetectionStrategy
@@ -55,9 +59,22 @@ fun DeveloperScreen(
     unlockViewModel: EnableDetectionViewModel = hiltViewModel(),
 ) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
-    val readLogsGranted by viewModel.readLogsGranted.collectAsStateWithLifecycle()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    LaunchedEffect(Unit) { viewModel.refreshPermissions() }
+    LaunchedEffect(Unit) {
+        viewModel.refreshPermissions()
+        unlockViewModel.refresh()
+    }
+
+    // Returning from Settings (developer options / wireless debugging toggle)
+    // must re-run the step checks immediately.
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) unlockViewModel.refresh()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     Scaffold(
         topBar = {
@@ -128,34 +145,50 @@ fun DeveloperScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            SectionLabel("READ_LOGS (Plus Key on Nord 5)")
+            // Same layout as the Unlock screen: flat status chips + method
+            // flow at page level — no card-in-card nesting.
+            SectionLabel("Unlock · Log access for Plus Key")
+            val unlockState by unlockViewModel.uiState.collectAsStateWithLifecycle()
+            StatusChip(
+                label = if (unlockState.readLogsGranted) "READ_LOGS granted" else "READ_LOGS needed",
+                tone = if (unlockState.readLogsGranted) StatusTone.Active else StatusTone.Warning,
+            )
+            unlockState.logAccessVisible?.let { visible ->
+                StatusChip(
+                    label = if (visible) {
+                        "System log access verified"
+                    } else {
+                        "Blocked: allow log access when prompted, then reopen"
+                    },
+                    tone = if (visible) StatusTone.Active else StatusTone.Warning,
+                )
+            }
+            if (unlockState.readLogsGranted && !unlockState.bankingAutoResumeReady) {
+                StatusChip(
+                    label = "Banking auto-pause needs Unlock",
+                    tone = StatusTone.Warning,
+                )
+            }
+
+            if (unlockState.readLogsGranted && unlockState.bankingAutoResumeReady) {
+                Text(
+                    text = "Unlocked. Logcat detection and hands-free banking pause are ready.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            } else {
+                UnlockMethodsSection(viewModel = unlockViewModel)
+                TextButton(onClick = onOpenEnableDetection) {
+                    Text("Open full Unlock screen")
+                }
+            }
+
+            SectionLabel("Log match pattern")
             NordSurfaceCard {
                 Column(
                     modifier = Modifier.padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text(
-                        text = if (readLogsGranted) {
-                            "READ_LOGS granted — logcat detection can run"
-                        } else {
-                            "Not granted — required to detect the Plus Key on Nord 5"
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (readLogsGranted) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.error
-                        },
-                    )
-                    if (!readLogsGranted) {
-                        // Same Built-In / Shizuku / Manual ADB selector as the
-                        // Unlock screen — one implementation, two entry points.
-                        UnlockMethodsSection(viewModel = unlockViewModel)
-                        TextButton(onClick = onOpenEnableDetection) {
-                            Text("Open full Unlock screen")
-                        }
-                    }
-
                     var pattern by rememberSaveable(settings.logcatPattern) {
                         mutableStateOf(settings.logcatPattern)
                     }
