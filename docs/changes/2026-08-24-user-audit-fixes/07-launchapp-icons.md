@@ -14,6 +14,7 @@ tiles. Users read the generic icon as "the assignment didn't take".
 |------|--------|
 | `presentation/common/AppIcon.kt` (new) | `rememberAppIcon(packageName)` — launcher icon decoded on `Dispatchers.IO`, keyed by package, null while loading/unresolvable |
 | `ui/components/ActionCard.kt` | + `appIcon: ImageBitmap?`; when set it replaces the vector in the 36dp slot (AnimatedContent target includes it so the swap animates) |
+| `presentation/remap/RemapScreen.kt` | Current-selection pill resolves + shows the app logo (user follow-up report) |
 | `presentation/home/HomeScreen.kt` | press cards resolve + pass the app icon |
 | `presentation/overlay/OverlaySettingsScreen.kt` | slot cards same |
 | `service/FloatingOverlayService.kt` | GridTile + PillTile render the bitmap inside the accent ring when present |

@@ -1,6 +1,7 @@
 package com.nordairemapper.presentation.remap
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
@@ -51,6 +52,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -70,6 +72,7 @@ import com.nordairemapper.presentation.common.conflictKey
 import com.nordairemapper.presentation.common.displayDescription
 import com.nordairemapper.presentation.common.displayName
 import com.nordairemapper.presentation.common.icon
+import com.nordairemapper.presentation.common.rememberAppIcon
 import com.nordairemapper.ui.components.NordGhostButton
 import com.nordairemapper.ui.components.NordTopBarTitle
 import com.nordairemapper.ui.components.NordPrimaryButton
@@ -248,6 +251,9 @@ fun RemapScreen(
                 CurrentSelectionPill(
                     action = state.currentAction,
                     category = categoryFor(state.currentAction),
+                    appIcon = rememberAppIcon(
+                        (state.currentAction as? RemapAction.LaunchApp)?.packageName,
+                    ),
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
             }
@@ -390,6 +396,7 @@ private fun CurrentSelectionPill(
     action: RemapAction,
     category: RemapActionCategory,
     modifier: Modifier = Modifier,
+    appIcon: ImageBitmap? = null,
 ) {
     val accent = categoryAccent(category)
     Row(
@@ -407,12 +414,20 @@ private fun CurrentSelectionPill(
                 .background(accent.container, MaterialTheme.shapes.small),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = action.icon(),
-                contentDescription = null,
-                tint = accent.tint,
-                modifier = Modifier.size(20.dp),
-            )
+            if (appIcon != null) {
+                Image(
+                    bitmap = appIcon,
+                    contentDescription = action.displayName(),
+                    modifier = Modifier.size(24.dp),
+                )
+            } else {
+                Icon(
+                    imageVector = action.icon(),
+                    contentDescription = null,
+                    tint = accent.tint,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
         }
         Text(
             text = action.displayName(),

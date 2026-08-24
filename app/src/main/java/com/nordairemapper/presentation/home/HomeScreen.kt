@@ -190,8 +190,8 @@ fun HomeScreen(
             val statusLabel = when {
                 !state.accessibilityEnabled -> "Accessibility off"
                 logStreamWaiting -> "Starting log stream…"
-                state.serviceEnabled -> "Service active"
-                else -> "Remapping paused"
+                state.serviceEnabled -> "Service Active"
+                else -> "Remapping Paused"
             }
             val statusDot = when {
                 !state.accessibilityEnabled || logStreamWaiting -> StatusInactive
