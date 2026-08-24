@@ -72,7 +72,8 @@ object PairingNotifier {
         )
 
         val portLine = port?.let { "Pairing port $port detected. " } ?: ""
-        val body = errorLine ?: "${portLine}Type the 6-digit code — no need to switch apps."
+        val body = errorLine
+            ?: "${portLine}Type the 6-digit code shown in the pairing dialog — no app switching needed."
         val notification = Notification.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(if (errorLine != null) "Try that code again" else "Finish pairing right here")
@@ -105,12 +106,15 @@ object PairingNotifier {
     fun postResult(context: Context, ok: Boolean, message: String) {
         if (!notificationsEnabled(context)) return
         ensureChannel(context)
+        // Remediation messages are long — BigTextStyle keeps them readable.
+        val style = Notification.BigTextStyle().bigText(message)
         notify(
             context,
             Notification.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentTitle(if (ok) "Paired and unlocked" else "Pairing didn't finish")
                 .setContentText(message)
+                .setStyle(style)
                 .setCategory(Notification.CATEGORY_PROGRESS)
                 .setAutoCancel(true)
                 .setTimeoutAfter(if (ok) 5_000L else 10_000L)

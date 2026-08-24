@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -76,14 +77,19 @@ private fun Loading() {
 @Composable
 private fun AppNavHost(onboardingCompleted: Boolean) {
     val navController = rememberNavController()
-    val start = if (onboardingCompleted) Routes.HOME else Routes.ONBOARDING
+    // Freeze the start destination for this composition lifetime: flipping
+    // onboardingCompleted mid-session would otherwise rebuild the graph with a
+    // different start and leave stale destinations on the back stack (user
+    // report: Back from Home reopened the onboarding finish page).
+    val start = remember { if (onboardingCompleted) Routes.HOME else Routes.ONBOARDING }
 
     NavHost(navController = navController, startDestination = start) {
         composable(Routes.ONBOARDING) {
             OnboardingScreen(
                 onFinished = {
                     navController.navigate(Routes.HOME) {
-                        popUpTo(Routes.ONBOARDING) { inclusive = true }
+                        // Wipe everything below Home — no onboarding leftovers.
+                        popUpTo(0) { inclusive = true }
                     }
                 },
                 onOpenEnableDetection = { navController.navigate(Routes.ENABLE_DETECTION) },
@@ -133,7 +139,7 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
                 onOpenPermissions = { navController.navigate(Routes.PERMISSIONS) },
                 onRestartOnboarding = {
                     navController.navigate(Routes.ONBOARDING) {
-                        popUpTo(Routes.HOME) { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
                 },
             )

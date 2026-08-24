@@ -137,3 +137,15 @@ phone's Wi-Fi IPv4 (or loopback), foreign advertisements logged + ignored;
 step-3 `done` is now `readLogsGranted`, with "Pair now (new code)" retry
 label while port is known but unlock hasn't happened. `stopPairingWatch`
 also cancels the abandoned ongoing notification.
+
+
+## Follow-up — back-stack fix + notification copy
+
+- **Back from Home reopened onboarding finish page**: AppNavHost passed a
+  changing startDestination (graph rebuilt mid-session when the
+  onboardingCompleted flag flipped), and onFinished only popped the ONBOARDING
+  route. Now: start destination frozen per composition (`remember`), and both
+  onboarding transitions use `popUpTo(0) { inclusive = true }` for a clean stack.
+- **Notification copy**: prompt body now says "Type the 6-digit code shown in
+  the pairing dialog"; result banners use BigTextStyle so the long OxygenOS
+  remediation message is fully readable when expanded.
