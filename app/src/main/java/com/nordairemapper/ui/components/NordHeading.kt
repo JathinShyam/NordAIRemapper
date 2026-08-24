@@ -14,6 +14,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontSynthesis
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import com.nordairemapper.ui.theme.HeadingRed
@@ -74,6 +75,7 @@ fun NordHeading(
         modifier = modifier,
         style = headingStyle,
         maxLines = maxLines,
+        overflow = TextOverflow.Ellipsis,
     )
 }
 
@@ -106,6 +108,8 @@ fun NordTopBarTitle(
             text = subtitle,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

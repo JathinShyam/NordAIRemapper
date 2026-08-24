@@ -53,6 +53,12 @@ object DetectionCoordinator {
             if (shouldRun) {
                 LogcatWatcherService.start(context)
             } else {
+                // Suppress the outage alarm ONLY for deliberate stops (master
+                // toggle off). A stop caused by a lost READ_LOGS grant while
+                // remapping is enabled is a real failure the user must see.
+                if (!serviceEnabled) {
+                    LogcatWatcherService.suppressDeathNotification()
+                }
                 LogcatWatcherService.stop(context)
             }
         }.onFailure { Log.w("DetectionCoordinator", "syncLogcatWatcher failed", it) }

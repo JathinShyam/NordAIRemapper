@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.presentation.common.relativeLastSeen
+import com.nordairemapper.presentation.common.rememberNowTicker
 import com.nordairemapper.ui.components.NordTopBarTitle
 import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.NordSurfaceCard
@@ -60,6 +61,7 @@ fun KeyLearningScreen(
     val plusKeyMissingHint by viewModel.plusKeyMissingHint.collectAsStateWithLifecycle()
     val lastPlusKeySeenAtMs by viewModel.lastPlusKeySeenAtMs.collectAsStateWithLifecycle()
     val logcatPlusKeySeen by viewModel.logcatPlusKeySeen.collectAsStateWithLifecycle()
+    val nowMs = rememberNowTicker()
 
     LaunchedEffect(Unit) { viewModel.refreshServiceState() }
 
@@ -119,7 +121,7 @@ fun KeyLearningScreen(
                         )
                         Text(
                             text = if (lastPlusKeySeenAtMs > 0) {
-                                "Last Plus Key press: " + relativeLastSeen(lastPlusKeySeenAtMs)
+                                "Last Plus Key press: " + relativeLastSeen(lastPlusKeySeenAtMs, nowMs)
                             } else {
                                 "No Plus Key press recorded yet"
                             },
@@ -196,6 +198,19 @@ fun KeyLearningScreen(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                if (presses.isEmpty()) {
+                    item {
+                        NordSurfaceCard {
+                            Text(
+                                text = "Listening… press any key. Volume keys prove Accessibility works; " +
+                                    "on Nord 5 the Plus Key usually only appears as a logcat row.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(14.dp),
+                            )
+                        }
+                    }
+                }
                 items(presses, key = { it.id }) { press ->
                     PressRow(press = press, onSave = { viewModel.saveAsPlusKey(press) })
                 }
@@ -204,9 +219,11 @@ fun KeyLearningScreen(
     }
 }
 
+/** One formatter shared by all press rows (main-thread only). */
+private val pressTimeFormat = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
+
 @Composable
 private fun PressRow(press: CapturedPress, onSave: () -> Unit) {
-    val timeFormat = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
     val duration = press.durationMs?.let { " · ${it}ms" }.orEmpty()
     NordSurfaceCard {
         Row(
@@ -219,7 +236,7 @@ private fun PressRow(press: CapturedPress, onSave: () -> Unit) {
                     style = MaterialTheme.typography.labelLarge,
                 )
                 Text(
-                    text = "${timeFormat.format(Date(press.timestampMs))}$duration · ${press.source.name.lowercase()}",
+                    text = "${pressTimeFormat.format(Date(press.timestampMs))}$duration · ${press.source.name.lowercase()}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

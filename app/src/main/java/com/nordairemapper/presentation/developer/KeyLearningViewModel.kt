@@ -10,6 +10,7 @@ import com.nordairemapper.domain.repository.SettingsRepository
 import com.nordairemapper.service.AccessibilityUtils
 import com.nordairemapper.service.KeyAction
 import com.nordairemapper.service.KeyEventBus
+import com.nordairemapper.service.LearningMode
 import com.nordairemapper.service.RawKeyEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -53,14 +54,6 @@ data class CapturedPress(
     val isSystemKey: Boolean get() = keyCode == KeyEvent.KEYCODE_VOLUME_UP ||
         keyCode == KeyEvent.KEYCODE_VOLUME_DOWN ||
         keyCode == KeyEvent.KEYCODE_POWER
-
-    fun toRawEvent(): RawKeyEvent = RawKeyEvent(
-        keyCode = keyCode,
-        scanCode = scanCode,
-        action = if (complete) KeyAction.PULSE else KeyAction.DOWN,
-        timestampMs = timestampMs,
-        source = source,
-    )
 }
 
 @HiltViewModel
@@ -105,10 +98,18 @@ class KeyLearningViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     init {
+        // While Key setup is open, the engine must not dispatch actions for
+        // presses (or consume keys) — learning is a setup flow.
+        LearningMode.active = true
         refreshServiceState()
         viewModelScope.launch {
             keyEventBus.rawEvents.collect(::onRawEvent)
         }
+    }
+
+    override fun onCleared() {
+        LearningMode.active = false
+        super.onCleared()
     }
 
     fun refreshServiceState() {

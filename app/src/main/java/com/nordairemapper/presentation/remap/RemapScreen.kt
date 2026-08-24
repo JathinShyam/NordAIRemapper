@@ -3,7 +3,6 @@ package com.nordairemapper.presentation.remap
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -46,12 +46,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -71,7 +75,6 @@ import com.nordairemapper.ui.components.NordTopBarTitle
 import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.NordSurfaceCard
 import com.nordairemapper.ui.components.SectionLabel
-import com.nordairemapper.ui.theme.NordBlue
 import kotlinx.coroutines.launch
 private enum class RemapSheet { None, AppPicker, UrlInput }
 
@@ -86,10 +89,11 @@ fun RemapScreen(
     val loadingApps by viewModel.loadingApps.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    var sheet by remember { mutableStateOf(RemapSheet.None) }
-    var query by remember { mutableStateOf("") }
-    var categoryFilter by remember { mutableStateOf<RemapActionCategory?>(null) }
-    var tryNowLoading by remember { mutableStateOf(false) }
+    // Saveable: rotation must not close the picker/URL sheet mid-flow.
+    var sheet by rememberSaveable { mutableStateOf(RemapSheet.None) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var categoryFilter by rememberSaveable { mutableStateOf<RemapActionCategory?>(null) }
+    var tryNowLoading by rememberSaveable { mutableStateOf(false) }
     val grouped = remember { RemapActionCatalog.grouped().toList() }
     val filtered = remember(query, grouped, categoryFilter) {
         val base = if (categoryFilter == null || query.isNotBlank()) {
@@ -157,6 +161,8 @@ fun RemapScreen(
             ) {
                 NordGhostButton(
                     text = "Try now",
+                    // Nothing assigned → the executor would no-op; don't fake it.
+                    enabled = state.currentAction !is RemapAction.None,
                     onClick = {
                         tryNowLoading = true
                         scope.launch {
@@ -210,7 +216,7 @@ fun RemapScreen(
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = MaterialTheme.colorScheme.surface,
                         unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                        focusedBorderColor = NordBlue.copy(alpha = 0.55f),
+                        focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                     ),
                 )
@@ -262,6 +268,20 @@ fun RemapScreen(
                                 else -> viewModel.setAction(catalogItem.action)
                             }
                         },
+                    )
+                }
+            }
+
+            if (filtered.isEmpty() && query.isNotBlank()) {
+                item {
+                    Text(
+                        text = "No actions match “${query.trim()}”",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                        textAlign = TextAlign.Center,
                     )
                 }
             }
@@ -330,9 +350,12 @@ private fun CategoryChips(
                         ),
                         shape,
                     )
-                    .clickable(enabled = !dimmed) {
-                        onSelect(if (on) null else category)
-                    }
+                    .selectable(
+                        selected = on,
+                        enabled = !dimmed,
+                        role = Role.RadioButton,
+                        onClick = { onSelect(if (on) null else category) },
+                    )
                     .padding(horizontal = 10.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -395,6 +418,9 @@ private fun CurrentSelectionPill(
             text = action.displayName(),
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
             color = accent.tint,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false),
         )
     }
 }
@@ -422,7 +448,11 @@ private fun ActionPickRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
-            .clickable(onClick = onClick)
+            .selectable(
+                selected = selected,
+                role = Role.RadioButton,
+                onClick = onClick,
+            )
             .then(
                 if (selected) {
                     Modifier.border(

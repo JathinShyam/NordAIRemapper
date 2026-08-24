@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.NordAIRemapper" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">@android:color/black</item>
+    <!-- Light is the base: dark background + white status icons come from
+         values-night so Light theme no longer flashes black or hides icons.
+         MainActivity re-applies edge-to-edge styles reactively for the
+         in-app DARK/LIGHT/SYSTEM setting, which is independent of OS night mode. -->
+    <style name="Theme.NordAIRemapper" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/nord_window_background</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 </resources>

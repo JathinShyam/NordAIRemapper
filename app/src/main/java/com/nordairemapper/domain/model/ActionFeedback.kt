@@ -19,4 +19,7 @@ object ActionFeedbackState {
     const val RINGER_RING = "ringer_ring"
     const val RINGER_VIBRATE = "ringer_vibrate"
     const val RINGER_SILENT = "ringer_silent"
+
+    /** Action could not run (missing Accessibility, system refused, crash). */
+    const val ACTION_FAILED = "action_failed"
 }

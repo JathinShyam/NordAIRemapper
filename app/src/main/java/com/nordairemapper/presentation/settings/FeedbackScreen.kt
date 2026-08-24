@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -46,6 +47,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import android.view.HapticFeedbackConstants
@@ -138,6 +140,14 @@ fun FeedbackScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .toggleable(
+                            value = settings.hapticFeedback,
+                            role = Role.Switch,
+                            onValueChange = {
+                                view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                                viewModel.setHapticFeedback(it)
+                            },
+                        )
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -154,10 +164,7 @@ fun FeedbackScreen(
                     }
                     Switch(
                         checked = settings.hapticFeedback,
-                        onCheckedChange = {
-                            view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
-                            viewModel.setHapticFeedback(it)
-                        },
+                        onCheckedChange = null,
                     )
                 }
             }
@@ -184,7 +191,10 @@ fun FeedbackScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
                         HapticIntensity.entries.forEach { intensity ->
                             val selected = settings.hapticIntensity == intensity
                             val label = when (intensity) {
@@ -197,6 +207,7 @@ fun FeedbackScreen(
                                     viewModel.setHapticIntensity(intensity)
                                     previewIntensity(intensity)
                                 },
+                                modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.outlinedButtonColors(
                                     containerColor = if (selected) MaterialTheme.colorScheme.primary
                                     else MaterialTheme.colorScheme.surface,
@@ -208,9 +219,9 @@ fun FeedbackScreen(
                                     if (selected) MaterialTheme.colorScheme.primary
                                     else MaterialTheme.colorScheme.outline,
                                 ),
-                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
                             ) {
-                                Text(label, style = MaterialTheme.typography.labelMedium)
+                                Text(label, style = MaterialTheme.typography.labelMedium, maxLines = 1)
                             }
                         }
                     }

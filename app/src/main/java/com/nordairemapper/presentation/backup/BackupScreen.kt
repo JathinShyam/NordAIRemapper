@@ -35,6 +35,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,12 +60,13 @@ fun BackupScreen(
 ) {
     val snapshots by viewModel.snapshots.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
-    var snapshotName by remember { mutableStateOf("") }
-    var pendingRestoreId by remember { mutableStateOf<Long?>(null) }
-    var localExpanded by remember { mutableStateOf(false) }
+    // Saveable: a rotation must never drop a destructive-confirm dialog.
+    var snapshotName by rememberSaveable { mutableStateOf("") }
+    var pendingRestoreId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var localExpanded by rememberSaveable { mutableStateOf(false) }
     // Destructive actions confirm first; import overwrites the whole setup.
-    var pendingImportUri by remember { mutableStateOf<Uri?>(null) }
-    var pendingDeleteId by remember { mutableStateOf<Long?>(null) }
+    var pendingImportUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    var pendingDeleteId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json"),
@@ -113,7 +115,7 @@ fun BackupScreen(
                     text = "Export",
                     onClick = {
                         val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
-                        exportLauncher.launch("nord-ai-remapper-$stamp.json")
+                        exportLauncher.launch("keyforge-$stamp.json")
                     },
                     modifier = Modifier.weight(1f),
                 )
@@ -127,7 +129,9 @@ fun BackupScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { localExpanded = !localExpanded }
+                    .clickable(
+                        onClickLabel = if (localExpanded) "Collapse local snapshots" else "Expand local snapshots",
+                    ) { localExpanded = !localExpanded }
                     .padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -165,7 +169,13 @@ fun BackupScreen(
                     },
                 )
 
-                if (snapshots.isNotEmpty()) {
+                if (snapshots.isEmpty()) {
+                    Text(
+                        text = "No snapshots yet — save one above.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
                     SectionLabel("Saved")
                     LazyColumn(
                         modifier = Modifier.weight(1f, fill = false),

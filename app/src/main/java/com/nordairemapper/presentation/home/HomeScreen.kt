@@ -1,6 +1,7 @@
 package com.nordairemapper.presentation.home
 
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -27,11 +28,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalView
 import android.view.HapticFeedbackConstants
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.animation.core.RepeatMode
@@ -127,19 +130,19 @@ fun HomeScreen(
                     )
                 },
                 actions = {
-                    // Single settings icon — 36×36dp bordered box matching .ico in design
+                    // 48dp touch target (a11y minimum) with the bordered-box look.
                     Box(
                         modifier = Modifier
-                            .padding(end = 12.dp)
-                            .size(36.dp)
+                            .padding(end = 6.dp)
+                            .size(48.dp)
                             .background(
                                 MaterialTheme.colorScheme.surface,
-                                RoundedCornerShape(10.dp),
+                                RoundedCornerShape(12.dp),
                             )
                             .border(
                                 1.dp,
                                 MaterialTheme.colorScheme.outline,
-                                RoundedCornerShape(10.dp),
+                                RoundedCornerShape(12.dp),
                             )
                             .clickable(onClick = onOpenSettings),
                         contentAlignment = Alignment.Center,
@@ -148,7 +151,7 @@ fun HomeScreen(
                             Icons.Outlined.Settings,
                             contentDescription = "Settings",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(18.dp),
+                            modifier = Modifier.size(20.dp),
                         )
                     }
                 },
@@ -180,13 +183,17 @@ fun HomeScreen(
                     .clickable { flashKey() },
             )
 
+            val logStreamWaiting = state.serviceEnabled &&
+                state.readLogsGranted &&
+                !state.tailSawNonSelf
             val statusLabel = when {
                 !state.accessibilityEnabled -> "Accessibility off"
+                logStreamWaiting -> "Starting log stream…"
                 state.serviceEnabled -> "Service active"
                 else -> "Remapping paused"
             }
             val statusDot = when {
-                !state.accessibilityEnabled -> StatusInactive
+                !state.accessibilityEnabled || logStreamWaiting -> StatusInactive
                 state.serviceEnabled -> StatusActive
                 else -> StatusWarning
             }
@@ -213,17 +220,29 @@ fun HomeScreen(
                     StatusRibbon(
                         label = statusLabel,
                         dotColor = statusDot,
-                        pulse = state.serviceEnabled && state.accessibilityEnabled,
-                        onClick = if (!state.accessibilityEnabled) {
-                            { viewModel.openAccessibilitySettings() }
-                        } else {
-                            null
+                        pulse = state.serviceEnabled &&
+                            state.accessibilityEnabled &&
+                            !logStreamWaiting,
+                        onClick = when {
+                            !state.accessibilityEnabled ->
+                                ({ viewModel.openAccessibilitySettings() })
+                            logStreamWaiting -> ({ onOpenEnableDetection() })
+                            else -> null
                         },
-                        lastUsedLabel = "Last Used: ${relativeLastSeen(state.lastPlusKeySeenAtMs)}",
+                        lastUsedLabel = "Last Used: " +
+                            relativeLastSeen(state.lastPlusKeySeenAtMs, state.nowMs),
                     )
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .toggleable(
+                                value = state.serviceEnabled,
+                                role = Role.Switch,
+                                onValueChange = { enabled ->
+                                    view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                                    viewModel.setServiceEnabled(enabled)
+                                },
+                            )
                             .padding(horizontal = 14.dp, vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -240,10 +259,22 @@ fun HomeScreen(
                         }
                         Switch(
                             checked = state.serviceEnabled,
-                            onCheckedChange = { enabled ->
-                                view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
-                                viewModel.setServiceEnabled(enabled)
-                            },
+                            // Row-level toggleable handles clicks; keep the
+                            // switch itself non-interactive to avoid double events.
+                            onCheckedChange = null,
+                        )
+                    }
+                    if (state.serviceEnabled && !state.notificationsEnabled) {
+                        Text(
+                            text = "Failure alerts are off — enable Keyforge notifications in Settings, or detection problems will be silent.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = StatusWarning,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(onClickLabel = "Open notification settings") {
+                                    viewModel.openAppNotificationSettings()
+                                }
+                                .padding(horizontal = 14.dp, vertical = 8.dp),
                         )
                     }
                 }
@@ -347,6 +378,7 @@ private fun StatusRibbon(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

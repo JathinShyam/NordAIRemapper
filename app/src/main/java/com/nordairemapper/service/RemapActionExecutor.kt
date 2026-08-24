@@ -59,6 +59,10 @@ class RemapActionExecutor @Inject constructor(
     @Volatile
     private var confirmedRingerProfile: RingerProfile? = null
 
+    /** Shown at most once per process when visual confirmations can't render. */
+    @Volatile
+    private var overlayPermissionHintShown = false
+
     init {
         runCatching {
             cameraManager.registerTorchCallback(
@@ -75,15 +79,25 @@ class RemapActionExecutor @Inject constructor(
     override suspend fun execute(action: RemapAction) {
         if (action == RemapAction.None) return
         val settings = settingsRepository.settings.first()
-        if (settings.hapticFeedback) {
-            performHaptic(settings.hapticIntensity)
+        // Visual Overlay is on by default; without the special grant it would
+        // silently render nothing. Say so once, visibly.
+        if (settings.visualOverlayEnabled &&
+            !overlayPermissionHintShown &&
+            !Settings.canDrawOverlays(context)
+        ) {
+            overlayPermissionHintShown = true
+            toast("Allow “Display over other apps” to see action confirmations")
         }
         val feedback = runCatching { dispatch(action) }
             .onFailure {
                 Log.w(TAG, "Failed to execute $action", it)
                 toast("Action failed: ${it.message ?: action.javaClass.simpleName}")
             }
-            .getOrDefault(ActionFeedback(action))
+            .getOrDefault(ActionFeedback(action, ActionFeedbackState.ACTION_FAILED))
+        val failed = feedback.stateKey == ActionFeedbackState.ACTION_FAILED
+        if (!failed && settings.hapticFeedback) {
+            performHaptic(settings.hapticIntensity)
+        }
         if (settings.visualOverlayEnabled) {
             ActionFeedbackOverlayService.show(context, feedback)
         }
@@ -103,20 +117,14 @@ class RemapActionExecutor @Inject constructor(
             ActionFeedback(action)
         }
         is RemapAction.ToggleFlashlight -> ActionFeedback(action, toggleFlashlight())
-        is RemapAction.TakeScreenshot -> {
-            globalAction(AccessibilityService.GLOBAL_ACTION_TAKE_SCREENSHOT)
-            ActionFeedback(action)
-        }
+        is RemapAction.TakeScreenshot ->
+            globalActionResult(action, AccessibilityService.GLOBAL_ACTION_TAKE_SCREENSHOT)
         is RemapAction.ToggleDoNotDisturb -> ActionFeedback(action, toggleDnd())
         is RemapAction.CycleRingerMode -> ActionFeedback(action, cycleRingerMode())
-        is RemapAction.OpenNotificationShade -> {
-            globalAction(AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS)
-            ActionFeedback(action)
-        }
-        is RemapAction.OpenQuickSettings -> {
-            globalAction(AccessibilityService.GLOBAL_ACTION_QUICK_SETTINGS)
-            ActionFeedback(action)
-        }
+        is RemapAction.OpenNotificationShade ->
+            globalActionResult(action, AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS)
+        is RemapAction.OpenQuickSettings ->
+            globalActionResult(action, AccessibilityService.GLOBAL_ACTION_QUICK_SETTINGS)
         is RemapAction.PlayPauseMedia -> {
             dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
             ActionFeedback(action)
@@ -133,22 +141,14 @@ class RemapActionExecutor @Inject constructor(
             adjustVolume(action.up)
             ActionFeedback(action)
         }
-        is RemapAction.OpenRecents -> {
-            globalAction(AccessibilityService.GLOBAL_ACTION_RECENTS)
-            ActionFeedback(action)
-        }
-        is RemapAction.GoHome -> {
-            globalAction(AccessibilityService.GLOBAL_ACTION_HOME)
-            ActionFeedback(action)
-        }
-        is RemapAction.GoBack -> {
-            globalAction(AccessibilityService.GLOBAL_ACTION_BACK)
-            ActionFeedback(action)
-        }
-        is RemapAction.LockScreen -> {
-            globalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN)
-            ActionFeedback(action)
-        }
+        is RemapAction.OpenRecents ->
+            globalActionResult(action, AccessibilityService.GLOBAL_ACTION_RECENTS)
+        is RemapAction.GoHome ->
+            globalActionResult(action, AccessibilityService.GLOBAL_ACTION_HOME)
+        is RemapAction.GoBack ->
+            globalActionResult(action, AccessibilityService.GLOBAL_ACTION_BACK)
+        is RemapAction.LockScreen ->
+            globalActionResult(action, AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN)
         is RemapAction.ToggleAutoRotate -> ActionFeedback(action, toggleAutoRotate())
         is RemapAction.OpenUrl -> {
             openUrl(action.url)
@@ -425,19 +425,33 @@ class RemapActionExecutor @Inject constructor(
         }
     }
 
-    private fun globalAction(action: Int) {
+    /**
+     * Runs a global action; false means Accessibility is missing or the system
+     * refused. Callers turn that into [ActionFeedbackState.ACTION_FAILED] so
+     * the visual popup does not claim success.
+     */
+    private fun globalAction(action: Int): Boolean {
         val service = AccessibilityServiceHolder.service
         if (service == null) {
             Log.w(TAG, "Accessibility service not connected; cannot run global action $action")
             toast("Enable Accessibility for this action")
-            return
+            return false
         }
         val ok = service.performGlobalAction(action)
         if (!ok) {
             Log.w(TAG, "performGlobalAction($action) returned false")
             toast("System action failed")
         }
+        return ok
     }
+
+    /** Feedback for an accessibility global action, honest about failures. */
+    private fun globalActionResult(action: RemapAction, actionId: Int): ActionFeedback =
+        if (globalAction(actionId)) {
+            ActionFeedback(action)
+        } else {
+            ActionFeedback(action, ActionFeedbackState.ACTION_FAILED)
+        }
 
     /**
      * Manifest `ACCESS_NOTIFICATION_POLICY` is not enough — the user must toggle

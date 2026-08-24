@@ -1,6 +1,9 @@
 package com.nordairemapper.presentation.home
 
+import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
+import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nordairemapper.domain.model.DetectionStrategy
@@ -27,6 +30,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import android.util.Log
 import javax.inject.Inject
@@ -45,6 +50,17 @@ class HomeViewModel @Inject constructor(
             readLogsGranted = LogcatWatcherService.hasReadLogsPermission(context),
         )
     )
+
+    /**
+     * 10s heartbeat so "last used Xs ago" stays honest while Home is visible.
+     * Runs only while the UI subscribes (stateIn WhileSubscribed).
+     */
+    private val ticker = flow {
+        while (true) {
+            emit(System.currentTimeMillis())
+            delay(10_000L)
+        }
+    }
 
     private val _plusKeyPulse = MutableSharedFlow<Unit>(extraBufferCapacity = 8)
     /** Fires when a Plus Key DOWN/PULSE arrives so Home can flash the silhouette. */
@@ -76,16 +92,20 @@ class HomeViewModel @Inject constructor(
         settingsRepository.settings,
         remapConfigRepository.observeConfigs(),
         runtimeFlags,
-    ) { settings, actions, flags ->
+        ticker,
+    ) { settings, actions, flags, nowMs ->
         HomeUiState(
             serviceEnabled = settings.serviceEnabled,
             accessibilityEnabled = flags.accessibilityEnabled,
             detectionStrategy = settings.detectionStrategy,
             keyConfigured = settings.keyIdentity.isConfigured,
             readLogsGranted = flags.readLogsGranted,
+            tailSawNonSelf = flags.tailSawNonSelf,
+            notificationsEnabled = flags.notificationsEnabled,
             actions = actions,
             conflictPressTypes = conflictPressTypes(actions),
             lastPlusKeySeenAtMs = settings.lastPlusKeySeenAtMs,
+            nowMs = nowMs,
             banner = buildBanner(
                 serviceEnabled = settings.serviceEnabled,
                 accessibilityEnabled = flags.accessibilityEnabled,
@@ -102,10 +122,16 @@ class HomeViewModel @Inject constructor(
             RuntimeFlags(
                 accessibilityEnabled = AccessibilityUtils.isServiceEnabled(context),
                 readLogsGranted = LogcatWatcherService.hasReadLogsPermission(context),
+                tailSawNonSelf = LogcatWatcherService.hasTailSeenNonSelf(),
+                notificationsEnabled = isNotificationsEnabled(),
             )
         }
         healBlindTailIfNeeded()
     }
+
+    private fun isNotificationsEnabled(): Boolean =
+        context.getSystemService(NotificationManager::class.java)
+            ?.areNotificationsEnabled() ?: true
 
     /**
      * Post-boot self-heal for ColorOS per-boot log consent: spawns made in the
@@ -148,9 +174,19 @@ class HomeViewModel @Inject constructor(
 
     fun openAccessibilitySettings() = AccessibilityUtils.openAccessibilitySettings(context)
 
+    /** Deep link to Keyforge's system notification settings (failure alerts). */
+    fun openAppNotificationSettings() {
+        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { context.startActivity(intent) }
+    }
+
     private data class RuntimeFlags(
         val accessibilityEnabled: Boolean,
         val readLogsGranted: Boolean,
+        val tailSawNonSelf: Boolean = true,
+        val notificationsEnabled: Boolean = true,
     )
 
     companion object {
@@ -222,21 +258,23 @@ class HomeViewModel @Inject constructor(
                     )
                 }
             }
-            if (serviceEnabled && !hasAnyAction) {
+            if (!serviceEnabled) {
+                // Paused must outrank "assign presses": the watcher is stopped,
+                // so claiming "Keyforge sees every press" here would be false.
+                return HomeBanner(
+                    title = "Remapping is paused",
+                    body = "Turn on the master toggle when you want the Plus Key to run your actions.",
+                    primaryLabel = "Key setup",
+                    primaryAction = HomeBannerAction.OPEN_KEY_LEARNING,
+                )
+            }
+            if (!hasAnyAction) {
                 // Keyforge SEES every press, but a fresh install (or wiped
                 // data) ships with no actions — presses look like "detection
                 // is broken" when detection is actually fine.
                 return HomeBanner(
                     title = "Assign your presses",
                     body = "Keyforge sees every Plus Key press. Choose what Single, Double, and Long press should do.",
-                    primaryLabel = "Key setup",
-                    primaryAction = HomeBannerAction.OPEN_KEY_LEARNING,
-                )
-            }
-            if (!serviceEnabled) {
-                return HomeBanner(
-                    title = "Remapping is paused",
-                    body = "Turn on the master toggle when you want the Plus Key to run your actions.",
                     primaryLabel = "Key setup",
                     primaryAction = HomeBannerAction.OPEN_KEY_LEARNING,
                 )

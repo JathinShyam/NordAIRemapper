@@ -6,7 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -37,10 +40,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -75,9 +82,10 @@ fun OverlaySettingsScreen(
     val config by viewModel.config.collectAsStateWithLifecycle()
     val apps by viewModel.installedApps.collectAsStateWithLifecycle()
     val loadingApps by viewModel.loadingApps.collectAsStateWithLifecycle()
-    var editingSlot by remember { mutableStateOf<Int?>(null) }
-    var appPickerSlot by remember { mutableStateOf<Int?>(null) }
-    var urlSheetSlot by remember { mutableStateOf<Int?>(null) }
+    // Saveable: rotation must not close an open slot editor mid-assignment.
+    var editingSlot by rememberSaveable { mutableStateOf<Int?>(null) }
+    var appPickerSlot by rememberSaveable { mutableStateOf<Int?>(null) }
+    var urlSheetSlot by rememberSaveable { mutableStateOf<Int?>(null) }
 
     Scaffold(
         topBar = {
@@ -114,6 +122,11 @@ fun OverlaySettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .toggleable(
+                            value = config.enabled,
+                            role = Role.Switch,
+                            onValueChange = viewModel::setEnabled,
+                        )
                         .padding(horizontal = 14.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -128,7 +141,7 @@ fun OverlaySettingsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Switch(checked = config.enabled, onCheckedChange = viewModel::setEnabled)
+                    Switch(checked = config.enabled, onCheckedChange = null)
                 }
             }
 
@@ -307,6 +320,9 @@ fun OverlaySettingsScreen(
                         value = config.opacity,
                         onValueChange = viewModel::setOpacity,
                         valueRange = 0.3f..1f,
+                        modifier = Modifier.semantics {
+                            stateDescription = "${(config.opacity * 100).toInt()}%"
+                        },
                     )
                 }
             }
@@ -375,14 +391,25 @@ private fun PrefCard(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun SegRow(content: @Composable () -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { content() }
+private fun SegRow(content: @Composable RowScope.() -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        content = content,
+    )
 }
 
 @Composable
-private fun SegButton(label: String, selected: Boolean, onClick: () -> Unit) {
+private fun RowScope.SegButton(
+    label: String,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
     OutlinedButton(
         onClick = onClick,
+        // Equal-width segments survive large font scales without clipping.
+        modifier = modifier.weight(1f),
         colors = ButtonDefaults.outlinedButtonColors(
             containerColor = if (selected) MaterialTheme.colorScheme.primary
                              else MaterialTheme.colorScheme.surface,
@@ -393,12 +420,9 @@ private fun SegButton(label: String, selected: Boolean, onClick: () -> Unit) {
             1.dp,
             if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
         ),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            horizontal = 14.dp,
-            vertical = 6.dp,
-        ),
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
     ) {
-        Text(label, style = MaterialTheme.typography.labelMedium)
+        Text(label, style = MaterialTheme.typography.labelMedium, maxLines = 1)
     }
 }
 

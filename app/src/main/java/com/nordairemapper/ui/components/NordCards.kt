@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -69,9 +70,10 @@ fun NordPrimaryButton(
     Button(
         onClick = onClick,
         enabled = enabled && !loading,
+        // Min, not fixed: labels must not clip at large font scales.
         modifier = modifier
             .fillMaxWidth()
-            .height(48.dp),
+            .defaultMinSize(minHeight = 48.dp),
         shape = MaterialTheme.shapes.medium,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
@@ -103,7 +105,7 @@ fun NordGhostButton(
         enabled = enabled && !loading,
         modifier = modifier
             .fillMaxWidth()
-            .height(48.dp),
+            .defaultMinSize(minHeight = 48.dp),
         shape = MaterialTheme.shapes.medium,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
     ) {

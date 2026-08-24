@@ -3,6 +3,7 @@ package com.nordairemapper.presentation.settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -43,6 +44,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
@@ -75,6 +77,7 @@ fun ExclusionsScreen(
     var showAppPicker by remember { mutableStateOf(false) }
     var installedApps by remember { mutableStateOf<List<InstalledAppInfo>>(emptyList()) }
     var loadingApps by remember { mutableStateOf(false) }
+    var loadFailed by remember { mutableStateOf(false) }
     var handsFreeReady by remember {
         mutableStateOf(ElevatedPermissions.canAutoResumeAccessibility(context))
     }
@@ -94,7 +97,13 @@ fun ExclusionsScreen(
         scope.launch {
             if (installedApps.isEmpty()) {
                 loadingApps = true
-                installedApps = runCatching { queryLaunchableApps(context) }.getOrDefault(emptyList())
+                loadFailed = false
+                // PackageManager queries are binder calls — keep them off main.
+                val result = withContext(Dispatchers.IO) {
+                    runCatching { queryLaunchableApps(context) }
+                }
+                installedApps = result.getOrDefault(emptyList())
+                loadFailed = result.isFailure
                 loadingApps = false
             }
             showAppPicker = true
@@ -102,15 +111,20 @@ fun ExclusionsScreen(
     }
 
     val pm = context.packageManager
-    val exclusionRows = remember(settings.excludedApps) {
-        settings.excludedApps
-            .map { pkg ->
-                val label = runCatching {
-                    pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
-                }.getOrDefault(pkg)
-                pkg to label
-            }
-            .sortedBy { it.second.lowercase() }
+    // Label lookup is a binder call per package; resolve off the main thread.
+    var exclusionRows by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    LaunchedEffect(settings.excludedApps) {
+        val packages = settings.excludedApps
+        exclusionRows = withContext(Dispatchers.IO) {
+            packages
+                .map { pkg ->
+                    val label = runCatching {
+                        pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
+                    }.getOrDefault(pkg)
+                    pkg to label
+                }
+                .sortedBy { it.second.lowercase() }
+        }
     }
 
     Scaffold(
@@ -134,7 +148,9 @@ fun ExclusionsScreen(
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
-        if (exclusionRows.isEmpty()) {
+        // Key emptiness off the setting itself, not the async-resolved rows,
+        // so the list never flashes the "no exclusions" panel mid-load.
+        if (settings.excludedApps.isEmpty()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -224,6 +240,11 @@ fun ExclusionsScreen(
             apps = installedApps,
             isLoading = loadingApps,
             onLoad = {},
+            errorMessage = if (loadFailed && !loadingApps) {
+                "Couldn't load your apps. Close this sheet and try again."
+            } else {
+                null
+            },
             onSelect = {
                 viewModel.addExclusion(it)
                 showAppPicker = false
@@ -254,6 +275,13 @@ private fun AutoPauseAccessibilityCard(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .toggleable(
+                        value = enabled,
+                        role = Role.Switch,
+                        onValueChange = onEnabledChange,
+                    ),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -270,7 +298,7 @@ private fun AutoPauseAccessibilityCard(
                 }
                 Switch(
                     checked = enabled,
-                    onCheckedChange = onEnabledChange,
+                    onCheckedChange = null,
                 )
             }
             StatusChip(

@@ -2,4 +2,6 @@
 <resources>
     <color name="ic_launcher_background">#0A0A0A</color>
     <color name="nord_blue">#0AC6FF</color>
+    <!-- Cold-start window background; overridden in values-night for dark. -->
+    <color name="nord_window_background">#F5F5F5</color>
 </resources>

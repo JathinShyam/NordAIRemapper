@@ -87,3 +87,4 @@ Going forward: write/update these notes in the **same turn** as the code.
 | 2026-08-23 | [exclusions-accessibility-limit](./2026-08-23-exclusions-accessibility-limit/) | Banking Accessibility: Auto-Pause + one-time Unlock for hands-free resume |
 | 2026-08-23 | [readlogs-logd-blind](./2026-08-23-readlogs-logd-blind/) | RCA: READ_LOGS granted but logd serves only self logs → blind watcher; blindness watchdog + alert |
 | 2026-08-23 | [change-safety](./2026-08-23-change-safety/) | Mandatory regression review protocol + `scripts/device-smoke.sh` post-install gate |
+| 2026-08-24 | [user-audit-fixes](./2026-08-24-user-audit-fixes/) | Full user-POV audit fixes: false stop alarm, honest Home liveness + alerts-off signal, learning-mode gate, action failure honesty, light-theme window, a11y/saveable UI batch |

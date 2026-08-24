@@ -11,6 +11,7 @@ import androidx.compose.material.icons.outlined.Campaign
 import androidx.compose.material.icons.outlined.Crop
 import androidx.compose.material.icons.outlined.DoNotDisturbOff
 import androidx.compose.material.icons.outlined.DoNotDisturbOn
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.FlashlightOff
 import androidx.compose.material.icons.outlined.FlashlightOn
 import androidx.compose.material.icons.outlined.Home
@@ -117,6 +118,7 @@ fun ActionFeedback.icon(): ImageVector = when (stateKey) {
     ActionFeedbackState.RINGER_RING -> Icons.AutoMirrored.Outlined.VolumeUp
     ActionFeedbackState.RINGER_VIBRATE -> Icons.Outlined.Vibration
     ActionFeedbackState.RINGER_SILENT -> Icons.Outlined.VolumeOff
+    ActionFeedbackState.ACTION_FAILED -> Icons.Outlined.ErrorOutline
     else -> action.icon()
 }
 
@@ -131,6 +133,7 @@ fun ActionFeedback.caption(): String? = when (stateKey) {
     ActionFeedbackState.RINGER_RING -> "Ring"
     ActionFeedbackState.RINGER_VIBRATE -> "Vibrate"
     ActionFeedbackState.RINGER_SILENT -> "Silent"
+    ActionFeedbackState.ACTION_FAILED -> "Failed"
     else -> null
 }
 

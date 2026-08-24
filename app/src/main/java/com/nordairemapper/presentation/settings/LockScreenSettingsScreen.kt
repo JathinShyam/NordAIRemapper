@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -27,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import android.view.HapticFeedbackConstants
@@ -87,12 +89,20 @@ fun LockScreenSettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .toggleable(
+                            value = settings.lockScreenSingleEnabled,
+                            role = Role.Switch,
+                            onValueChange = {
+                                view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                                viewModel.setLockScreenSingleEnabled(it)
+                            },
+                        )
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            "Single Press",
+                            "Single press",
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                         )
                         Text(
@@ -103,10 +113,7 @@ fun LockScreenSettingsScreen(
                     }
                     Switch(
                         checked = settings.lockScreenSingleEnabled,
-                        onCheckedChange = {
-                            view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
-                            viewModel.setLockScreenSingleEnabled(it)
-                        },
+                        onCheckedChange = null,
                     )
                 }
             }
@@ -120,12 +127,20 @@ fun LockScreenSettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .toggleable(
+                            value = settings.lockScreenDoubleEnabled,
+                            role = Role.Switch,
+                            onValueChange = {
+                                view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                                viewModel.setLockScreenDoubleEnabled(it)
+                            },
+                        )
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            "Double Press",
+                            "Double press",
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                         )
                         Text(
@@ -136,10 +151,7 @@ fun LockScreenSettingsScreen(
                     }
                     Switch(
                         checked = settings.lockScreenDoubleEnabled,
-                        onCheckedChange = {
-                            view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
-                            viewModel.setLockScreenDoubleEnabled(it)
-                        },
+                        onCheckedChange = null,
                     )
                 }
             }
@@ -153,12 +165,20 @@ fun LockScreenSettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .toggleable(
+                            value = settings.lockScreenLongEnabled,
+                            role = Role.Switch,
+                            onValueChange = {
+                                view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                                viewModel.setLockScreenLongEnabled(it)
+                            },
+                        )
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            "Long Press",
+                            "Long press",
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                         )
                         Text(
@@ -169,10 +189,7 @@ fun LockScreenSettingsScreen(
                     }
                     Switch(
                         checked = settings.lockScreenLongEnabled,
-                        onCheckedChange = {
-                            view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
-                            viewModel.setLockScreenLongEnabled(it)
-                        },
+                        onCheckedChange = null,
                     )
                 }
             }

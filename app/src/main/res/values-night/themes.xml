@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Night overrides: OLED-dark cold start + light-on-dark system bars. -->
+    <style name="Theme.NordAIRemapper" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/nord_window_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

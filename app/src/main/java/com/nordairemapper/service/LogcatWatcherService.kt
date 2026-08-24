@@ -77,6 +77,19 @@ class LogcatWatcherService : Service() {
         @Volatile private var sRestarting = false
 
         /**
+         * Set by [DetectionCoordinator] right before a deliberate stop (master
+         * toggle off). Consumed by [onDestroy] so a user-intended stop does not
+         * post the "detection stopped" outage alarm. System kills, crashes, and
+         * logd deaths leave it false and DO alarm.
+         */
+        @Volatile private var sSuppressDeathNotify = false
+
+        @JvmStatic
+        fun suppressDeathNotification() {
+            sSuppressDeathNotify = true
+        }
+
+        /**
          * True once the CURRENT tail has delivered any line from another pid.
          * A tail spawned under per-boot background denial never sets this —
          * that is the exact signal UI flows use to decide a reconnect is
@@ -129,6 +142,8 @@ class LogcatWatcherService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // A fresh start re-arms the outage alarm.
+        sSuppressDeathNotify = false
         startForeground(
             NOTIFICATION_ID,
             buildNotification(showDetails = true),
@@ -315,9 +330,11 @@ class LogcatWatcherService : Service() {
         logcatProcess?.destroy()
         scope.cancel()
         watchJob = null
-        if (!sRestarting) {
-            // A planned restart() must not cry wolf about detection dying.
-            ServiceNotifications.notifyDetectionStopped(this)
+        when {
+            sRestarting -> Unit
+            // Deliberate stop (master off): no alarm — this is what the user asked for.
+            sSuppressDeathNotify -> sSuppressDeathNotify = false
+            else -> ServiceNotifications.notifyDetectionStopped(this)
         }
         super.onDestroy()
     }

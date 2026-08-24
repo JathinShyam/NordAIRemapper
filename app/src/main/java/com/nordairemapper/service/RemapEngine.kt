@@ -114,8 +114,10 @@ class RemapEngine @Inject constructor(
         }
     }
 
-    /** Whether the accessibility service should consume this key event. */
+    /** Whether the accessibility service should consume this key event.
+     *  Never consumes while Key setup is open: learning must not swallow keys. */
     fun shouldConsume(keyCode: Int, scanCode: Int): Boolean {
+        if (LearningMode.active) return false
         val strategy = settings.detectionStrategy
         val consumeViaAccessibility =
             strategy == DetectionStrategy.ACCESSIBILITY || strategy == DetectionStrategy.AUTO
@@ -132,10 +134,15 @@ class RemapEngine @Inject constructor(
         }
         scope.launch {
             // Detection health signal (Home / Key setup): throttled to avoid a
-            // DataStore write per physical press.
+            // DataStore write per physical press. Recorded even in learning mode
+            // so "Last Plus Key press" stays truthful during setup.
             val now = System.currentTimeMillis()
             if (now - settings.lastPlusKeySeenAtMs > 1_000) {
                 settingsRepository.setLastPlusKeySeen(now)
+            }
+            if (LearningMode.active) {
+                Log.d(TAG, "Learning mode active; not dispatching $pressType")
+                return@launch
             }
             val foreground = foregroundAppTracker.packageName
             if (foreground != null && foreground in settings.excludedApps) {

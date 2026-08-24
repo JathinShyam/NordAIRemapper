@@ -29,7 +29,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.NordTopBarHeading
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
@@ -44,6 +48,8 @@ fun AppPickerSheet(
     onSelect: (InstalledAppInfo) -> Unit,
     onDismiss: () -> Unit,
     isLoading: Boolean = false,
+    /** Set when loading failed — distinguishes an error from "no apps". */
+    errorMessage: String? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var query by remember { mutableStateOf("") }
@@ -76,7 +82,14 @@ fun AppPickerSheet(
             )
             when {
                 filtered.isEmpty() && isLoading -> LoadingRow()
-                filtered.isEmpty() -> EmptyRow(query.isNotBlank())
+                filtered.isEmpty() && errorMessage != null -> EmptyRow(text = errorMessage)
+                filtered.isEmpty() -> EmptyRow(
+                    text = if (query.isNotBlank()) {
+                        "No apps match your search"
+                    } else {
+                        "No launchable apps found"
+                    },
+                )
                 else -> LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -108,9 +121,9 @@ private fun LoadingRow() {
 }
 
 @Composable
-private fun EmptyRow(searched: Boolean) {
+private fun EmptyRow(text: String) {
     Text(
-        text = if (searched) "No apps match your search" else "No launchable apps found",
+        text = text,
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
@@ -175,7 +188,14 @@ fun UrlInputSheet(
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var url by remember { mutableStateOf(initialUrl.ifBlank { "https://" }) }
+    // Placeholder, not a prefilled value: an untouched field must not save "https://".
+    var url by remember { mutableStateOf(initialUrl) }
+    val valid = url.trim().isNotEmpty()
+
+    fun save() {
+        val trimmed = url.trim()
+        if (trimmed.isNotEmpty()) onSave(trimmed)
+    }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
@@ -192,16 +212,11 @@ fun UrlInputSheet(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 label = { Text("URL") },
+                placeholder = { Text("example.com or https://…") },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { save() }),
             )
-            androidx.compose.material3.Button(
-                onClick = {
-                    val trimmed = url.trim()
-                    if (trimmed.isNotEmpty()) onSave(trimmed)
-                },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text("Save")
-            }
+            NordPrimaryButton(text = "Save", enabled = valid, onClick = ::save)
         }
     }
 }
