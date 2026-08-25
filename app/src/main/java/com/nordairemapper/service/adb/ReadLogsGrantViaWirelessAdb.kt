@@ -296,39 +296,17 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
             logFile.appendText("${TS.format(Date())} $s\n")
         }
 
+        val startedAt = android.os.SystemClock.elapsedRealtime()
         for (command in ReadLogsGrantHelper.ON_DEVICE_SHELL_COMMANDS) {
+            if (android.os.SystemClock.elapsedRealtime() - startedAt > GRANTS_TOTAL_DEADLINE_MS) {
+                log("DEADLINE reached; skipping: $command")
+                break
+            }
             Log.i(TAG, "Running: $command")
             log("RUN $command")
             var verified = false
             for (attempt in 1..GRANT_VERIFY_ATTEMPTS) {
-                runCatching {
-                    manager.openStream("shell:$command").use { stream ->
-                        // RCA: silent commands (pm grant prints nothing) never
-                        // deliver EOF promptly over TLS — a blocking drain hung
-                        // forever and killed the grant flow after command #1.
-                        // Bounded non-blocking read instead; output is optional,
-                        // verification below is authoritative.
-                        val input = stream.openInputStream()
-                        val buffer = ByteArray(4096)
-                        val out = StringBuilder()
-                        val deadline = android.os.SystemClock.elapsedRealtime() +
-                            SHELL_OUTPUT_WINDOW_MS
-                        while (android.os.SystemClock.elapsedRealtime() < deadline) {
-                            val n = runCatching { input.available() }.getOrDefault(0)
-                            if (n > 0) {
-                                val r = input.read(buffer, 0, minOf(n, buffer.size))
-                                if (r <= 0) break
-                                out.append(String(buffer, 0, r, StandardCharsets.UTF_8))
-                            } else {
-                                Thread.sleep(SHELL_OUTPUT_POLL_MS)
-                            }
-                        }
-                        if (out.isNotBlank()) log("OUT $out")
-                    }
-                }.onFailure {
-                    log("ERR attempt=$attempt ${it.message}")
-                    Log.w(TAG, "Command failed (continuing): $command", it)
-                }
+                runCommandBounded(manager, command, ::log)
                 Thread.sleep(GRANT_VERIFY_DELAY_MS)
                 verified = verifyCommand(command)
                 log("attempt=$attempt verified=$verified")
@@ -336,6 +314,59 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
             }
             if (!verified) log("NOT APPLIED: $command")
         }
+    }
+
+    /**
+     * Opens shell:<command> and drains output with a hard wall-clock bound.
+     *
+     * RCA 2026-08-25: openStream() has no internal timeout — a stalled TLS
+     * connection blocked forever, and inside the old broadcast-window path the
+     * process died before commands #2/#3 could even be sent. The stream work
+     * now runs on a daemon worker we abandon after [STREAM_JOIN_TIMEOUT_MS];
+     * verification below stays authoritative either way.
+     */
+    private fun runCommandBounded(
+        manager: NordAdbConnectionManager,
+        command: String,
+        log: (String) -> Unit,
+    ) {
+        val out = StringBuilder()
+        var error: String? = null
+        val worker = Thread {
+            try {
+                manager.openStream("shell:$command").use { stream ->
+                    // Silent commands (pm grant prints nothing) never deliver
+                    // EOF promptly over TLS — output capture stays best-effort
+                    // with a bounded non-blocking read window.
+                    val input = stream.openInputStream()
+                    val buffer = ByteArray(4096)
+                    val deadline = android.os.SystemClock.elapsedRealtime() +
+                        SHELL_OUTPUT_WINDOW_MS
+                    while (android.os.SystemClock.elapsedRealtime() < deadline) {
+                        val n = runCatching { input.available() }.getOrDefault(0)
+                        if (n > 0) {
+                            val r = input.read(buffer, 0, minOf(n, buffer.size))
+                            if (r <= 0) break
+                            out.append(String(buffer, 0, r, StandardCharsets.UTF_8))
+                        } else {
+                            Thread.sleep(SHELL_OUTPUT_POLL_MS)
+                        }
+                    }
+                }
+            } catch (t: Throwable) {
+                error = t.message ?: t.javaClass.simpleName
+            }
+        }
+        worker.isDaemon = true
+        worker.start()
+        // join() gives the happens-before edge for out/error reads below.
+        worker.join(STREAM_JOIN_TIMEOUT_MS)
+        if (worker.isAlive) {
+            log("HANG abandoned (no result within ${STREAM_JOIN_TIMEOUT_MS}ms): $command")
+        } else if (error != null) {
+            log("ERR ${error}")
+        }
+        if (out.isNotBlank()) log("OUT $out")
     }
 
     /** In-process truth for whichever permission a given shell command grants. */
@@ -371,6 +402,12 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
         private const val GRANT_VERIFY_DELAY_MS = 400L
         private const val SHELL_OUTPUT_WINDOW_MS = 300L
         private const val SHELL_OUTPUT_POLL_MS = 40L
+
+        /** Hard cap on one shell: open + drain — a stalled TLS stream is abandoned. */
+        private const val STREAM_JOIN_TIMEOUT_MS = 2_000L
+
+        /** Wall-clock cap for the whole grant run; remaining commands are skipped. */
+        private const val GRANTS_TOTAL_DEADLINE_MS = 90_000L
         private const val MAX_GRANT_LOG_BYTES = 256 * 1024L
         private val TS = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
         private val PAIRING_CODE_REGEX = Regex("^\\d{6}$")

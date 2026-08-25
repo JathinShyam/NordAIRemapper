@@ -4,20 +4,20 @@ import android.app.RemoteInput
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.util.Log
-import com.nordairemapper.presentation.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import com.nordairemapper.service.LogVisibilityProbe
 
 /**
  * Receives the 6-digit pairing code typed into the heads-up notification and
- * completes the Built-In Wireless pairing + grant flow — the user never has
- * to leave the system pairing dialog.
+ * hands it to [PairingGrantService], which completes pairing + grants outside
+ * the broadcast grace window (RCA 2026-08-25: doing the work inside goAsync()
+ * hit the ~10s timeout mid-grants and killed commands #2/#3 silently).
  */
 @AndroidEntryPoint
 class PairingReplyReceiver : BroadcastReceiver() {
@@ -51,15 +51,37 @@ class PairingReplyReceiver : BroadcastReceiver() {
             return
         }
 
+        val session = PairingSession.current()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // shortService FGS: exempt from background-start limits, minutes
+            // of budget instead of the broadcast window.
+            context.startForegroundService(
+                PairingGrantService.intent(
+                    context = context,
+                    code = code,
+                    host = session?.host,
+                    pairingPort = session?.pairingPort,
+                    connectPort = session?.connectPort,
+                ),
+            )
+        } else {
+            // API 33 fallback: no shortService type — keep the legacy in-window
+            // path (quick bounds the flow so it fits the grace window).
+            legacyInWindowPairing(context, code, session)
+        }
+    }
+
+    private fun legacyInWindowPairing(
+        context: Context,
+        code: String,
+        session: PairingSession.Snapshot?,
+    ) {
         val pending = goAsync()
         val appContext = context.applicationContext
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
-                val session = PairingSession.current()
                 PairingNotifier.postProgress(appContext, "Pairing with the code you entered…")
-                Log.i(TAG, "Notification reply: attempting pair+grant")
-                // quick=true bounds connect attempts so the whole flow fits
-                // the broadcast grace window.
                 val result = grantViaWirelessAdb.pairAndGrant(
                     pairingCode = code,
                     host = session?.host,
@@ -67,42 +89,7 @@ class PairingReplyReceiver : BroadcastReceiver() {
                     connectPort = session?.connectPort,
                     quick = true,
                 )
-                when (result) {
-                    is ReadLogsGrantViaWirelessAdb.GrantResult.AlreadyGranted,
-                    is ReadLogsGrantViaWirelessAdb.GrantResult.Success,
-                    -> {
-                        // Honest success: verify logd delivers other apps' logs
-                        // (post-boot consent can leave a fresh tail blind).
-                        val blind = runCatching {
-                            LogVisibilityProbe.probe() == LogVisibilityProbe.Result.BLIND
-                        }.getOrDefault(false)
-                        if (blind) {
-                            PairingNotifier.postResult(
-                                appContext,
-                                ok = false,
-                                "Grants applied, but OxygenOS is still filtering system logs. " +
-                                    "Open Keyforge and allow log access when prompted.",
-                            )
-                        } else {
-                            // Bring the user back into the app — allowed here
-                            // because Keyforge usually holds SYSTEM_ALERT_WINDOW;
-                            // if blocked, the result banner taps through.
-                            runCatching {
-                                appContext.startActivity(
-                                    Intent(appContext, MainActivity::class.java)
-                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                                )
-                            }
-                            PairingNotifier.postResult(
-                                appContext,
-                                ok = true,
-                                "You're all set — assign presses on Home.",
-                            )
-                        }
-                    }
-                    is ReadLogsGrantViaWirelessAdb.GrantResult.Failed ->
-                        PairingNotifier.postResult(appContext, ok = false, result.message)
-                }
+                PairingGrantService.handleResult(appContext, result)
             } catch (t: Throwable) {
                 Log.w(TAG, "Reply pairing crashed", t)
                 PairingNotifier.postResult(appContext, ok = false, t.message ?: t.javaClass.simpleName)

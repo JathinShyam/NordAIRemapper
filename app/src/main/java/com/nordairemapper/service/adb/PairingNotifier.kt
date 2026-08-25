@@ -18,7 +18,8 @@ import com.nordairemapper.presentation.MainActivity
  */
 object PairingNotifier {
 
-    private const val CHANNEL_ID = "pairing_reply"
+    /** Shared by [PairingGrantService] for its FGS notification. */
+    internal const val CHANNEL_ID = "pairing_reply"
     const val NOTIFICATION_ID = 2001
     const val KEY_CODE = "pairing_code"
 
@@ -134,7 +135,7 @@ object PairingNotifier {
         getManager(context).notify(NOTIFICATION_ID, notification)
     }
 
-    private fun ensureChannel(context: Context) {
+    internal fun ensureChannel(context: Context) {
         getManager(context).createNotificationChannel(
             NotificationChannel(
                 CHANNEL_ID,

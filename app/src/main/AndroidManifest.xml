@@ -17,6 +17,9 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- PairingGrantService: finishes Built-In pairing + grants outside the
+         broadcast grace window (API 34+; ignored below). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SHORT_SERVICE" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- Loopback Wireless ADB pairing (READ_LOGS grant) -->
@@ -128,6 +131,13 @@
         <receiver
             android:name=".service.adb.PairingReplyReceiver"
             android:exported="false" />
+
+        <!-- Runs the actual pairing + grant work so it survives the ~10s
+             broadcast timeout that killed mid-grant flows (RCA 2026-08-25) -->
+        <service
+            android:name=".service.adb.PairingGrantService"
+            android:exported="false"
+            android:foregroundServiceType="shortService" />
 
         <!-- Shizuku binder bridge (only used when the user picks the Shizuku path) -->
         <provider
