@@ -92,7 +92,7 @@ private fun AppNavHost(onboardingCompleted: Boolean) {
                         popUpTo(0) { inclusive = true }
                     }
                 },
-                onOpenEnableDetection = { navController.navigate(Routes.ENABLE_DETECTION) },
+                // Unlock is embedded in onboarding page 2 — no subpage detour.
             )
         }
         composable(Routes.HOME) {

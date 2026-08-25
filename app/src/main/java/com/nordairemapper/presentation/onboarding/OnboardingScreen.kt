@@ -59,6 +59,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nordairemapper.presentation.detection.EnableDetectionViewModel
+import com.nordairemapper.presentation.detection.UnlockMethodsSection
 import com.nordairemapper.ui.components.NordGhostButton
 import com.nordairemapper.ui.components.NordHeading
 import com.nordairemapper.ui.components.NordPrimaryButton
@@ -71,8 +73,8 @@ private const val PageCount = 6
 @Composable
 fun OnboardingScreen(
     onFinished: () -> Unit,
-    onOpenEnableDetection: () -> Unit,
     viewModel: OnboardingViewModel = hiltViewModel(),
+    unlockViewModel: EnableDetectionViewModel = hiltViewModel(),
 ) {
     var page by rememberSaveable { mutableIntStateOf(0) }
     val permissions by viewModel.permissions.collectAsStateWithLifecycle()
@@ -133,21 +135,9 @@ fun OnboardingScreen(
                         secondaryLabel = if (!permissions.accessibilityEnabled) "I've enabled it" else null,
                         onSecondary = viewModel::refresh,
                     )
-                    2 -> StepContent(
-                        icon = Icons.Outlined.Sensors,
-                        title = "Enable Plus Key detection",
-                        body = "OnePlus doesn't send the Plus Key to apps. Unlock once — pick Built-in (no PC), Shizuku, or Manual ADB on the next screen.",
-                        statusLabel = if (permissions.readLogsGranted) "READ_LOGS granted" else "READ_LOGS needed",
-                        statusTone = if (permissions.readLogsGranted) StatusTone.Active else StatusTone.Warning,
-                        primaryLabel = if (permissions.readLogsGranted) "Continue" else "Unlock detection",
-                        onPrimary = {
-                            if (permissions.readLogsGranted) page = 3
-                            else onOpenEnableDetection()
-                        },
-                        secondaryLabel = if (!permissions.readLogsGranted) "I've done this — Recheck" else null,
-                        onSecondary = viewModel::refresh,
-                        tertiaryLabel = "Skip for now",
-                        onTertiary = { page = 3 },
+                    2 -> DetectionStepContent(
+                        viewModel = unlockViewModel,
+                        onContinue = { page = 3 },
                     )
                     3 -> StepContent(
                         icon = Icons.Outlined.Layers,
@@ -247,6 +237,116 @@ private fun WelcomeStepContent(onPrimary: () -> Unit) {
     }
 }
 
+/**
+ * Onboarding page 2: the whole Unlock experience lives here — no detour to
+ * the standalone subpage. Embeds [UnlockMethodsSection] so the user pairs,
+ * watches chips turn green, and hits Continue without leaving onboarding.
+ */
+@Composable
+private fun DetectionStepContent(
+    viewModel: EnableDetectionViewModel,
+    onContinue: () -> Unit,
+) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.refresh()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        androidx.compose.foundation.layout.BoxWithConstraints(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = maxHeight)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                StepIconTile(icon = Icons.Outlined.Sensors)
+                Spacer(Modifier.height(24.dp))
+                NordHeading(
+                    text = "Enable Plus Key detection",
+                    style = MaterialTheme.typography.headlineMedium,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = "OnePlus doesn't send the Plus Key to apps. Unlock once right here — Built-in needs no PC.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                )
+                Spacer(Modifier.height(16.dp))
+                StatusChip(
+                    label = if (state.readLogsGranted) "READ_LOGS granted" else "READ_LOGS needed",
+                    tone = if (state.readLogsGranted) StatusTone.Active else StatusTone.Warning,
+                )
+                state.logAccessVisible?.let { visible ->
+                    Spacer(Modifier.height(6.dp))
+                    StatusChip(
+                        label = if (visible) {
+                            "System log access verified"
+                        } else {
+                            "Blocked: allow log access when prompted, then reopen"
+                        },
+                        tone = if (visible) StatusTone.Active else StatusTone.Warning,
+                    )
+                }
+                if (state.readLogsGranted) {
+                    Spacer(Modifier.height(6.dp))
+                    StatusChip(
+                        label = if (state.bankingAutoResumeReady) {
+                            "Banking auto-pause ready"
+                        } else {
+                            "Banking auto-pause needs Unlock"
+                        },
+                        tone = if (state.bankingAutoResumeReady) StatusTone.Active else StatusTone.Warning,
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+                UnlockMethodsSection(
+                    viewModel = viewModel,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+
+        NordPrimaryButton(text = "Continue", onClick = onContinue)
+    }
+}
+
+@Composable
+private fun StepIconTile(icon: ImageVector) {
+    Box(
+        modifier = Modifier
+            .size(64.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                RoundedCornerShape(18.dp),
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(28.dp),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
 @Composable
 private fun StepContent(
     icon: ImageVector,
@@ -278,30 +378,12 @@ private fun StepContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .border(
-                        1.dp,
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
-                        RoundedCornerShape(18.dp),
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(28.dp),
-                    tint = MaterialTheme.colorScheme.primary,
+                StepIconTile(icon = icon)
+                Spacer(Modifier.height(24.dp))
+                NordHeading(
+                    text = title,
+                    style = MaterialTheme.typography.headlineMedium,
                 )
-            }
-            Spacer(Modifier.height(24.dp))
-            NordHeading(
-                text = title,
-                style = MaterialTheme.typography.headlineMedium,
-            )
             Spacer(Modifier.height(6.dp))
             Text(
                 text = body,
