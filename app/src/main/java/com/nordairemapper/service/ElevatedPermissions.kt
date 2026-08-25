@@ -33,11 +33,19 @@ object ElevatedPermissions {
     /**
      * Shell lines run during Wireless Unlock so banking auto-pause works hands-free.
      * Safe to re-run; grants are idempotent.
+     *
+     * ORDER MATTERS: READ_LOGS stays LAST. It is the only grant backed by a
+     * Unix group ("log"), so applying it makes PackageManager KILL this app's
+     * process to swap the new gids in ("permission grant or revoke changed
+     * gids"). First-in-list, it silently murdered commands #2/#3 mid-flow
+     * (RCA 2026-08-25). Last-in-list, everything else is already applied when
+     * the expected self-kill fires; if the process survives (gids unchanged,
+     * e.g. re-run), the caller just finishes the success UX normally.
      */
     val UNLOCK_SHELL_COMMANDS: List<String> = listOf(
-        "pm grant com.nordairemapper android.permission.READ_LOGS",
         "pm grant com.nordairemapper android.permission.WRITE_SECURE_SETTINGS",
         "appops set com.nordairemapper GET_USAGE_STATS allow",
+        "pm grant com.nordairemapper android.permission.READ_LOGS",
     )
 
     fun openUsageAccessSettings(context: Context) {

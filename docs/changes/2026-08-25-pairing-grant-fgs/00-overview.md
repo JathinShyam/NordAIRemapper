@@ -59,3 +59,48 @@ fallback behavior.
 
 Note from this incident: uninstall/reinstall wipes ALL Unlock grants
 (including USB-granted ones); they must be reapplied after any reinstall.
+
+## CORRECTION — true root cause found on-device (same day, ~22:29)
+
+The FGS build was installed fresh and the user re-paired. The FGS started
+(system log: `Background started FGS: Allowed … PairingGrantService`) and the
+transcript again ended at `RUN pm grant …READ_LOGS` — but this time logcat
+showed the real killer:
+
+```
+22:29:32.375 RUN pm grant …READ_LOGS
+22:29:32.460 I/ActivityManager: Killing 7608:com.nordairemapper (adj 51):
+               permission grant or revoke changed gids
+22:29:32.464 W/ActivityManager: Short FGS brought down without stopping
+```
+
+**READ_LOGS is backed by a Unix group (`log`). Granting it makes PackageManager
+kill the TARGET app's process so the new gids can be applied — unconditionally,
+regardless of FGS/broadcast/foreground state.** Our app ran the adb session and
+was also the grant target, so it killed itself after command #1. The earlier
+"broadcast timeout" theory was a timing coincidence; the 21:49 failure had the
+same cause.
+
+### Fix
+
+1. **`ElevatedPermissions.UNLOCK_SHELL_COMMANDS` reordered**: WRITE_SECURE_SETTINGS
+   → GET_USAGE_STATS → READ_LOGS **last**. The first two are gid-safe; by the
+   time the expected self-kill fires, all grants are applied. Applies to every
+   consumer (wireless path, Shizuku path, USB paste block).
+2. `runGrantsVerifying` posts a heads-up ("Keyforge may blink once") + transcript
+   NOTE right before the READ_LOGS command, so silence below it reads as success.
+3. If the process survives (gids unchanged on re-run), the normal Success flow
+   (banner, relaunch, watcher sync) completes as before.
+
+### Verify (fresh-install Built-In)
+
+- Transcript shows RUN + verified for WSS and usage; ends around the READ_LOGS
+  RUN line (expected).
+- All three chips green after reopening Keyforge; `scripts/device-smoke.sh` PASS.
+
+## Debug tips (additions)
+
+| Symptom | Likely cause |
+|---------|--------------|
+| Process dies exactly at the READ_LOGS grant | Expected gids self-kill — check that commands #1/#2 already verified in `unlock_grants.log` |
+| App dies at READ_LOGS even over USB/Shizuku | Same mechanism; order in UNLOCK_SHELL_COMMANDS protects those paths too |

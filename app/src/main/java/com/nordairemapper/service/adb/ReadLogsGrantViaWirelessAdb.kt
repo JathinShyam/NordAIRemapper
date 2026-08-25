@@ -304,6 +304,17 @@ class ReadLogsGrantViaWirelessAdb @Inject constructor(
             }
             Log.i(TAG, "Running: $command")
             log("RUN $command")
+            if (command.contains("READ_LOGS")) {
+                // Heads-up for the expected self-kill: READ_LOGS swaps the
+                // process's gids, so PackageManager may kill us right after
+                // adbd applies it. Silence below this line usually means
+                // every grant landed and only the process died.
+                log("NOTE: READ_LOGS grant changes gids — system may kill this process now.")
+                PairingNotifier.postProgress(
+                    context,
+                    "Applying log access — Keyforge may blink once. Reopen it to finish.",
+                )
+            }
             var verified = false
             for (attempt in 1..GRANT_VERIFY_ATTEMPTS) {
                 runCommandBounded(manager, command, ::log)
