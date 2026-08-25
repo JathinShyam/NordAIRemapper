@@ -89,4 +89,4 @@ Going forward: write/update these notes in the **same turn** as the code.
 | 2026-08-23 | [change-safety](./2026-08-23-change-safety/) | Mandatory regression review protocol + `scripts/device-smoke.sh` post-install gate |
 | 2026-08-24 | [user-audit-fixes](./2026-08-24-user-audit-fixes/) | Full user-POV audit fixes: false stop alarm, honest Home liveness + alerts-off signal, learning-mode gate, action failure honesty, light-theme window, a11y/saveable UI batch |
 | 2026-08-25 | [pairing-grant-fgs](./2026-08-25-pairing-grant-fgs/) | RCA (corrected): PM kills our uid when READ_LOGS swaps gids mid-flow; grants reordered gid-safe-last + shortService FGS runner |
-| 2026-08-25 | [onboarding-embedded-unlock](./2026-08-25-onboarding-embedded-unlock/) | Onboarding page 2 hosts the full Unlock UI inline — no subpage detour |
+| 2026-08-25 | [onboarding-embedded-unlock](./2026-08-25-onboarding-embedded-unlock/) | Onboarding page 2 hosts the full Unlock UI inline — no subpage detour; dedicated notifications page before Unlock, battery-only Keep-alive |

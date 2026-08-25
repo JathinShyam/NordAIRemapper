@@ -31,6 +31,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.BatterySaver
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Notifications
@@ -68,7 +69,7 @@ import com.nordairemapper.ui.components.PhoneDiagram
 import com.nordairemapper.ui.components.StatusChip
 import com.nordairemapper.ui.components.StatusTone
 
-private const val PageCount = 6
+private const val PageCount = 7
 
 @Composable
 fun OnboardingScreen(
@@ -135,11 +136,27 @@ fun OnboardingScreen(
                         secondaryLabel = if (!permissions.accessibilityEnabled) "I've enabled it" else null,
                         onSecondary = viewModel::refresh,
                     )
-                    2 -> DetectionStepContent(
-                        viewModel = unlockViewModel,
-                        onContinue = { page = 3 },
+                    2 -> StepContent(
+                        icon = Icons.Outlined.Notifications,
+                        title = "Heads-up codes",
+                        body = "Pairing finishes inside a heads-up notification — you type the code without leaving the pairing dialog. Alerts also warn you if detection ever stops.",
+                        statusLabel = if (permissions.notificationsGranted) "Allowed" else "Not allowed yet",
+                        statusTone = if (permissions.notificationsGranted) StatusTone.Active else StatusTone.Warning,
+                        primaryLabel = if (permissions.notificationsGranted) "Continue" else "Allow notifications",
+                        onPrimary = {
+                            if (permissions.notificationsGranted) page = 3
+                            else notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        },
+                        secondaryLabel = if (!permissions.notificationsGranted) "I've enabled it — Recheck" else null,
+                        onSecondary = viewModel::refresh,
+                        tertiaryLabel = "Skip for now",
+                        onTertiary = { page = 3 },
                     )
-                    3 -> StepContent(
+                    3 -> DetectionStepContent(
+                        viewModel = unlockViewModel,
+                        onContinue = { page = 4 },
+                    )
+                    4 -> StepContent(
                         icon = Icons.Outlined.Layers,
                         title = "Display over apps",
                         body = "Needed for the floating menu and visual action popup. Skip if you only want single-action remaps without on-screen UI.",
@@ -147,45 +164,29 @@ fun OnboardingScreen(
                         statusTone = if (permissions.overlayGranted) StatusTone.Active else StatusTone.Warning,
                         primaryLabel = if (permissions.overlayGranted) "Continue" else "Open Display over apps",
                         onPrimary = {
-                            if (permissions.overlayGranted) page = 4
+                            if (permissions.overlayGranted) page = 5
                             else viewModel.openOverlaySettings()
                         },
                         secondaryLabel = if (!permissions.overlayGranted) "I've enabled it" else null,
                         onSecondary = viewModel::refresh,
                         tertiaryLabel = "Skip for now",
-                        onTertiary = { page = 4 },
+                        onTertiary = { page = 5 },
                     )
-                    4 -> StepContent(
-                        icon = Icons.Outlined.Notifications,
+                    5 -> StepContent(
+                        icon = Icons.Outlined.BatterySaver,
                         title = "Keep it alive",
-                        body = "Notifications and battery exemption help OxygenOS keep detection running in the background.",
-                        statusLabel = buildString {
-                            append(if (permissions.notificationsGranted) "Notifications OK" else "Notifications needed")
-                            append(" · ")
-                            append(if (permissions.batteryExempt) "Battery exempt" else "Battery not exempt")
-                        },
-                        statusTone = if (permissions.notificationsGranted && permissions.batteryExempt) {
-                            StatusTone.Active
-                        } else {
-                            StatusTone.Warning
-                        },
-                        primaryLabel = when {
-                            !permissions.notificationsGranted -> "Allow notifications"
-                            !permissions.batteryExempt -> "Exempt from battery optimization"
-                            else -> "Continue"
-                        },
+                        body = "Battery exemption helps OxygenOS keep Plus Key detection running overnight and through doze.",
+                        statusLabel = if (permissions.batteryExempt) "Battery exempt" else "Battery not exempt",
+                        statusTone = if (permissions.batteryExempt) StatusTone.Active else StatusTone.Warning,
+                        primaryLabel = if (permissions.batteryExempt) "Continue" else "Exempt from battery optimization",
                         onPrimary = {
-                            when {
-                                !permissions.notificationsGranted ->
-                                    notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                !permissions.batteryExempt -> viewModel.openBatterySettings()
-                                else -> page = 5
-                            }
+                            if (permissions.batteryExempt) page = 6
+                            else viewModel.openBatterySettings()
                         },
-                        secondaryLabel = "I've done this — Recheck",
+                        secondaryLabel = if (!permissions.batteryExempt) "I've done this — Recheck" else null,
                         onSecondary = viewModel::refresh,
                         tertiaryLabel = "Continue anyway",
-                        onTertiary = { page = 5 },
+                        onTertiary = { page = 6 },
                     )
                     else -> StepContent(
                         icon = Icons.Outlined.CheckCircle,
@@ -315,6 +316,9 @@ private fun DetectionStepContent(
                 Spacer(Modifier.height(16.dp))
                 UnlockMethodsSection(
                     viewModel = viewModel,
+                    // Notifications have their own onboarding page now — the
+                    // in-section gate card would ask a second time.
+                    showNotificationGate = false,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }

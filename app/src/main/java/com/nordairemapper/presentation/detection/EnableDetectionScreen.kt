@@ -61,13 +61,16 @@ import com.nordairemapper.ui.components.StatusChip
 import com.nordairemapper.ui.components.StatusTone
 
 /**
- * Shared Unlock UI: notification gate → one-row method selector
+ * Shared Unlock UI: optional notification gate → one-row method selector
  * (Built-In / Shizuku / Manual ADB) → the selected method's flow.
- * Used by the full Unlock screen and embedded in Lab.
+ * Used by the full Unlock screen, embedded in Lab, and in onboarding
+ * (where notifications have their own earlier page — pass
+ * [showNotificationGate] = false there).
  */
 @Composable
 fun UnlockMethodsSection(
     viewModel: EnableDetectionViewModel,
+    showNotificationGate: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -102,7 +105,7 @@ fun UnlockMethodsSection(
     }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        if (!state.notificationsGranted) {
+        if (showNotificationGate && !state.notificationsGranted) {
             NordSurfaceCard {
                 Column(
                     modifier = Modifier.padding(14.dp),
@@ -393,26 +396,25 @@ private fun BuiltInChecklistPanel(
             stepNumber = 3,
             title = "Tap Pair now, then open “Pair device with pairing code”",
             done = state.readLogsGranted,
-            // The whole completion path lives in a notification — without
-            // POST_NOTIFICATIONS this step can never succeed.
-            enabled = prerequisitesOk && state.notificationsGranted,
+            enabled = prerequisitesOk,
             body = when {
                 state.readLogsGranted ->
                     "Done — you're unlocked."
+                !prerequisitesOk ->
+                    "Complete steps 1–2 first."
                 !state.notificationsGranted ->
-                    "Allow notifications above first — the code box lives there."
+                    "Keyforge needs its notifications on to show the code box — re-enable them in system Settings."
                 state.discoveredPort != null ->
                     "Port ${state.discoveredPort} detected — enter the 6-digit code in the Keyforge notification."
                 state.isWatchingForPairing ->
                     "Watching for the pairing dialog… open “Pair device with pairing code” now; the notification will turn into a code box."
-                prerequisitesOk ->
+                else ->
                     "Keyforge posts a floating notification — you'll type the code there, never here. No forms."
-                else -> "Complete steps 1–2 first."
             },
             actionLabel = when {
                 state.readLogsGranted -> null
                 state.isWatchingForPairing -> null
-                !prerequisitesOk || !state.notificationsGranted -> null
+                !prerequisitesOk -> null
                 state.discoveredPort != null -> "Pair now (new code)"
                 else -> "Pair now"
             },
