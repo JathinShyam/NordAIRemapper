@@ -39,7 +39,7 @@ fun AppearanceSettingsScreen(
                 title = {
                     NordTopBarTitle(
                         title = "Appearance",
-                        subtitle = "Theme & Notifications",
+                        subtitle = "Theme and notifications",
                     )
                 },
                 navigationIcon = {
@@ -62,7 +62,7 @@ fun AppearanceSettingsScreen(
                 .verticalScroll(rememberScrollState()),
         ) {
             SectionLabel("Theme")
-            SettingsHubGroup {
+            SettingsGroup {
                 ThemeSegmentBlock(
                     selectedMode = settings.themeMode,
                     onSelect = viewModel::setThemeMode,
@@ -70,24 +70,32 @@ fun AppearanceSettingsScreen(
             }
 
             SectionLabel("Options")
-            SettingsHubGroup {
-                SettingsHubToggleRow(
-                    title = "Dynamic Color",
-                    subtitle = "Material You From Wallpaper",
+            SettingsGroup {
+                SettingsToggleRow(
+                    title = "Dynamic color",
+                    subtitle = if (settings.dynamicColor) "On · Material You" else "Off",
                     checked = settings.dynamicColor,
                     onCheckedChange = viewModel::setDynamicColor,
                 )
-                SettingsHubDivider()
-                SettingsHubToggleRow(
-                    title = "OLED Black",
-                    subtitle = "Use Pure Black Background In Dark Mode",
+                SettingsDivider()
+                SettingsToggleRow(
+                    title = "OLED black",
+                    subtitle = if (settings.oledBlack) {
+                        "Pure black in dark mode"
+                    } else {
+                        "Default dark background"
+                    },
                     checked = settings.oledBlack,
                     onCheckedChange = viewModel::setOledBlack,
                 )
-                SettingsHubDivider()
-                SettingsHubToggleRow(
-                    title = "Service Notification",
-                    subtitle = "Ongoing Status While Remapping",
+                SettingsDivider()
+                SettingsToggleRow(
+                    title = "Service notification",
+                    subtitle = if (settings.showServiceNotification) {
+                        "Ongoing while remapping"
+                    } else {
+                        "Hidden"
+                    },
                     checked = settings.showServiceNotification,
                     onCheckedChange = viewModel::setShowServiceNotification,
                 )

@@ -36,18 +36,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.nordairemapper.presentation.common.adaptiveAccent
+import com.nordairemapper.domain.model.ThemeMode
 import com.nordairemapper.ui.components.NordTopBarTitle
 import com.nordairemapper.ui.components.SectionLabel
-import com.nordairemapper.ui.theme.NordBlue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,37 +81,6 @@ fun SettingsScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    val green = adaptiveAccent(
-        darkContainer = Color(0xFF14321F),
-        darkTint = Color(0xFF3DDC84),
-        lightContainer = Color(0xFFDCF3E4),
-        lightTint = Color(0xFF1C7C46),
-    )
-    val purple = adaptiveAccent(
-        darkContainer = Color(0xFF2A1F3D),
-        darkTint = Color(0xFFB388FF),
-        lightContainer = Color(0xFFEAE2FA),
-        lightTint = Color(0xFF6A46B8),
-    )
-    val amber = adaptiveAccent(
-        darkContainer = Color(0xFF3D2E14),
-        darkTint = Color(0xFFFFB020),
-        lightContainer = Color(0xFFFFF0D6),
-        lightTint = Color(0xFF9A5F00),
-    )
-    val muted = adaptiveAccent(
-        darkContainer = Color(0xFF222222),
-        darkTint = Color(0xFFB0B0B0),
-        lightContainer = Color(0xFFE8E8E8),
-        lightTint = Color(0xFF5A5A5A),
-    )
-    val red = adaptiveAccent(
-        darkContainer = Color(0xFF3A1818),
-        darkTint = Color(0xFFFF6B6B),
-        lightContainer = Color(0xFFFBE3E0),
-        lightTint = Color(0xFFB3261E),
-    )
-
     val buildLabel = if (
         (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
     ) {
@@ -122,6 +89,17 @@ fun SettingsScreen(
         "Release"
     }
     val exclusionCount = settings.excludedApps.size
+    val appearanceStatus = buildString {
+        append(
+            when (settings.themeMode) {
+                ThemeMode.DARK -> "Dark"
+                ThemeMode.LIGHT -> "Light"
+                ThemeMode.SYSTEM -> "System"
+            },
+        )
+        if (settings.oledBlack) append(" · OLED")
+        if (settings.dynamicColor) append(" · Dynamic")
+    }
 
     Scaffold(
         topBar = {
@@ -129,7 +107,7 @@ fun SettingsScreen(
                 title = {
                     NordTopBarTitle(
                         title = "Settings",
-                        subtitle = "Shortcuts, Reliability & Tools",
+                        subtitle = "Shortcuts, reliability, and tools",
                     )
                 },
                 navigationIcon = {
@@ -152,91 +130,77 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState()),
         ) {
             SectionLabel("Appearance")
-            SettingsHubGroup {
-                SettingsHubRow(
+            SettingsGroup {
+                SettingsNavRow(
                     icon = Icons.Outlined.Palette,
                     title = "Appearance",
-                    subtitle = "Theme, Dynamic Color, OLED Black, Service Notification",
-                    accentContainer = MaterialTheme.colorScheme.primaryContainer,
-                    accentTint = NordBlue,
+                    subtitle = appearanceStatus,
                     onClick = onOpenAppearance,
                 )
             }
 
             SectionLabel("Shortcuts")
-            SettingsHubGroup {
-                SettingsHubRow(
+            SettingsGroup {
+                SettingsNavRow(
                     icon = Icons.Outlined.Vibration,
                     title = "Feedback",
-                    subtitle = "Haptics When A Remap Fires",
-                    accentContainer = green.container,
-                    accentTint = green.tint,
+                    subtitle = if (settings.hapticFeedback) {
+                        "Haptics · ${settings.hapticIntensity.name.lowercase().replaceFirstChar { it.uppercase() }}"
+                    } else {
+                        "Haptics off"
+                    },
                     onClick = onOpenFeedback,
                 )
-                SettingsHubDivider()
-                SettingsHubRow(
+                SettingsDivider()
+                SettingsNavRow(
                     icon = Icons.Outlined.Visibility,
                     title = "Visual Overlay",
-                    subtitle = "Popup Style On Remap",
-                    accentContainer = purple.container,
-                    accentTint = purple.tint,
+                    subtitle = if (settings.visualOverlayEnabled) "On" else "Off",
                     onClick = onOpenVisualOverlay,
                 )
-                SettingsHubDivider()
-                SettingsHubRow(
+                SettingsDivider()
+                SettingsNavRow(
                     icon = Icons.Outlined.Widgets,
                     title = "Floating Menu",
-                    subtitle = "Slots, Layout & Position",
-                    accentContainer = purple.container,
-                    accentTint = purple.tint,
+                    subtitle = "Slots, layout, and position",
                     onClick = onOpenOverlay,
                 )
             }
 
             SectionLabel("Tools")
-            SettingsHubGroup {
-                SettingsHubRow(
+            SettingsGroup {
+                SettingsNavRow(
                     icon = Icons.Outlined.Lock,
                     title = "Lock Screen",
-                    subtitle = "Gestures While Locked",
-                    accentContainer = amber.container,
-                    accentTint = amber.tint,
+                    subtitle = "Gestures while locked",
                     onClick = onOpenLockScreen,
                 )
-                SettingsHubDivider()
-                SettingsHubRow(
+                SettingsDivider()
+                SettingsNavRow(
                     icon = Icons.Outlined.Backup,
                     title = "Backup & Restore",
-                    subtitle = "Export And Import Remaps",
-                    accentContainer = MaterialTheme.colorScheme.primaryContainer,
-                    accentTint = NordBlue,
+                    subtitle = "Export and import remaps",
                     onClick = onOpenBackup,
                 )
-                SettingsHubDivider()
-                SettingsHubRow(
+                SettingsDivider()
+                SettingsNavRow(
                     icon = Icons.Outlined.TouchApp,
                     title = "Key Setup",
-                    subtitle = "Learn / Verify Plus Key",
-                    accentContainer = MaterialTheme.colorScheme.primaryContainer,
-                    accentTint = NordBlue,
+                    subtitle = "Learn / verify Plus Key",
                     onClick = onOpenKeyLearning,
                 )
-                SettingsHubDivider()
-                SettingsHubRow(
+                SettingsDivider()
+                SettingsNavRow(
                     icon = Icons.Outlined.Science,
-                    title = "Advanced",
-                    subtitle = "Strategy, Timing, USB Unlock",
-                    accentContainer = amber.container,
-                    accentTint = amber.tint,
+                    title = "Lab",
+                    subtitle = "Strategy, timing, unlock",
                     onClick = onOpenDeveloper,
                 )
-                SettingsHubDivider()
-                SettingsHubRow(
+                SettingsDivider()
+                SettingsNavRow(
                     icon = Icons.Outlined.RestartAlt,
                     title = "Restart Onboarding",
-                    subtitle = "Walk Through Setup Again",
-                    accentContainer = red.container,
-                    accentTint = red.tint,
+                    subtitle = "Walk through setup again",
                     onClick = {
                         viewModel.resetOnboarding()
                         onRestartOnboarding()
@@ -244,16 +208,24 @@ fun SettingsScreen(
                 )
             }
 
-            SectionLabel("Permissions")
-            SettingsHubGroup {
-                SettingsHubRow(
+            SectionLabel("Reliability")
+            SettingsGroup {
+                BatteryOptimizationBlock(
+                    exempt = batteryExempt,
+                    icon = if (batteryExempt) {
+                        Icons.Outlined.BatteryChargingFull
+                    } else {
+                        Icons.Outlined.BatteryAlert
+                    },
+                    onCta = viewModel::openBatterySettings,
+                )
+                SettingsDivider()
+                SettingsNavRow(
                     icon = Icons.Outlined.Shield,
                     title = "Permissions",
-                    subtitle = "Accessibility, Detection, Overlays & More",
-                    accentContainer = MaterialTheme.colorScheme.primaryContainer,
-                    accentTint = NordBlue,
+                    subtitle = permissionSummary.label,
                     onClick = onOpenPermissions,
-                    titleTrailing = {
+                    status = {
                         SettingsStatusChip(
                             label = permissionSummary.label,
                             tone = if (permissionSummary.allOk) {
@@ -264,35 +236,22 @@ fun SettingsScreen(
                         )
                     },
                 )
-            }
-
-            SectionLabel("Reliability")
-            SettingsHubGroup {
-                BatteryOptimizationBlock(
-                    exempt = batteryExempt,
-                    icon = if (batteryExempt) {
-                        Icons.Outlined.BatteryChargingFull
-                    } else {
-                        Icons.Outlined.BatteryAlert
-                    },
-                    accentContainer = if (batteryExempt) green.container else amber.container,
-                    accentTint = if (batteryExempt) green.tint else amber.tint,
-                    onCta = viewModel::openBatterySettings,
-                )
-                SettingsHubDivider()
-                SettingsHubRow(
+                SettingsDivider()
+                SettingsNavRow(
                     icon = Icons.Outlined.Apps,
                     title = "Per-App Exclusions",
-                    subtitle = "Pause Remapping In Selected Apps",
-                    accentContainer = muted.container,
-                    accentTint = muted.tint,
+                    subtitle = when (exclusionCount) {
+                        0 -> "None"
+                        1 -> "1 app"
+                        else -> "$exclusionCount apps"
+                    },
                     onClick = onOpenExclusions,
-                    titleTrailing = {
+                    status = {
                         SettingsStatusChip(
                             label = when (exclusionCount) {
                                 0 -> "None"
-                                1 -> "1 App"
-                                else -> "$exclusionCount Apps"
+                                1 -> "1 app"
+                                else -> "$exclusionCount apps"
                             },
                             tone = if (exclusionCount == 0) {
                                 SettingsStatusTone.Muted
@@ -305,14 +264,11 @@ fun SettingsScreen(
             }
 
             SectionLabel("About")
-            SettingsHubGroup {
-                SettingsHubRow(
+            SettingsGroup {
+                SettingsNavRow(
                     icon = Icons.Outlined.Info,
                     title = "Version",
-                    accentContainer = muted.container,
-                    accentTint = muted.tint,
-                    onClick = null,
-                    trailing = null,
+                    showChevron = false,
                     subtitleContent = {
                         VersionMeta(
                             versionName = viewModel.versionName(),
@@ -320,13 +276,11 @@ fun SettingsScreen(
                         )
                     },
                 )
-                SettingsHubDivider()
-                SettingsHubRow(
+                SettingsDivider()
+                SettingsNavRow(
                     icon = Icons.Outlined.Code,
                     title = "GitHub",
-                    subtitle = "Source Code & Issues",
-                    accentContainer = MaterialTheme.colorScheme.primaryContainer,
-                    accentTint = NordBlue,
+                    subtitle = "Source code and issues",
                     onClick = viewModel::openGithub,
                 )
             }

@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.service.AppPermissions
 import com.nordairemapper.ui.components.NordTopBarTitle
@@ -42,7 +43,7 @@ fun PermissionsScreen(
     viewModel: PermissionsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -62,7 +63,7 @@ fun PermissionsScreen(
                 title = {
                     NordTopBarTitle(
                         title = "Permissions",
-                        subtitle = "Access And Special Grants",
+                        subtitle = "Access and special grants",
                     )
                 },
                 navigationIcon = {
@@ -118,7 +119,7 @@ fun PermissionsScreen(
             )
 
             Text(
-                text = "Tap A Row To Open The Matching Settings Screen Or Unlock Flow.",
+                text = "Tap a row to open the matching settings screen or unlock flow.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
@@ -137,7 +138,7 @@ private fun PermissionSection(
 ) {
     if (items.isEmpty()) return
     SectionLabel(label)
-    SettingsHubGroup {
+    SettingsGroup {
         items.forEachIndexed { index, item ->
             PermissionStatusRow(
                 title = item.title,
@@ -147,7 +148,7 @@ private fun PermissionSection(
                 onClick = { onItemClick(item) },
             )
             if (index < items.lastIndex) {
-                SettingsHubDivider()
+                SettingsDivider()
             }
         }
     }

@@ -86,7 +86,7 @@ fun BackupScreen(
                 title = {
                     NordTopBarTitle(
                         title = "Backup & Restore",
-                        subtitle = "Export & import",
+                        subtitle = "Export and import",
                     )
                 },
                 navigationIcon = {
@@ -106,7 +106,7 @@ fun BackupScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 20.dp, vertical = 8.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             SectionLabel("Transfer")

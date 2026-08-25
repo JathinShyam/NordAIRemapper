@@ -1,40 +1,32 @@
 package com.nordairemapper.presentation.settings
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.Arrangement
+import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import android.view.HapticFeedbackConstants
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.ui.components.NordTopBarTitle
+import com.nordairemapper.ui.components.SectionLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,129 +62,50 @@ fun LockScreenSettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = "Controls whether each press type works while the screen is locked. Lock Screen action still requires Accessibility connected.",
+                text = "Controls whether each press type works while the screen is locked. Lock Screen actions still need Accessibility connected.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 4.dp),
+                modifier = Modifier.padding(bottom = 8.dp),
             )
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                elevation = CardDefaults.cardElevation(0.dp),
-                shape = MaterialTheme.shapes.medium,
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .toggleable(
-                            value = settings.lockScreenSingleEnabled,
-                            role = Role.Switch,
-                            onValueChange = {
-                                view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
-                                viewModel.setLockScreenSingleEnabled(it)
-                            },
-                        )
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Single press",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                        )
-                        Text(
-                            text = if (settings.lockScreenSingleEnabled) "Enabled when locked" else "Disabled when locked",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(
-                        checked = settings.lockScreenSingleEnabled,
-                        onCheckedChange = null,
-                    )
-                }
+
+            SectionLabel("Press types")
+            SettingsGroup {
+                SettingsToggleRow(
+                    title = "Single press",
+                    subtitle = if (settings.lockScreenSingleEnabled) "Enabled when locked" else "Disabled when locked",
+                    checked = settings.lockScreenSingleEnabled,
+                    onCheckedChange = {
+                        view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                        viewModel.setLockScreenSingleEnabled(it)
+                    },
+                )
+                SettingsDivider()
+                SettingsToggleRow(
+                    title = "Double press",
+                    subtitle = if (settings.lockScreenDoubleEnabled) "Enabled when locked" else "Disabled when locked",
+                    checked = settings.lockScreenDoubleEnabled,
+                    onCheckedChange = {
+                        view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                        viewModel.setLockScreenDoubleEnabled(it)
+                    },
+                )
+                SettingsDivider()
+                SettingsToggleRow(
+                    title = "Long press",
+                    subtitle = if (settings.lockScreenLongEnabled) "Enabled when locked" else "Disabled when locked",
+                    checked = settings.lockScreenLongEnabled,
+                    onCheckedChange = {
+                        view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                        viewModel.setLockScreenLongEnabled(it)
+                    },
+                )
             }
 
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                elevation = CardDefaults.cardElevation(0.dp),
-                shape = MaterialTheme.shapes.medium,
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .toggleable(
-                            value = settings.lockScreenDoubleEnabled,
-                            role = Role.Switch,
-                            onValueChange = {
-                                view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
-                                viewModel.setLockScreenDoubleEnabled(it)
-                            },
-                        )
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Double press",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                        )
-                        Text(
-                            text = if (settings.lockScreenDoubleEnabled) "Enabled when locked" else "Disabled when locked",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(
-                        checked = settings.lockScreenDoubleEnabled,
-                        onCheckedChange = null,
-                    )
-                }
-            }
-
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                elevation = CardDefaults.cardElevation(0.dp),
-                shape = MaterialTheme.shapes.medium,
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .toggleable(
-                            value = settings.lockScreenLongEnabled,
-                            role = Role.Switch,
-                            onValueChange = {
-                                view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
-                                viewModel.setLockScreenLongEnabled(it)
-                            },
-                        )
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Long press",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                        )
-                        Text(
-                            text = if (settings.lockScreenLongEnabled) "Enabled when locked" else "Disabled when locked",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(
-                        checked = settings.lockScreenLongEnabled,
-                        onCheckedChange = null,
-                    )
-                }
-            }
+            Spacer(Modifier.height(24.dp))
         }
     }
 }

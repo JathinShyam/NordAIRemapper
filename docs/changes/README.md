@@ -79,6 +79,7 @@ Going forward: write/update these notes in the **same turn** as the code.
 | 2026-08-22 | [settings-hub-redesign-preview](./2026-08-22-settings-hub-redesign-preview/) | Design-first Settings hub: grouped surfaces, battery/exclusions chips, About+GitHub (HTML only) |
 | 2026-08-22 | [settings-hub-compose](./2026-08-22-settings-hub-compose/) | Compose port of Settings hub from `settings-preview.html` (+ exclusions detail page) |
 | 2026-08-23 | [exclusions-app-icons](./2026-08-23-exclusions-app-icons/) | Per-app exclusions list shows app logos; Version bold; design parity |
+| 2026-08-25 | [settings-instrument-redesign](./2026-08-25-settings-instrument-redesign/) | Quiet instrument Settings: monochrome rows, status secondary text, unified groups/segments |
 | 2026-08-23 | [settings-appearance-screen](./2026-08-23-settings-appearance-screen/) | Appearance hub row + dedicated theme/notification screen |
 | 2026-08-23 | [settings-permissions-screen](./2026-08-23-settings-permissions-screen/) | Permissions hub row + status subpage (access, detection, overlays) |
 | 2026-08-23 | [rename-floating-menu](./2026-08-23-rename-floating-menu/) | User-facing "Overlay" → Floating Menu; Visual Overlay unchanged |

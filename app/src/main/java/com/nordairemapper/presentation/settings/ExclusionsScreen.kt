@@ -133,7 +133,7 @@ fun ExclusionsScreen(
                 title = {
                     NordTopBarTitle(
                         title = "Per-App Exclusions",
-                        subtitle = "Pause Remapping In Selected Apps",
+                        subtitle = "Pause remapping in selected apps",
                     )
                 },
                 navigationIcon = {
@@ -166,7 +166,7 @@ fun ExclusionsScreen(
                     onOpenEnableDetection = onOpenEnableDetection,
                 )
                 Spacer(Modifier.height(12.dp))
-                SettingsHubGroup {
+                SettingsGroup {
                     ExclusionsEmptyPanel(
                         icon = Icons.Outlined.Apps,
                         onAdd = ::openAppPicker,
@@ -198,7 +198,7 @@ fun ExclusionsScreen(
                 }
                 item {
                     Text(
-                        text = "${exclusionRows.size} ${if (exclusionRows.size == 1) "App" else "Apps"} Excluded",
+                        text = "${exclusionRows.size} ${if (exclusionRows.size == 1) "app" else "apps"} excluded",
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 4.dp),
@@ -214,7 +214,7 @@ fun ExclusionsScreen(
                 item {
                     Spacer(Modifier.height(8.dp))
                     NordPrimaryButton(
-                        text = "Add Excluded App",
+                        text = "Add excluded app",
                         onClick = ::openAppPicker,
                     )
                     Text(
@@ -287,7 +287,7 @@ private fun AutoPauseAccessibilityCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Auto-Pause Accessibility",
+                        text = "Auto-pause Accessibility",
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                     )
                     Text(

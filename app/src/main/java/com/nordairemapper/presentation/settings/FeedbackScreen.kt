@@ -3,37 +3,31 @@ package com.nordairemapper.presentation.settings
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -47,15 +41,15 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import android.view.HapticFeedbackConstants
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nordairemapper.domain.model.HapticIntensity
 import com.nordairemapper.ui.components.NordGhostButton
 import com.nordairemapper.ui.components.NordTopBarTitle
+import com.nordairemapper.ui.components.SectionLabel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -126,115 +120,75 @@ fun FeedbackScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            // Card 1: Haptic feedback toggle
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                shape = MaterialTheme.shapes.medium,
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .toggleable(
-                            value = settings.hapticFeedback,
-                            role = Role.Switch,
-                            onValueChange = {
-                                view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
-                                viewModel.setHapticFeedback(it)
-                            },
-                        )
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Haptic feedback",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                        )
-                        Text(
-                            text = "Vibrate when button action triggers",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(
-                        checked = settings.hapticFeedback,
-                        onCheckedChange = null,
-                    )
-                }
+            SectionLabel("Haptics")
+            SettingsGroup {
+                SettingsToggleRow(
+                    title = "Haptic feedback",
+                    subtitle = if (settings.hapticFeedback) {
+                        "On when a remap fires"
+                    } else {
+                        "Off"
+                    },
+                    checked = settings.hapticFeedback,
+                    onCheckedChange = {
+                        view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                        viewModel.setHapticFeedback(it)
+                    },
+                )
             }
 
-            // Card 2: Vibration intensity segmented control
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                shape = MaterialTheme.shapes.medium,
-            ) {
+            SectionLabel("Intensity")
+            SettingsGroup {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                        .padding(14.dp),
                 ) {
                     Text(
                         text = "Vibration intensity",
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = if (settings.hapticFeedback) {
+                            MaterialTheme.colorScheme.onSurface
+                        } else {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
+                        },
                     )
                     Text(
-                        text = "How strong the Plus Key confirmation feels.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = "How strong the Plus Key confirmation feels",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                            alpha = if (settings.hapticFeedback) 1f else 0.5f,
+                        ),
+                        modifier = Modifier.padding(top = 3.dp, bottom = 12.dp),
                     )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        HapticIntensity.entries.forEach { intensity ->
-                            val selected = settings.hapticIntensity == intensity
-                            val label = when (intensity) {
-                                HapticIntensity.LIGHT -> "Light"
-                                HapticIntensity.MEDIUM -> "Medium"
-                                HapticIntensity.HEAVY -> "Heavy"
-                            }
-                            OutlinedButton(
-                                onClick = {
-                                    viewModel.setHapticIntensity(intensity)
-                                    previewIntensity(intensity)
+                    SettingsSegmentedControl(
+                        options = HapticIntensity.entries.map { intensity ->
+                            SettingsSegmentOption(
+                                key = intensity.name,
+                                label = when (intensity) {
+                                    HapticIntensity.LIGHT -> "Light"
+                                    HapticIntensity.MEDIUM -> "Medium"
+                                    HapticIntensity.HEAVY -> "Heavy"
                                 },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    containerColor = if (selected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.surface,
-                                    contentColor = if (selected) MaterialTheme.colorScheme.onPrimary
-                                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                                ),
-                                border = BorderStroke(
-                                    1.dp,
-                                    if (selected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.outline,
-                                ),
-                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
-                            ) {
-                                Text(label, style = MaterialTheme.typography.labelMedium, maxLines = 1)
-                            }
-                        }
-                    }
+                            )
+                        },
+                        selectedKey = settings.hapticIntensity.name,
+                        onSelect = { key ->
+                            if (!settings.hapticFeedback) return@SettingsSegmentedControl
+                            val intensity = runCatching { HapticIntensity.valueOf(key) }.getOrNull()
+                                ?: return@SettingsSegmentedControl
+                            viewModel.setHapticIntensity(intensity)
+                            previewIntensity(intensity)
+                        },
+                    )
                 }
             }
 
-            // Card 3: Preview with pulse ring indicator
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                shape = MaterialTheme.shapes.medium,
-            ) {
+            SectionLabel("Preview")
+            SettingsGroup {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -242,10 +196,6 @@ fun FeedbackScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    Text(
-                        text = "Preview",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                    )
                     Box(
                         modifier = Modifier.size(72.dp),
                         contentAlignment = Alignment.Center,
@@ -255,11 +205,7 @@ fun FeedbackScreen(
                                 .size(64.dp)
                                 .scale(ringScale.value)
                                 .graphicsLayer { alpha = ringAlpha.value }
-                                .border(
-                                    2.dp,
-                                    MaterialTheme.colorScheme.primary,
-                                    CircleShape,
-                                ),
+                                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape),
                         )
                         Box(
                             modifier = Modifier
@@ -274,6 +220,8 @@ fun FeedbackScreen(
                     )
                 }
             }
+
+            Spacer(Modifier.height(24.dp))
         }
     }
 }

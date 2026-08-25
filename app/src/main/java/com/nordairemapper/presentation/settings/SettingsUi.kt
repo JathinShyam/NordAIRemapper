@@ -7,20 +7,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -37,343 +35,72 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nordairemapper.domain.model.ThemeMode
 import com.nordairemapper.ui.components.NordGhostButton
-import com.nordairemapper.ui.components.NordHeading
 import com.nordairemapper.ui.components.NordPrimaryButton
-import com.nordairemapper.ui.components.SectionLabel
-import com.nordairemapper.ui.theme.StatusActive
-import com.nordairemapper.ui.theme.StatusWarning
+import com.nordairemapper.ui.components.StatusChip
+import com.nordairemapper.ui.components.StatusTone
+
+private val GroupShape = RoundedCornerShape(16.dp)
+private val SegmentTrackShape = RoundedCornerShape(12.dp)
+private val SegmentBtnShape = RoundedCornerShape(9.dp)
 
 @Composable
-fun SettingsGroupCard(
+fun SettingsGroup(
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = MaterialTheme.shapes.medium,
-    ) {
-        Column(modifier = Modifier.padding(vertical = 4.dp), content = { content() })
-    }
+        shape = GroupShape,
+        content = content,
+    )
 }
 
-@Composable
-fun SettingsToggleRow(
-    title: String,
-    subtitle: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    icon: ImageVector? = null,
-    showDivider: Boolean = false,
-) {
-    Column {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .toggleable(
-                    value = checked,
-                    role = Role.Switch,
-                    onValueChange = onCheckedChange,
-                )
-                .padding(horizontal = 14.dp, vertical = 13.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            if (icon != null) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .background(
-                            MaterialTheme.colorScheme.primaryContainer,
-                            MaterialTheme.shapes.small,
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Switch(checked = checked, onCheckedChange = null)
-        }
-        if (showDivider) {
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f),
-                modifier = Modifier.padding(horizontal = 14.dp),
-            )
-        }
-    }
-}
-
-@Composable
-fun SettingsChoiceRow(
-    title: String,
-    subtitle: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    icon: ImageVector? = null,
-    showDivider: Boolean = false,
-) {
-    Column {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .selectable(
-                    selected = selected,
-                    role = Role.RadioButton,
-                    onClick = onClick,
-                )
-                .padding(horizontal = 14.dp, vertical = 13.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            if (icon != null) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            if (selected) {
-                Box(
-                    modifier = Modifier
-                        .size(22.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Check,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(14.dp),
-                    )
-                }
-            }
-        }
-        if (showDivider) {
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f),
-                modifier = Modifier.padding(horizontal = 14.dp),
-            )
-        }
-    }
-}
-
-@Composable
-fun SettingsLinkRow(
-    title: String,
-    onClick: () -> Unit,
-    subtitle: String? = null,
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = MaterialTheme.shapes.medium,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                )
-                if (subtitle != null) {
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Text(
-                text = "›",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.outline,
-            )
-        }
-    }
-}
-
-@Composable
-fun ScreenIntro(
-    title: String,
-    body: String,
-    centered: Boolean = false,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 16.dp),
-        horizontalAlignment = if (centered) Alignment.CenterHorizontally else Alignment.Start,
-    ) {
-        NordHeading(
-            text = title,
-            style = MaterialTheme.typography.headlineMedium,
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = body,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = if (centered) TextAlign.Center else TextAlign.Start,
-        )
-    }
-}
-
-@Composable
-fun QuietSectionLabel(text: String) {
-    SectionLabel(text = text)
-}
-
-@Composable
-fun StylePreviewCard(
-    title: String,
-    selected: Boolean,
-    accent: Color,
-    darkPreview: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(100.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(if (darkPreview) Color(0xFF121212) else Color(0xFFD0D0D0))
-                .border(
-                    BorderStroke(
-                        width = if (selected) 2.dp else 1.dp,
-                        color = if (selected) accent else MaterialTheme.colorScheme.outline,
-                    ),
-                    RoundedCornerShape(14.dp),
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(if (selected) accent else Color(0xFF9E9E9E)),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (selected) {
-                    Icon(
-                        Icons.Outlined.Check,
-                        contentDescription = null,
-                        tint = Color(0xFF041018),
-                        modifier = Modifier.size(14.dp),
-                    )
-                }
-            }
-        }
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-            color = if (selected) MaterialTheme.colorScheme.onSurface
-            else MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-// ── Settings hub (settings-preview.html) ─────────────────────────────────────
-
-private val HubGroupShape = RoundedCornerShape(16.dp)
-private val HubIconShape = RoundedCornerShape(11.dp)
-private val HubSegmentShape = RoundedCornerShape(12.dp)
-private val HubSegmentBtnShape = RoundedCornerShape(9.dp)
-private val HubChipShape = RoundedCornerShape(999.dp)
-
+/** @deprecated Use [SettingsGroup]. Kept as a thin alias during migration. */
 @Composable
 fun SettingsHubGroup(
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = HubGroupShape,
-    ) {
-        Column(content = { content() })
-    }
+    SettingsGroup(modifier = modifier, content = content)
+}
+
+/** @deprecated Use [SettingsGroup]. */
+@Composable
+fun SettingsGroupCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    SettingsGroup(modifier = modifier, content = content)
 }
 
 @Composable
-fun SettingsHubDivider() {
+fun SettingsDivider() {
     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))
 }
 
+/** @deprecated Use [SettingsDivider]. */
 @Composable
-fun SettingsHubRow(
-    icon: ImageVector,
+fun SettingsHubDivider() = SettingsDivider()
+
+@Composable
+fun SettingsNavRow(
     title: String,
     subtitle: String = "",
-    accentContainer: Color,
-    accentTint: Color,
     onClick: (() -> Unit)? = null,
-    titleTrailing: @Composable (() -> Unit)? = null,
+    icon: ImageVector? = null,
+    status: @Composable (() -> Unit)? = null,
     subtitleContent: @Composable (() -> Unit)? = null,
-    trailing: @Composable (() -> Unit)? = {
-        if (onClick != null) {
-            Icon(
-                imageVector = Icons.Outlined.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.size(18.dp),
-            )
-        }
-    },
+    showChevron: Boolean = onClick != null,
 ) {
     val base = Modifier.fillMaxWidth()
     val clickable = if (onClick != null) base.clickable(onClick = onClick) else base
@@ -382,17 +109,12 @@ fun SettingsHubRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .background(accentContainer, HubIconShape),
-            contentAlignment = Alignment.Center,
-        ) {
+        if (icon != null) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = accentTint,
-                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
             )
         }
         Column(modifier = Modifier.weight(1f)) {
@@ -407,35 +129,82 @@ fun SettingsHubRow(
                         letterSpacing = (-0.1).sp,
                     ),
                 )
-                titleTrailing?.invoke()
+                status?.invoke()
             }
             when {
                 subtitleContent != null -> subtitleContent()
                 subtitle.isNotBlank() -> Text(
                     text = subtitle,
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp, lineHeight = 15.sp),
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
                 )
             }
         }
-        trailing?.invoke()
+        if (showChevron) {
+            Icon(
+                imageVector = Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.size(18.dp),
+            )
+        }
     }
 }
 
+/**
+ * Compatibility wrapper for older hub call sites that passed accent wells.
+ * Ignores decorative colors — icons stay monochrome.
+ */
 @Composable
-fun SettingsHubToggleRow(
+fun SettingsHubRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String = "",
+    accentContainer: Color = Color.Transparent,
+    accentTint: Color = Color.Transparent,
+    onClick: (() -> Unit)? = null,
+    titleTrailing: @Composable (() -> Unit)? = null,
+    subtitleContent: @Composable (() -> Unit)? = null,
+    trailing: @Composable (() -> Unit)? = null,
+) {
+    @Suppress("UNUSED_PARAMETER")
+    val unusedAccents = accentContainer to accentTint
+    SettingsNavRow(
+        title = title,
+        subtitle = subtitle,
+        onClick = onClick,
+        icon = icon,
+        status = titleTrailing,
+        subtitleContent = subtitleContent,
+        showChevron = onClick != null && trailing == null,
+    )
+}
+
+@Composable
+fun SettingsToggleRow(
     title: String,
     subtitle: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    enabled: Boolean = true,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .toggleable(
-                value = checked,
-                role = Role.Switch,
-                onValueChange = onCheckedChange,
+            .then(
+                if (enabled) {
+                    Modifier.toggleable(
+                        value = checked,
+                        role = Role.Switch,
+                        onValueChange = onCheckedChange,
+                    )
+                } else {
+                    Modifier
+                },
             )
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -445,57 +214,92 @@ fun SettingsHubToggleRow(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = if (enabled) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
+                },
             )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (subtitle.isNotBlank()) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp, lineHeight = 16.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                        alpha = if (enabled) 1f else 0.5f,
+                    ),
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
         }
-        Switch(checked = checked, onCheckedChange = null)
+        Switch(
+            checked = checked,
+            onCheckedChange = null,
+            enabled = enabled,
+        )
     }
 }
 
+/** @deprecated Use [SettingsToggleRow]. */
 @Composable
-fun PermissionStatusRow(
+fun SettingsHubToggleRow(
     title: String,
     subtitle: String,
-    statusLabel: String,
-    tone: SettingsStatusTone,
-    onClick: () -> Unit,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) = SettingsToggleRow(title, subtitle, checked, onCheckedChange)
+
+data class SettingsSegmentOption(
+    val key: String,
+    val label: String,
+)
+
+@Composable
+fun SettingsSegmentedControl(
+    options: List<SettingsSegmentOption>,
+    selectedKey: String,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+            .background(MaterialTheme.colorScheme.background, SegmentTrackShape)
+            .border(1.dp, MaterialTheme.colorScheme.outline, SegmentTrackShape)
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+        options.forEach { option ->
+            val selected = selectedKey == option.key
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(SegmentBtnShape)
+                    .background(
+                        if (selected) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                        } else {
+                            Color.Transparent
+                        },
+                    )
+                    .selectable(
+                        selected = selected,
+                        role = Role.RadioButton,
+                        onClick = { onSelect(option.key) },
+                    )
+                    .padding(vertical = 11.dp),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                    text = option.label,
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = if (selected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                 )
-                SettingsStatusChip(label = statusLabel, tone = tone)
             }
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp, lineHeight = 15.sp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 2.dp),
-            )
         }
-        Icon(
-            imageVector = Icons.Outlined.ChevronRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.outline,
-            modifier = Modifier.size(18.dp),
-        )
     }
 }
 
@@ -514,84 +318,63 @@ fun ThemeSegmentBlock(
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
         )
         Text(
-            text = "Dark, Light, Or Match The System.",
-            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+            text = "Dark, light, or match the system",
+            style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 3.dp, bottom = 12.dp),
         )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.background, HubSegmentShape)
-                .border(1.dp, MaterialTheme.colorScheme.outline, HubSegmentShape)
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            ThemeMode.entries.forEach { mode ->
-                val selected = selectedMode == mode
-                val label = when (mode) {
-                    ThemeMode.DARK -> "Dark"
-                    ThemeMode.LIGHT -> "Light"
-                    ThemeMode.SYSTEM -> "System"
-                }
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(HubSegmentBtnShape)
-                        .background(
-                            if (selected) {
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
-                            } else {
-                                Color.Transparent
-                            },
-                        )
-                        .selectable(
-                            selected = selected,
-                            role = Role.RadioButton,
-                            onClick = { onSelect(mode) },
-                        )
-                        .padding(vertical = 11.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = if (selected) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                    )
-                }
-            }
-        }
+        SettingsSegmentedControl(
+            options = ThemeMode.entries.map { mode ->
+                SettingsSegmentOption(
+                    key = mode.name,
+                    label = when (mode) {
+                        ThemeMode.DARK -> "Dark"
+                        ThemeMode.LIGHT -> "Light"
+                        ThemeMode.SYSTEM -> "System"
+                    },
+                )
+            },
+            selectedKey = selectedMode.name,
+            onSelect = { key ->
+                runCatching { ThemeMode.valueOf(key) }.getOrNull()?.let(onSelect)
+            },
+        )
     }
 }
 
 enum class SettingsStatusTone { Ok, Warn, Muted }
+
+fun SettingsStatusTone.toStatusTone(): StatusTone = when (this) {
+    SettingsStatusTone.Ok -> StatusTone.Active
+    SettingsStatusTone.Warn -> StatusTone.Warning
+    SettingsStatusTone.Muted -> StatusTone.Inactive
+}
 
 @Composable
 fun SettingsStatusChip(
     label: String,
     tone: SettingsStatusTone,
 ) {
-    val (bg, fg) = when (tone) {
-        SettingsStatusTone.Ok -> StatusActive.copy(alpha = 0.14f) to StatusActive
-        SettingsStatusTone.Warn -> StatusWarning.copy(alpha = 0.14f) to StatusWarning
-        SettingsStatusTone.Muted ->
-            MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    Text(
-        text = label.uppercase(),
-        modifier = Modifier
-            .background(bg, HubChipShape)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        style = MaterialTheme.typography.labelSmall.copy(
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.4.sp,
-            fontSize = 10.sp,
-        ),
-        color = fg,
+    StatusChip(
+        label = label,
+        tone = tone.toStatusTone(),
+        showDot = tone != SettingsStatusTone.Muted,
+    )
+}
+
+@Composable
+fun PermissionStatusRow(
+    title: String,
+    subtitle: String,
+    statusLabel: String,
+    tone: SettingsStatusTone,
+    onClick: () -> Unit,
+) {
+    SettingsNavRow(
+        title = title,
+        subtitle = subtitle,
+        onClick = onClick,
+        status = { SettingsStatusChip(label = statusLabel, tone = tone) },
     )
 }
 
@@ -599,8 +382,6 @@ fun SettingsStatusChip(
 fun BatteryOptimizationBlock(
     exempt: Boolean,
     icon: ImageVector,
-    accentContainer: Color,
-    accentTint: Color,
     onCta: () -> Unit,
 ) {
     Column(
@@ -612,35 +393,33 @@ fun BatteryOptimizationBlock(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.Top,
         ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .background(accentContainer, HubIconShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(icon, contentDescription = null, tint = accentTint, modifier = Modifier.size(18.dp))
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
             Column(modifier = Modifier.weight(1f)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
-                        text = "Battery Optimization",
+                        text = "Battery optimization",
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                     )
                     SettingsStatusChip(
-                        label = if (exempt) "Exempt" else "At Risk",
+                        label = if (exempt) "Exempt" else "At risk",
                         tone = if (exempt) SettingsStatusTone.Ok else SettingsStatusTone.Warn,
                     )
                 }
                 Text(
                     text = if (exempt) {
-                        "Detection Can Keep Running In The Background."
+                        "Detection can keep running in the background"
                     } else {
-                        "OxygenOS May Kill Detection In The Background."
+                        "OxygenOS may kill detection in the background"
                     },
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp, lineHeight = 16.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp),
                 )
@@ -648,9 +427,9 @@ fun BatteryOptimizationBlock(
         }
         Spacer(Modifier.height(12.dp))
         if (exempt) {
-            NordGhostButton(text = "Open Battery Settings", onClick = onCta)
+            NordGhostButton(text = "Open battery settings", onClick = onCta)
         } else {
-            NordPrimaryButton(text = "Exempt From Battery Optimization", onClick = onCta)
+            NordPrimaryButton(text = "Exempt from battery optimization", onClick = onCta)
         }
     }
 }
@@ -666,32 +445,25 @@ fun ExclusionsEmptyPanel(
             .padding(horizontal = 14.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp),
-            )
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(28.dp),
+        )
         Spacer(Modifier.height(10.dp))
         Text(
-            text = "No Apps Excluded",
+            text = "No apps excluded",
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
         )
         Text(
-            text = "Remapping Stays On In Every App. Add Apps Where The Plus Key Should Stay Stock. Banking Apps May Still Require Turning Accessibility Off.",
-            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+            text = "Remapping stays on in every app. Add apps where the Plus Key should stay stock. Banking apps may still need Accessibility turned off.",
+            style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp, lineHeight = 16.sp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
         )
-        NordGhostButton(text = "Add Excluded App", onClick = onAdd)
+        NordGhostButton(text = "Add excluded app", onClick = onAdd)
     }
 }
 
@@ -699,14 +471,19 @@ fun ExclusionsEmptyPanel(
 fun VersionMeta(versionName: String, buildLabel: String) {
     Text(
         text = buildAnnotatedString {
-            withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)) {
+            withStyle(
+                SpanStyle(
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                ),
+            ) {
                 append(versionName)
             }
             withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)) {
                 append(" · $buildLabel")
             }
         },
-        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
         modifier = Modifier.padding(top = 2.dp),
     )
 }

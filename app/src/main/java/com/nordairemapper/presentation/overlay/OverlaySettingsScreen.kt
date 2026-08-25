@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -68,6 +69,10 @@ import com.nordairemapper.presentation.common.icon
 import com.nordairemapper.presentation.common.rememberAppIcon
 import com.nordairemapper.presentation.remap.AppPickerSheet
 import com.nordairemapper.presentation.remap.UrlInputSheet
+import com.nordairemapper.presentation.settings.SettingsGroup
+import com.nordairemapper.presentation.settings.SettingsSegmentOption
+import com.nordairemapper.presentation.settings.SettingsSegmentedControl
+import com.nordairemapper.presentation.settings.SettingsToggleRow
 import com.nordairemapper.ui.components.ActionCard
 import com.nordairemapper.ui.components.NordTopBarHeading
 import com.nordairemapper.ui.components.NordTopBarTitle
@@ -113,37 +118,23 @@ fun OverlaySettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
 
             // ── Enable toggle ─────────────────────────────────────────────
-            PrefCard {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .toggleable(
-                            value = config.enabled,
-                            role = Role.Switch,
-                            onValueChange = viewModel::setEnabled,
-                        )
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Enable floating menu",
-                            style = MaterialTheme.typography.titleSmall,
-                        )
-                        Text(
-                            text = "\"Show floating menu\" actions will not open the menu when off",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(checked = config.enabled, onCheckedChange = null)
-                }
+            SettingsGroup {
+                SettingsToggleRow(
+                    title = "Enable floating menu",
+                    subtitle = if (config.enabled) {
+                        "On for Show floating menu actions"
+                    } else {
+                        "Off — menu actions will not open"
+                    },
+                    checked = config.enabled,
+                    onCheckedChange = viewModel::setEnabled,
+                )
             }
 
             // ── Live preview ──────────────────────────────────────────────
@@ -186,15 +177,8 @@ fun OverlaySettingsScreen(
 
             // ── Layout ────────────────────────────────────────────────────
             SectionLabel("Layout style")
-            PrefCard {
+            SettingsGroup {
                 Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
-                    Text(
-                        text = when (config.layoutStyle) {
-                            OverlayLayoutStyle.GRID -> "Grid"
-                            OverlayLayoutStyle.PILL_BAR -> "Pill bar"
-                        },
-                        style = MaterialTheme.typography.titleSmall,
-                    )
                     Text(
                         text = when (config.layoutStyle) {
                             OverlayLayoutStyle.GRID ->
@@ -206,18 +190,23 @@ fun OverlaySettingsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 10.dp),
                     )
-                    SegRow {
-                        OverlayLayoutStyle.entries.forEach { style ->
-                            val selected = config.layoutStyle == style
-                            val label = when (style) {
-                                OverlayLayoutStyle.GRID -> "Grid"
-                                OverlayLayoutStyle.PILL_BAR -> "Pill bar"
-                            }
-                            SegButton(label = label, selected = selected) {
-                                viewModel.setLayoutStyle(style)
-                            }
-                        }
-                    }
+                    SettingsSegmentedControl(
+                        options = OverlayLayoutStyle.entries.map { style ->
+                            SettingsSegmentOption(
+                                key = style.name,
+                                label = when (style) {
+                                    OverlayLayoutStyle.GRID -> "Grid"
+                                    OverlayLayoutStyle.PILL_BAR -> "Pill bar"
+                                },
+                            )
+                        },
+                        selectedKey = config.layoutStyle.name,
+                        onSelect = { key ->
+                            OverlayLayoutStyle.entries
+                                .firstOrNull { it.name == key }
+                                ?.let(viewModel::setLayoutStyle)
+                        },
+                    )
                 }
             }
 
@@ -387,16 +376,8 @@ fun OverlaySettingsScreen(
 // ─── Reusable primitives ──────────────────────────────────────────────────
 
 @Composable
-private fun PrefCard(content: @Composable () -> Unit) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        elevation = CardDefaults.cardElevation(0.dp),
-        shape = MaterialTheme.shapes.medium,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        content()
-    }
+private fun PrefCard(content: @Composable ColumnScope.() -> Unit) {
+    SettingsGroup(content = content)
 }
 
 @Composable

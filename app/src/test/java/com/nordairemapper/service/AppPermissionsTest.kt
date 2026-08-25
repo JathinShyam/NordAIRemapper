@@ -8,8 +8,8 @@ class AppPermissionsTest {
     @Test
     fun hubSummaryLabel_reflectsAttentionCount() {
         assertEquals("All OK", AppPermissions.hubSummaryLabel(0))
-        assertEquals("1 Need Attention", AppPermissions.hubSummaryLabel(1))
-        assertEquals("3 Need Attention", AppPermissions.hubSummaryLabel(3))
+        assertEquals("1 needs attention", AppPermissions.hubSummaryLabel(1))
+        assertEquals("3 need attention", AppPermissions.hubSummaryLabel(3))
     }
 
     @Test

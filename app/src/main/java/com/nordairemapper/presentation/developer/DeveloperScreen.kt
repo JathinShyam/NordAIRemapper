@@ -42,6 +42,9 @@ import com.nordairemapper.domain.model.AppSettings
 import com.nordairemapper.domain.model.DetectionStrategy
 import com.nordairemapper.presentation.detection.EnableDetectionViewModel
 import com.nordairemapper.presentation.detection.UnlockMethodsSection
+import com.nordairemapper.presentation.settings.SettingsGroup
+import com.nordairemapper.presentation.settings.SettingsSegmentOption
+import com.nordairemapper.presentation.settings.SettingsSegmentedControl
 import com.nordairemapper.ui.components.NordTopBarTitle
 import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.NordSurfaceCard
@@ -81,8 +84,8 @@ fun DeveloperScreen(
             TopAppBar(
                 title = {
                     NordTopBarTitle(
-                        title = "Advanced",
-                        subtitle = "Strategy · Timing · Key identity",
+                        title = "Lab",
+                        subtitle = "Strategy, timing, and unlock",
                     )
                 },
                 navigationIcon = {
@@ -101,49 +104,38 @@ fun DeveloperScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             SectionLabel("Detection strategy")
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                StatusChip(
-                    label = "Auto",
-                    tone = StatusTone.Active,
-                    selected = settings.detectionStrategy == DetectionStrategy.AUTO,
-                    showDot = false,
-                    onClick = { viewModel.setStrategy(DetectionStrategy.AUTO) },
+            SettingsGroup {
+                SettingsSegmentedControl(
+                    options = listOf(
+                        SettingsSegmentOption(DetectionStrategy.AUTO.key, "Auto"),
+                        SettingsSegmentOption(DetectionStrategy.ACCESSIBILITY.key, "A11y"),
+                        SettingsSegmentOption(DetectionStrategy.LOGCAT.key, "Logcat"),
+                    ),
+                    selectedKey = settings.detectionStrategy.key,
+                    onSelect = { key ->
+                        DetectionStrategy.fromKey(key).let(viewModel::setStrategy)
+                    },
+                    modifier = Modifier.padding(start = 14.dp, top = 14.dp, end = 14.dp),
                 )
-                StatusChip(
-                    label = "Accessibility",
-                    tone = StatusTone.Active,
-                    selected = settings.detectionStrategy == DetectionStrategy.ACCESSIBILITY,
-                    showDot = false,
-                    onClick = { viewModel.setStrategy(DetectionStrategy.ACCESSIBILITY) },
-                )
-                StatusChip(
-                    label = "Logcat",
-                    tone = StatusTone.Active,
-                    selected = settings.detectionStrategy == DetectionStrategy.LOGCAT,
-                    showDot = false,
-                    onClick = { viewModel.setStrategy(DetectionStrategy.LOGCAT) },
+                Text(
+                    text = when (settings.detectionStrategy) {
+                        DetectionStrategy.AUTO ->
+                            "Uses Accessibility when the OS delivers the Plus Key, and logcat when it does not (Nord 5). Recommended."
+                        DetectionStrategy.ACCESSIBILITY ->
+                            "Listens for KeyEvents. On Nord 5 the Plus Key almost never arrives here (volume keys do). A logcat companion runs when READ_LOGS is granted."
+                        DetectionStrategy.LOGCAT ->
+                            "Watches system logs for KEYCODE_ACTION_BUTTON_CLICK. Requires READ_LOGS."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 14.dp, top = 10.dp, end = 14.dp, bottom = 14.dp),
                 )
             }
-            Text(
-                text = when (settings.detectionStrategy) {
-                    DetectionStrategy.AUTO ->
-                        "Uses Accessibility when the OS delivers the Plus Key, and logcat when it does not (Nord 5). Recommended."
-                    DetectionStrategy.ACCESSIBILITY ->
-                        "Listens for KeyEvents. On Nord 5 the Plus Key almost never arrives here (volume keys do). A logcat companion runs when READ_LOGS is granted."
-                    DetectionStrategy.LOGCAT ->
-                        "Watches system logs for KEYCODE_ACTION_BUTTON_CLICK. Requires READ_LOGS."
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
 
             // Same layout as the Unlock screen: flat status chips + method
             // flow at page level — no card-in-card nesting.

@@ -23,11 +23,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.BlurOn
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.FlashlightOn
 import androidx.compose.material.icons.outlined.Palette
-import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -66,6 +64,7 @@ import com.nordairemapper.service.ActionFeedbackOverlayService
 import com.nordairemapper.ui.components.NordGhostButton
 import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.NordTopBarTitle
+import com.nordairemapper.ui.components.SectionLabel
 import com.nordairemapper.ui.components.StatusChip
 import com.nordairemapper.ui.components.StatusTone
 import com.nordairemapper.ui.components.VisualActionPopupPill
@@ -128,12 +127,12 @@ fun VisualOverlayScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState()),
         ) {
             Text(
-                text = "Shows which action fired — a brief icon popup on the Plus Key edge. Not the floating menu (see Floating Menu in Settings).",
-                style = MaterialTheme.typography.bodyMedium,
+                text = "Shows which action fired — a brief icon popup on the Plus Key edge. Not the floating menu.",
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 12.dp),
             )
@@ -145,7 +144,7 @@ fun VisualOverlayScreen(
             )
 
             if (!overlayGrantedNow) {
-                SettingsGroupCard {
+                SettingsGroup {
                     Column(
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -171,17 +170,21 @@ fun VisualOverlayScreen(
                 Spacer(Modifier.height(12.dp))
             }
 
-            SettingsGroupCard {
+            SectionLabel("Popup")
+            SettingsGroup {
                 SettingsToggleRow(
                     title = "Enable visual overlay",
-                    subtitle = "Popup when Single, Double, or Long press fires",
+                    subtitle = if (settings.visualOverlayEnabled) {
+                        "On when a remap fires"
+                    } else {
+                        "Off"
+                    },
                     checked = settings.visualOverlayEnabled,
                     onCheckedChange = settingsViewModel::setVisualOverlayEnabled,
-                    icon = Icons.Outlined.Visibility,
                 )
             }
 
-            QuietSectionLabel("Style")
+            SectionLabel("Style")
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -206,8 +209,8 @@ fun VisualOverlayScreen(
                 )
             }
 
-            QuietSectionLabel("Appearance")
-            SettingsGroupCard {
+            SectionLabel("Appearance")
+            SettingsGroup {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -215,7 +218,12 @@ fun VisualOverlayScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Icon(Icons.Outlined.Palette, contentDescription = null)
+                    Icon(
+                        Icons.Outlined.Palette,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             "Accent color",
@@ -242,8 +250,6 @@ fun VisualOverlayScreen(
                 ) {
                     AccentPresets.forEach { argb ->
                         val selected = config.accentColorArgb == argb
-                        // 28dp swatch inside a ≥48dp selectable hit area, with
-                        // selected-state semantics for TalkBack.
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
@@ -283,19 +289,23 @@ fun VisualOverlayScreen(
                         }
                     }
                 }
+                SettingsDivider()
                 SettingsToggleRow(
                     title = "Glow effect",
-                    subtitle = "Accent line and bloom on the Plus Key edge",
+                    subtitle = if (config.glowEffects) {
+                        "Accent line on the Plus Key edge"
+                    } else {
+                        "Off"
+                    },
                     checked = config.glowEffects,
                     onCheckedChange = viewModel::setGlowEffects,
-                    icon = Icons.Outlined.BlurOn,
                 )
             }
 
-            QuietSectionLabel(
+            SectionLabel(
                 "Hold duration · ${String.format("%.1fs", config.holdDurationMs / 1000f)}",
             )
-            SettingsGroupCard {
+            SettingsGroup {
                 Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp)) {
                     Text(
                         text = "How long the popup stays on screen",
