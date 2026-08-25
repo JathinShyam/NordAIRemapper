@@ -46,7 +46,7 @@ Keyforge is honest about that. It unlocks **logcat detection** once, keeps Acces
 | **Lock Screen** | Per-gesture allow/deny while locked |
 | **Exclusions** | Disable remapping in chosen apps |
 | **Backup & Restore** | Export/import JSON + local snapshots |
-| **Lab** | Strategy, gesture timings, logcat pattern, USB unlock tools |
+| **Advanced** | Detection strategy, gesture timings, logcat pattern, unlock repair |
 
 ---
 
@@ -58,7 +58,7 @@ Keyforge is honest about that. It unlocks **logcat detection** once, keeps Acces
 
 Every push to `main` also publishes an immutable `debug-<sha>` release so older builds stay available: [all releases](https://github.com/JathinShyam/NordAIRemapper/releases).
 
-> **Signature tip:** GitHub APKs and local Android Studio builds use different debug keystores. You cannot overwrite one with the other (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`) without uninstalling — which clears `READ_LOGS` and settings. Prefer the GitHub APK for day-to-day use, or stick to one signing path.
+> **Signature tip:** debug builds (local and CI) share one committed keystore (`keystore/debug.keystore`), so updates install in place without uninstalling. Only mixing in an APK signed elsewhere triggers `INSTALL_FAILED_UPDATE_INCOMPATIBLE`.
 
 ---
 
@@ -84,7 +84,7 @@ If Key setup later shows volume keys but never the Plus Key, that is expected on
 
 ### 3. Unlock Plus Key detection (`READ_LOGS`) — required on Nord 5
 
-**What you do:** Tap **Unlock detection** (same flow as Home banners / Lab).
+**What you do:** Tap **Unlock detection** (same flow as Home banners / Advanced).
 
 **Why:** Android will not show a normal “Allow logs?” dialog for `READ_LOGS`. OnePlus rarely delivers the Plus Key as a `KeyEvent`, so the app must watch system log lines (default pattern `KEYCODE_ACTION_BUTTON_CLICK`). That needs a one-time grant.
 
@@ -158,7 +158,22 @@ Confirm detection, then assign actions.
 | **Home** | Status chip active; no Unlock banner |
 | Remap **Try now** | Action runs (bypasses some gates — hardware press is the real test) |
 
-Lab (advanced): Auto / Accessibility / Logcat strategy, double-press window, long-press threshold, log match pattern.
+### Advanced screen — what it is and when to use it
+
+**Advanced** is Keyforge's service panel. Regular setup never requires it —
+it exists because OnePlus hides the Plus Key from normal apps, and that
+behavior can change with firmware updates.
+
+| Section | What it does | Touch it when |
+|---|---|---|
+| **Detection strategy** | Which pipeline may report presses: Auto / Accessibility / Logcat | Almost never — keep Auto. Force a mode only if an OxygenOS update changes how the key is delivered |
+| **Unlock · Log access** | Re-runs the three Unlock methods (Built-in / Shizuku / Manual ADB) | Detection stops after a reinstall or system update |
+| **Log match pattern** | The system-log fingerprint that identifies Plus Key presses | Presses stop being detected after an OTA update (new pattern from support/release notes) |
+| **Gesture timing** | Double-press window (300 ms) and long-press threshold (500 ms) | Double-presses feel too strict or too loose |
+| **Key identity** | Shows the raw keyCode/scanCode your unit emits | Diagnostic only — support may ask for this |
+
+If everything works, nothing in Advanced needs changing. It's the engine bay,
+not the dashboard.
 
 ---
 
@@ -221,7 +236,7 @@ Backup uses the **Storage Access Framework** — no broad storage permission.
 ## Known limitations
 
 - **No root** → stock Plus Key action may still run (**dual-fire**). Documented, not a silent bug.
-- **OS updates** can change logcat tags/patterns — editable in Lab if detection breaks after an update.
+- **OS updates** can change logcat tags/patterns — editable in Advanced if detection breaks after an update.
 - **Other OxygenOS “Plus Key” phones** — best-effort; Nord 5 is the primary target.
 - Debug APKs are for testing, not Play Store distribution.
 
