@@ -337,6 +337,8 @@ class LogcatWatcherService : Service() {
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(contentIntent)
             .setOngoing(true)
+            // Never on the lock screen — the shade entry is housekeeping.
+            .setVisibility(Notification.VISIBILITY_SECRET)
         return if (showDetails) {
             builder
                 .setContentTitle("Plus Key detection active")

@@ -65,7 +65,9 @@ import com.nordairemapper.presentation.detection.UnlockMethodsSection
 import com.nordairemapper.ui.components.NordGhostButton
 import com.nordairemapper.ui.components.NordHeading
 import com.nordairemapper.ui.components.NordPrimaryButton
+import com.nordairemapper.ui.components.NordSurfaceCard
 import com.nordairemapper.ui.components.PhoneDiagram
+import com.nordairemapper.ui.components.SectionLabel
 import com.nordairemapper.ui.components.StatusChip
 import com.nordairemapper.ui.components.StatusTone
 
@@ -258,6 +260,9 @@ private fun DetectionStepContent(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val fullyUnlocked = state.readLogsGranted &&
+        state.bankingAutoResumeReady &&
+        state.logAccessVisible != false
 
     Column(modifier = Modifier.fillMaxSize()) {
         androidx.compose.foundation.layout.BoxWithConstraints(
@@ -287,40 +292,62 @@ private fun DetectionStepContent(
                     modifier = Modifier.padding(horizontal = 8.dp),
                 )
                 Spacer(Modifier.height(16.dp))
-                StatusChip(
-                    label = if (state.readLogsGranted) "READ_LOGS granted" else "READ_LOGS needed",
-                    tone = if (state.readLogsGranted) StatusTone.Active else StatusTone.Warning,
-                )
-                state.logAccessVisible?.let { visible ->
-                    Spacer(Modifier.height(6.dp))
-                    StatusChip(
-                        label = if (visible) {
-                            "System log access verified"
-                        } else {
-                            "Blocked: allow log access when prompted, then reopen"
-                        },
-                        tone = if (visible) StatusTone.Active else StatusTone.Warning,
+
+                if (fullyUnlocked) {
+                    NordSurfaceCard(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.CheckCircle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.size(28.dp),
+                            )
+                            Text(
+                                text = "Detection unlocked — all three grants are in. Continue to finish setup.",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
+                } else {
+                    // Compact one-row status: READ_LOGS / log access / banking.
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        StatusChip(
+                            label = "READ_LOGS",
+                            tone = if (state.readLogsGranted) StatusTone.Active else StatusTone.Warning,
+                            modifier = Modifier.weight(1f),
+                        )
+                        StatusChip(
+                            label = when (state.logAccessVisible) {
+                                null -> "Log access"
+                                true -> "Log access"
+                                false -> "Log blocked"
+                            },
+                            tone = if (state.logAccessVisible == true) StatusTone.Active else StatusTone.Warning,
+                            modifier = Modifier.weight(1f),
+                        )
+                        StatusChip(
+                            label = "Banking pause",
+                            tone = if (state.bankingAutoResumeReady) StatusTone.Active else StatusTone.Warning,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    Spacer(Modifier.height(14.dp))
+                    SectionLabel(text = "Choose how to unlock")
+                    UnlockMethodsSection(
+                        viewModel = viewModel,
+                        // Notifications have their own onboarding page now — the
+                        // in-section gate card would ask a second time.
+                        showNotificationGate = false,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
-                if (state.readLogsGranted) {
-                    Spacer(Modifier.height(6.dp))
-                    StatusChip(
-                        label = if (state.bankingAutoResumeReady) {
-                            "Banking auto-pause ready"
-                        } else {
-                            "Banking auto-pause needs Unlock"
-                        },
-                        tone = if (state.bankingAutoResumeReady) StatusTone.Active else StatusTone.Warning,
-                    )
-                }
-                Spacer(Modifier.height(16.dp))
-                UnlockMethodsSection(
-                    viewModel = viewModel,
-                    // Notifications have their own onboarding page now — the
-                    // in-section gate card would ask a second time.
-                    showNotificationGate = false,
-                    modifier = Modifier.fillMaxWidth(),
-                )
             }
         }
 
