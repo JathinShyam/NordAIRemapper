@@ -43,7 +43,7 @@ fun LockScreenSettingsScreen(
                 title = {
                     NordTopBarTitle(
                         title = "Lock Screen",
-                        subtitle = "Gestures while locked",
+                        subtitle = "Gestures While Locked",
                     )
                 },
                 navigationIcon = {
@@ -75,8 +75,8 @@ fun LockScreenSettingsScreen(
             SectionLabel("Press types")
             SettingsGroup {
                 SettingsToggleRow(
-                    title = "Single press",
-                    subtitle = if (settings.lockScreenSingleEnabled) "Enabled when locked" else "Disabled when locked",
+                    title = "Single Press",
+                    subtitle = if (settings.lockScreenSingleEnabled) "Enabled When Locked" else "Disabled When Locked",
                     checked = settings.lockScreenSingleEnabled,
                     onCheckedChange = {
                         view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
@@ -85,8 +85,8 @@ fun LockScreenSettingsScreen(
                 )
                 SettingsDivider()
                 SettingsToggleRow(
-                    title = "Double press",
-                    subtitle = if (settings.lockScreenDoubleEnabled) "Enabled when locked" else "Disabled when locked",
+                    title = "Double Press",
+                    subtitle = if (settings.lockScreenDoubleEnabled) "Enabled When Locked" else "Disabled When Locked",
                     checked = settings.lockScreenDoubleEnabled,
                     onCheckedChange = {
                         view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
@@ -95,8 +95,8 @@ fun LockScreenSettingsScreen(
                 )
                 SettingsDivider()
                 SettingsToggleRow(
-                    title = "Long press",
-                    subtitle = if (settings.lockScreenLongEnabled) "Enabled when locked" else "Disabled when locked",
+                    title = "Long Press",
+                    subtitle = if (settings.lockScreenLongEnabled) "Enabled When Locked" else "Disabled When Locked",
                     checked = settings.lockScreenLongEnabled,
                     onCheckedChange = {
                         view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)

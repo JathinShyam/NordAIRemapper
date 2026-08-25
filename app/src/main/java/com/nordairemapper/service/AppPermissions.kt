@@ -47,12 +47,12 @@ object AppPermissions {
             add(
                 Item(
                     id = Id.ACCESSIBILITY,
-                    title = "Accessibility service",
-                    subtitle = "Key events and system actions",
+                    title = "Accessibility Service",
+                    subtitle = "Key Events And System Actions",
                     statusLabel = if (AccessibilityUtils.isServiceEnabled(context)) {
                         "Enabled"
                     } else {
-                        "Not enabled"
+                        "Not Enabled"
                     },
                     isOk = AccessibilityUtils.isServiceEnabled(context),
                     section = Section.CORE,
@@ -62,8 +62,8 @@ object AppPermissions {
                 Item(
                     id = Id.READ_LOGS,
                     title = "READ_LOGS",
-                    subtitle = "Plus Key detection via logcat on Nord 5",
-                    statusLabel = if (readLogsGranted) "Granted" else "Not granted",
+                    subtitle = "Plus Key Detection Via Logcat On Nord 5",
+                    statusLabel = if (readLogsGranted) "Granted" else "Not Granted",
                     isOk = readLogsGranted,
                     section = Section.CORE,
                 ),
@@ -71,9 +71,9 @@ object AppPermissions {
             add(
                 Item(
                     id = Id.OVERLAY,
-                    title = "Display over other apps",
-                    subtitle = "Floating Menu and Visual Overlay",
-                    statusLabel = if (Settings.canDrawOverlays(context)) "Granted" else "Not granted",
+                    title = "Display Over Other Apps",
+                    subtitle = "Floating Menu And Visual Overlay",
+                    statusLabel = if (Settings.canDrawOverlays(context)) "Granted" else "Not Granted",
                     isOk = Settings.canDrawOverlays(context),
                     section = Section.OVERLAYS,
                 ),
@@ -82,8 +82,8 @@ object AppPermissions {
                 Item(
                     id = Id.NOTIFICATIONS,
                     title = "Notifications",
-                    subtitle = "Detection health and service status",
-                    statusLabel = if (notificationsGranted) "Granted" else "Not granted",
+                    subtitle = "Detection Health And Service Status",
+                    statusLabel = if (notificationsGranted) "Granted" else "Not Granted",
                     isOk = notificationsGranted,
                     section = Section.RELIABILITY,
                 ),
@@ -91,12 +91,12 @@ object AppPermissions {
             add(
                 Item(
                     id = Id.BATTERY,
-                    title = "Battery optimization",
-                    subtitle = "Keep detection running in the background",
+                    title = "Battery Optimization",
+                    subtitle = "Keep Detection Running In The Background",
                     statusLabel = if (pm?.isIgnoringBatteryOptimizations(context.packageName) == true) {
                         "Exempt"
                     } else {
-                        "Not exempt"
+                        "Not Exempt"
                     },
                     isOk = pm?.isIgnoringBatteryOptimizations(context.packageName) == true,
                     section = Section.RELIABILITY,
@@ -105,12 +105,12 @@ object AppPermissions {
             add(
                 Item(
                     id = Id.WRITE_SECURE_SETTINGS,
-                    title = "Modify system settings",
-                    subtitle = "Hands-free banking Accessibility pause",
+                    title = "Modify System Settings",
+                    subtitle = "Hands-Free Banking Accessibility Pause",
                     statusLabel = if (ElevatedPermissions.hasWriteSecureSettings(context)) {
                         "Granted"
                     } else {
-                        "Not granted"
+                        "Not Granted"
                     },
                     isOk = ElevatedPermissions.hasWriteSecureSettings(context),
                     section = Section.ADVANCED,
@@ -119,12 +119,12 @@ object AppPermissions {
             add(
                 Item(
                     id = Id.USAGE_ACCESS,
-                    title = "Usage access",
-                    subtitle = "Auto-resume after banking apps",
+                    title = "Usage Access",
+                    subtitle = "Auto-Resume After Banking Apps",
                     statusLabel = if (ElevatedPermissions.hasUsageAccess(context)) {
                         "Granted"
                     } else {
-                        "Not granted"
+                        "Not Granted"
                     },
                     isOk = ElevatedPermissions.hasUsageAccess(context),
                     section = Section.ADVANCED,
@@ -135,8 +135,8 @@ object AppPermissions {
 
     fun logVisibilityItem(result: LogVisibilityProbe.Result): Item = Item(
         id = Id.LOG_VISIBILITY,
-        title = "Device log visibility",
-        subtitle = "Logcat can see other apps (OxygenOS consent)",
+        title = "Device Log Visibility",
+        subtitle = "Logcat Can See Other Apps (OxygenOS Consent)",
         statusLabel = when (result) {
             LogVisibilityProbe.Result.VISIBLE -> "Visible"
             LogVisibilityProbe.Result.BLIND -> "Blind"
@@ -147,8 +147,8 @@ object AppPermissions {
 
     fun logVisibilityCheckingItem(): Item = Item(
         id = Id.LOG_VISIBILITY,
-        title = "Device log visibility",
-        subtitle = "Logcat can see other apps (OxygenOS consent)",
+        title = "Device Log Visibility",
+        subtitle = "Logcat Can See Other Apps (OxygenOS Consent)",
         statusLabel = "Checking",
         isOk = false,
         section = Section.CORE,
@@ -160,8 +160,8 @@ object AppPermissions {
 
     fun hubSummaryLabel(attentionCount: Int): String = when (attentionCount) {
         0 -> "All OK"
-        1 -> "1 needs attention"
-        else -> "$attentionCount need attention"
+        1 -> "1 Needs Attention"
+        else -> "$attentionCount Need Attention"
     }
 
     fun withLogVisibility(

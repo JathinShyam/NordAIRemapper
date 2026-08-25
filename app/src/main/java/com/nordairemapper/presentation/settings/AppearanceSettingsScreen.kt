@@ -39,7 +39,7 @@ fun AppearanceSettingsScreen(
                 title = {
                     NordTopBarTitle(
                         title = "Appearance",
-                        subtitle = "Theme and notifications",
+                        subtitle = "Theme And Notifications",
                     )
                 },
                 navigationIcon = {
@@ -72,27 +72,27 @@ fun AppearanceSettingsScreen(
             SectionLabel("Options")
             SettingsGroup {
                 SettingsToggleRow(
-                    title = "Dynamic color",
+                    title = "Dynamic Color",
                     subtitle = if (settings.dynamicColor) "On · Material You" else "Off",
                     checked = settings.dynamicColor,
                     onCheckedChange = viewModel::setDynamicColor,
                 )
                 SettingsDivider()
                 SettingsToggleRow(
-                    title = "OLED black",
+                    title = "OLED Black",
                     subtitle = if (settings.oledBlack) {
-                        "Pure black in dark mode"
+                        "Pure Black In Dark Mode"
                     } else {
-                        "Default dark background"
+                        "Default Dark Background"
                     },
                     checked = settings.oledBlack,
                     onCheckedChange = viewModel::setOledBlack,
                 )
                 SettingsDivider()
                 SettingsToggleRow(
-                    title = "Service notification",
+                    title = "Service Notification",
                     subtitle = if (settings.showServiceNotification) {
-                        "Ongoing while remapping"
+                        "Ongoing While Remapping"
                     } else {
                         "Hidden"
                     },

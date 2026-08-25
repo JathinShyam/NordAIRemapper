@@ -1,15 +1,11 @@
 package com.nordairemapper.presentation.overlay
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,22 +13,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -46,7 +36,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -69,6 +58,7 @@ import com.nordairemapper.presentation.common.icon
 import com.nordairemapper.presentation.common.rememberAppIcon
 import com.nordairemapper.presentation.remap.AppPickerSheet
 import com.nordairemapper.presentation.remap.UrlInputSheet
+import com.nordairemapper.presentation.settings.SettingsDivider
 import com.nordairemapper.presentation.settings.SettingsGroup
 import com.nordairemapper.presentation.settings.SettingsSegmentOption
 import com.nordairemapper.presentation.settings.SettingsSegmentedControl
@@ -99,7 +89,7 @@ fun OverlaySettingsScreen(
                 title = {
                     NordTopBarTitle(
                         title = "Floating Menu",
-                        subtitle = "Quick-action slots",
+                        subtitle = "Quick-Action Slots",
                     )
                 },
                 navigationIcon = {
@@ -126,11 +116,11 @@ fun OverlaySettingsScreen(
             // ── Enable toggle ─────────────────────────────────────────────
             SettingsGroup {
                 SettingsToggleRow(
-                    title = "Enable floating menu",
+                    title = "Enable Floating Menu",
                     subtitle = if (config.enabled) {
-                        "On for Show floating menu actions"
+                        "On For Show Floating Menu Actions"
                     } else {
-                        "Off — menu actions will not open"
+                        "Off — Menu Actions Will Not Open"
                     },
                     checked = config.enabled,
                     onCheckedChange = viewModel::setEnabled,
@@ -138,7 +128,7 @@ fun OverlaySettingsScreen(
             }
 
             // ── Live preview ──────────────────────────────────────────────
-            SectionLabel("Live preview")
+            SectionLabel("Live Preview")
             OverlayPreview(config = config)
 
             // ── Slots ─────────────────────────────────────────────────────
@@ -146,14 +136,14 @@ fun OverlaySettingsScreen(
             val allSlotsEmpty = config.slots.none { it !is RemapAction.None }
             if (allSlotsEmpty) {
                 Text(
-                    text = "Tap a slot to add an action — at least one is needed for the floating menu to show",
+                    text = "Tap A Slot To Add An Action — At Least One Is Needed For The Floating Menu To Show",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 4.dp),
                 )
             } else {
                 Text(
-                    text = "Tap a slot to assign an action. Up to 6 slots are shown in the floating menu.",
+                    text = "Tap A Slot To Assign An Action. Up To 6 Slots Are Shown In The Floating Menu.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -175,28 +165,17 @@ fun OverlaySettingsScreen(
                 )
             }
 
-            // ── Layout ────────────────────────────────────────────────────
-            SectionLabel("Layout style")
+            // ── Look (layout, position, size, animation, opacity) ─────────
+            SectionLabel("Look")
             SettingsGroup {
-                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
-                    Text(
-                        text = when (config.layoutStyle) {
-                            OverlayLayoutStyle.GRID ->
-                                "3×2 square tile panel — Top / Middle / Bottom"
-                            OverlayLayoutStyle.PILL_BAR ->
-                                "Vertical strip (Left/Right) or horizontal scroll row (Bottom)"
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 10.dp),
-                    )
+                CompactOptionBlock(title = "Layout Style") {
                     SettingsSegmentedControl(
                         options = OverlayLayoutStyle.entries.map { style ->
                             SettingsSegmentOption(
                                 key = style.name,
                                 label = when (style) {
                                     OverlayLayoutStyle.GRID -> "Grid"
-                                    OverlayLayoutStyle.PILL_BAR -> "Pill bar"
+                                    OverlayLayoutStyle.PILL_BAR -> "Pill Bar"
                                 },
                             )
                         },
@@ -208,22 +187,8 @@ fun OverlaySettingsScreen(
                         },
                     )
                 }
-            }
-
-            // ── Position ──────────────────────────────────────────────────
-            SectionLabel("Position")
-            PrefCard {
-                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
-                    Text(
-                        text = when (config.layoutStyle) {
-                            OverlayLayoutStyle.GRID -> "Where the panel appears vertically"
-                            OverlayLayoutStyle.PILL_BAR ->
-                                "Left / Right = vertical strip · Bottom = horizontal scroll row"
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 10.dp),
-                    )
+                SettingsDivider()
+                CompactOptionBlock(title = "Position") {
                     val positions = when (config.layoutStyle) {
                         OverlayLayoutStyle.GRID -> listOf(
                             OverlayPosition.TOP,
@@ -236,80 +201,62 @@ fun OverlaySettingsScreen(
                             OverlayPosition.BOTTOM,
                         )
                     }
-                    SegRow {
-                        positions.forEach { pos ->
-                            val selected = config.position == pos
-                            val label = when (pos) {
-                                OverlayPosition.TOP -> "Top"
-                                OverlayPosition.MIDDLE -> "Middle"
-                                OverlayPosition.BOTTOM -> "Bottom"
-                                OverlayPosition.LEFT -> "Left"
-                                OverlayPosition.RIGHT -> "Right"
-                            }
-                            SegButton(label = label, selected = selected) {
-                                viewModel.setPosition(pos)
-                            }
-                        }
-                    }
-                }
-            }
-
-            // ── Icon size ─────────────────────────────────────────────────
-            SectionLabel("Icon size")
-            PrefCard {
-                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
-                    Text(
-                        text = "Size of icons inside each tile",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 10.dp),
+                    SettingsSegmentedControl(
+                        options = positions.map { pos ->
+                            SettingsSegmentOption(
+                                key = pos.name,
+                                label = when (pos) {
+                                    OverlayPosition.TOP -> "Top"
+                                    OverlayPosition.MIDDLE -> "Middle"
+                                    OverlayPosition.BOTTOM -> "Bottom"
+                                    OverlayPosition.LEFT -> "Left"
+                                    OverlayPosition.RIGHT -> "Right"
+                                },
+                            )
+                        },
+                        selectedKey = config.position.name,
+                        onSelect = { key ->
+                            positions.firstOrNull { it.name == key }
+                                ?.let(viewModel::setPosition)
+                        },
                     )
-                    SegRow {
-                        OverlayIconSize.entries.forEach { size ->
-                            val selected = config.iconSize == size
-                            val label = size.name.lowercase().replaceFirstChar { it.titlecase() }
-                            SegButton(label = label, selected = selected) {
-                                viewModel.setIconSize(size)
-                            }
-                        }
-                    }
                 }
-            }
-
-            // ── Animation ─────────────────────────────────────────────────
-            SectionLabel("Entry animation")
-            PrefCard {
-                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
-                    Text(
-                        text = "How tiles animate in when the floating menu opens",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 10.dp),
+                SettingsDivider()
+                CompactOptionBlock(title = "Icon Size") {
+                    SettingsSegmentedControl(
+                        options = OverlayIconSize.entries.map { size ->
+                            SettingsSegmentOption(
+                                key = size.name,
+                                label = size.name.lowercase().replaceFirstChar { it.titlecase() },
+                            )
+                        },
+                        selectedKey = config.iconSize.name,
+                        onSelect = { key ->
+                            OverlayIconSize.entries
+                                .firstOrNull { it.name == key }
+                                ?.let(viewModel::setIconSize)
+                        },
                     )
-                    SegRow {
-                        OverlayAnimation.entries.forEach { anim ->
-                            val selected = config.animation == anim
-                            val label = anim.name.lowercase().replaceFirstChar { it.titlecase() }
-                            SegButton(label = label, selected = selected) {
-                                viewModel.setAnimation(anim)
-                            }
-                        }
-                    }
                 }
-            }
-
-            // ── Opacity ───────────────────────────────────────────────────
-            SectionLabel("Opacity · ${(config.opacity * 100).toInt()}%")
-            PrefCard {
-                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
-                    Text(
-                        text = "Panel background transparency",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 4.dp),
+                SettingsDivider()
+                CompactOptionBlock(title = "Entry Animation") {
+                    SettingsSegmentedControl(
+                        options = OverlayAnimation.entries.map { anim ->
+                            SettingsSegmentOption(
+                                key = anim.name,
+                                label = anim.name.lowercase().replaceFirstChar { it.titlecase() },
+                            )
+                        },
+                        selectedKey = config.animation.name,
+                        onSelect = { key ->
+                            OverlayAnimation.entries
+                                .firstOrNull { it.name == key }
+                                ?.let(viewModel::setAnimation)
+                        },
                     )
-                    // Drag locally, commit once — a DataStore write per tick
-                    // starved everything else sharing the flow.
+                }
+                SettingsDivider()
+                CompactOptionBlock(title = "Opacity · ${(config.opacity * 100).toInt()}%") {
                     var pendingOpacity by remember(config.opacity) {
                         mutableStateOf(config.opacity)
                     }
@@ -376,43 +323,21 @@ fun OverlaySettingsScreen(
 // ─── Reusable primitives ──────────────────────────────────────────────────
 
 @Composable
-private fun PrefCard(content: @Composable ColumnScope.() -> Unit) {
-    SettingsGroup(content = content)
-}
-
-@Composable
-private fun SegRow(content: @Composable RowScope.() -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        content = content,
-    )
-}
-
-@Composable
-private fun RowScope.SegButton(
-    label: String,
-    selected: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
+private fun CompactOptionBlock(
+    title: String,
+    content: @Composable () -> Unit,
 ) {
-    OutlinedButton(
-        onClick = onClick,
-        // Equal-width segments survive large font scales without clipping.
-        modifier = modifier.weight(1f),
-        colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = if (selected) MaterialTheme.colorScheme.primary
-                             else MaterialTheme.colorScheme.surface,
-            contentColor = if (selected) MaterialTheme.colorScheme.onPrimary
-                           else MaterialTheme.colorScheme.onSurfaceVariant,
-        ),
-        border = BorderStroke(
-            1.dp,
-            if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-        ),
-        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 10.dp),
     ) {
-        Text(label, style = MaterialTheme.typography.labelMedium, maxLines = 1)
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+        content()
     }
 }
 
@@ -440,7 +365,7 @@ private fun ActionCatalogSheet(
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             NordTopBarHeading(
-                text = "Choose action",
+                text = "Choose Action",
                 modifier = Modifier.padding(bottom = 8.dp),
             )
             grouped.forEach { (category, items) ->

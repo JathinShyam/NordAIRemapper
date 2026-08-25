@@ -85,7 +85,7 @@ fun DeveloperScreen(
                 title = {
                     NordTopBarTitle(
                         title = "Lab",
-                        subtitle = "Strategy, timing, and unlock",
+                        subtitle = "Strategy, Timing, And Unlock",
                     )
                 },
                 navigationIcon = {

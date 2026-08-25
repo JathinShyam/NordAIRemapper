@@ -108,7 +108,7 @@ fun VisualOverlayScreen(
                 title = {
                     NordTopBarTitle(
                         title = "Visual Overlay",
-                        subtitle = "Action popup near Plus Key",
+                        subtitle = "Action Popup Near Plus Key",
                     )
                 },
                 navigationIcon = {
@@ -138,7 +138,7 @@ fun VisualOverlayScreen(
             )
 
             StatusChip(
-                label = if (overlayGrantedNow) "Display over apps granted" else "Display over apps needed",
+                label = if (overlayGrantedNow) "Display Over Apps Granted" else "Display Over Apps Needed",
                 tone = if (overlayGrantedNow) StatusTone.Active else StatusTone.Warning,
                 modifier = Modifier.padding(bottom = 12.dp),
             )
@@ -155,7 +155,7 @@ fun VisualOverlayScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         NordPrimaryButton(
-                            text = "Open Display over apps",
+                            text = "Open Display Over Apps",
                             onClick = {
                                 context.startActivity(
                                     Intent(
@@ -173,9 +173,9 @@ fun VisualOverlayScreen(
             SectionLabel("Popup")
             SettingsGroup {
                 SettingsToggleRow(
-                    title = "Enable visual overlay",
+                    title = "Enable Visual Overlay",
                     subtitle = if (settings.visualOverlayEnabled) {
-                        "On when a remap fires"
+                        "On When A Remap Fires"
                     } else {
                         "Off"
                     },
@@ -226,11 +226,11 @@ fun VisualOverlayScreen(
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            "Accent color",
+                            "Accent Color",
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                         )
                         Text(
-                            "Border, icon, and edge glow",
+                            "Border, Icon, And Edge Glow",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -291,9 +291,9 @@ fun VisualOverlayScreen(
                 }
                 SettingsDivider()
                 SettingsToggleRow(
-                    title = "Glow effect",
+                    title = "Glow Effect",
                     subtitle = if (config.glowEffects) {
-                        "Accent line on the Plus Key edge"
+                        "Accent Line On The Plus Key Edge"
                     } else {
                         "Off"
                     },
@@ -303,12 +303,12 @@ fun VisualOverlayScreen(
             }
 
             SectionLabel(
-                "Hold duration · ${String.format("%.1fs", config.holdDurationMs / 1000f)}",
+                "Hold Duration · ${String.format("%.1fs", config.holdDurationMs / 1000f)}",
             )
             SettingsGroup {
                 Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp)) {
                     Text(
-                        text = "How long the popup stays on screen",
+                        text = "How Long The Popup Stays On Screen",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 8.dp),
@@ -330,7 +330,7 @@ fun VisualOverlayScreen(
             }
 
             NordGhostButton(
-                text = "Preview on screen",
+                text = "Preview On Screen",
                 onClick = {
                     overlayGrantedNow = Settings.canDrawOverlays(context)
                     if (!overlayGrantedNow) {

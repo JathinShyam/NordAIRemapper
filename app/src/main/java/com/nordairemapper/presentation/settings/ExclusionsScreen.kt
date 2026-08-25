@@ -133,7 +133,7 @@ fun ExclusionsScreen(
                 title = {
                     NordTopBarTitle(
                         title = "Per-App Exclusions",
-                        subtitle = "Pause remapping in selected apps",
+                        subtitle = "Pause Remapping In Selected Apps",
                     )
                 },
                 navigationIcon = {
@@ -198,7 +198,7 @@ fun ExclusionsScreen(
                 }
                 item {
                     Text(
-                        text = "${exclusionRows.size} ${if (exclusionRows.size == 1) "app" else "apps"} excluded",
+                        text = "${exclusionRows.size} ${if (exclusionRows.size == 1) "App" else "Apps"} Excluded",
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 4.dp),
@@ -214,7 +214,7 @@ fun ExclusionsScreen(
                 item {
                     Spacer(Modifier.height(8.dp))
                     NordPrimaryButton(
-                        text = "Add excluded app",
+                        text = "Add Excluded App",
                         onClick = ::openAppPicker,
                     )
                     Text(
@@ -287,7 +287,7 @@ private fun AutoPauseAccessibilityCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Auto-pause Accessibility",
+                        text = "Auto-Pause Accessibility",
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                     )
                     Text(
@@ -302,7 +302,7 @@ private fun AutoPauseAccessibilityCard(
                 )
             }
             StatusChip(
-                label = if (handsFreeReady) "Hands-free ready" else "Needs Wireless Unlock once",
+                label = if (handsFreeReady) "Hands-Free Ready" else "Needs Wireless Unlock Once",
                 tone = if (handsFreeReady) StatusTone.Active else StatusTone.Warning,
             )
             if (!handsFreeReady) {

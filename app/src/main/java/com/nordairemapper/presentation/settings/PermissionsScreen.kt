@@ -63,7 +63,7 @@ fun PermissionsScreen(
                 title = {
                     NordTopBarTitle(
                         title = "Permissions",
-                        subtitle = "Access and special grants",
+                        subtitle = "Access And Special Grants",
                     )
                 },
                 navigationIcon = {
@@ -119,7 +119,7 @@ fun PermissionsScreen(
             )
 
             Text(
-                text = "Tap a row to open the matching settings screen or unlock flow.",
+                text = "Tap A Row To Open The Matching Settings Screen Or Unlock Flow.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),

@@ -101,7 +101,7 @@ fun FeedbackScreen(
                 title = {
                     NordTopBarTitle(
                         title = "Feedback",
-                        subtitle = "Haptic confirmation",
+                        subtitle = "Haptic Confirmation",
                     )
                 },
                 navigationIcon = {
@@ -126,9 +126,9 @@ fun FeedbackScreen(
             SectionLabel("Haptics")
             SettingsGroup {
                 SettingsToggleRow(
-                    title = "Haptic feedback",
+                    title = "Haptic Feedback",
                     subtitle = if (settings.hapticFeedback) {
-                        "On when a remap fires"
+                        "On When A Remap Fires"
                     } else {
                         "Off"
                     },
@@ -148,7 +148,7 @@ fun FeedbackScreen(
                         .padding(14.dp),
                 ) {
                     Text(
-                        text = "Vibration intensity",
+                        text = "Vibration Intensity",
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                         color = if (settings.hapticFeedback) {
                             MaterialTheme.colorScheme.onSurface
@@ -157,7 +157,7 @@ fun FeedbackScreen(
                         },
                     )
                     Text(
-                        text = "How strong the Plus Key confirmation feels",
+                        text = "How Strong The Plus Key Confirmation Feels",
                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
                             alpha = if (settings.hapticFeedback) 1f else 0.5f,
@@ -215,7 +215,7 @@ fun FeedbackScreen(
                         )
                     }
                     NordGhostButton(
-                        text = "Pulse preview",
+                        text = "Pulse Preview",
                         onClick = { previewIntensity(settings.hapticIntensity) },
                     )
                 }

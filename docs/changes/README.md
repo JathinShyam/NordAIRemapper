@@ -79,6 +79,8 @@ Going forward: write/update these notes in the **same turn** as the code.
 | 2026-08-22 | [settings-hub-redesign-preview](./2026-08-22-settings-hub-redesign-preview/) | Design-first Settings hub: grouped surfaces, battery/exclusions chips, About+GitHub (HTML only) |
 | 2026-08-22 | [settings-hub-compose](./2026-08-22-settings-hub-compose/) | Compose port of Settings hub from `settings-preview.html` (+ exclusions detail page) |
 | 2026-08-23 | [exclusions-app-icons](./2026-08-23-exclusions-app-icons/) | Per-app exclusions list shows app logos; Version bold; design parity |
+| 2026-08-26 | [floating-menu-look-compact](./2026-08-26-floating-menu-look-compact/) | Dense Floating Menu Look group — drop verbose subtext, one card for layout/position/size/anim/opacity |
+| 2026-08-26 | [settings-title-case-drop-battery](./2026-08-26-settings-title-case-drop-battery/) | Drop hub battery CTA (kept in Permissions); Title Case Settings copy |
 | 2026-08-25 | [settings-instrument-redesign](./2026-08-25-settings-instrument-redesign/) | Quiet instrument Settings: monochrome rows, status secondary text, unified groups/segments |
 | 2026-08-23 | [settings-appearance-screen](./2026-08-23-settings-appearance-screen/) | Appearance hub row + dedicated theme/notification screen |
 | 2026-08-23 | [settings-permissions-screen](./2026-08-23-settings-permissions-screen/) | Permissions hub row + status subpage (access, detection, overlays) |

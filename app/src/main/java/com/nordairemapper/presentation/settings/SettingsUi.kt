@@ -42,11 +42,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nordairemapper.domain.model.ThemeMode
 import com.nordairemapper.ui.components.NordGhostButton
-import com.nordairemapper.ui.components.NordPrimaryButton
 import com.nordairemapper.ui.components.StatusChip
 import com.nordairemapper.ui.components.StatusTone
 
 private val GroupShape = RoundedCornerShape(16.dp)
+private val IconWellShape = RoundedCornerShape(11.dp)
 private val SegmentTrackShape = RoundedCornerShape(12.dp)
 private val SegmentBtnShape = RoundedCornerShape(9.dp)
 
@@ -98,6 +98,8 @@ fun SettingsNavRow(
     subtitle: String = "",
     onClick: (() -> Unit)? = null,
     icon: ImageVector? = null,
+    accentContainer: Color? = null,
+    accentTint: Color? = null,
     status: @Composable (() -> Unit)? = null,
     subtitleContent: @Composable (() -> Unit)? = null,
     showChevron: Boolean = onClick != null,
@@ -110,12 +112,30 @@ fun SettingsNavRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp),
-            )
+            val container = accentContainer
+            val tint = accentTint
+            if (container != null && tint != null) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(container, IconWellShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = tint,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            } else {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
         }
         Column(modifier = Modifier.weight(1f)) {
             Row(
@@ -157,7 +177,6 @@ fun SettingsNavRow(
 
 /**
  * Compatibility wrapper for older hub call sites that passed accent wells.
- * Ignores decorative colors — icons stay monochrome.
  */
 @Composable
 fun SettingsHubRow(
@@ -172,12 +191,14 @@ fun SettingsHubRow(
     trailing: @Composable (() -> Unit)? = null,
 ) {
     @Suppress("UNUSED_PARAMETER")
-    val unusedAccents = accentContainer to accentTint
+    val unusedTrailing = trailing
     SettingsNavRow(
         title = title,
         subtitle = subtitle,
         onClick = onClick,
         icon = icon,
+        accentContainer = accentContainer.takeUnless { it == Color.Transparent },
+        accentTint = accentTint.takeUnless { it == Color.Transparent },
         status = titleTrailing,
         subtitleContent = subtitleContent,
         showChevron = onClick != null && trailing == null,
@@ -318,7 +339,7 @@ fun ThemeSegmentBlock(
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
         )
         Text(
-            text = "Dark, light, or match the system",
+            text = "Dark, Light, Or Match The System",
             style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 3.dp, bottom = 12.dp),
@@ -379,62 +400,6 @@ fun PermissionStatusRow(
 }
 
 @Composable
-fun BatteryOptimizationBlock(
-    exempt: Boolean,
-    icon: ImageVector,
-    onCta: () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(14.dp),
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.Top,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp),
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        text = "Battery optimization",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                    )
-                    SettingsStatusChip(
-                        label = if (exempt) "Exempt" else "At risk",
-                        tone = if (exempt) SettingsStatusTone.Ok else SettingsStatusTone.Warn,
-                    )
-                }
-                Text(
-                    text = if (exempt) {
-                        "Detection can keep running in the background"
-                    } else {
-                        "OxygenOS may kill detection in the background"
-                    },
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp, lineHeight = 16.sp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 2.dp),
-                )
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-        if (exempt) {
-            NordGhostButton(text = "Open battery settings", onClick = onCta)
-        } else {
-            NordPrimaryButton(text = "Exempt from battery optimization", onClick = onCta)
-        }
-    }
-}
-
-@Composable
 fun ExclusionsEmptyPanel(
     icon: ImageVector,
     onAdd: () -> Unit,
@@ -453,7 +418,7 @@ fun ExclusionsEmptyPanel(
         )
         Spacer(Modifier.height(10.dp))
         Text(
-            text = "No apps excluded",
+            text = "No Apps Excluded",
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
         )
         Text(
@@ -463,7 +428,7 @@ fun ExclusionsEmptyPanel(
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
         )
-        NordGhostButton(text = "Add excluded app", onClick = onAdd)
+        NordGhostButton(text = "Add Excluded App", onClick = onAdd)
     }
 }
 
