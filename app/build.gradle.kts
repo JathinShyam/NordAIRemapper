@@ -19,7 +19,23 @@ android {
         versionName = "0.1.0"
     }
 
+    signingConfigs {
+        getByName("debug") {
+            // Shared repo keystore: every local + CI debug build signs with the
+            // SAME key so latest-debug updates install in-place. A per-runner
+            // generated key made every release a signature mismatch (and each
+            // update then needed an uninstall that wiped Unlock grants).
+            storeFile = rootProject.file("keystore/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
