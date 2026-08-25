@@ -81,8 +81,8 @@ fun DeveloperScreen(
             TopAppBar(
                 title = {
                     NordTopBarTitle(
-                        title = "Lab",
-                        subtitle = "Advanced controls · Developer",
+                        title = "Advanced",
+                        subtitle = "Strategy · Timing · Key identity",
                     )
                 },
                 navigationIcon = {

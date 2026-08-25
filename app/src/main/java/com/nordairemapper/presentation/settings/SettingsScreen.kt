@@ -224,7 +224,7 @@ fun SettingsScreen(
                 SettingsHubDivider()
                 SettingsHubRow(
                     icon = Icons.Outlined.Science,
-                    title = "Lab",
+                    title = "Advanced",
                     subtitle = "Strategy, Timing, USB Unlock",
                     accentContainer = amber.container,
                     accentTint = amber.tint,
