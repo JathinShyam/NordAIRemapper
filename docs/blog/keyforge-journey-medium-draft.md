@@ -18,6 +18,8 @@ A lot of people want more: play/pause music, open WhatsApp, show a small menu �
 
 **Keyforge** is an app I built for that. It’s **free**.
 
+Repo + APKs: [github.com/JathinShyam/NordAIRemapper](https://github.com/JathinShyam/NordAIRemapper) · [latest-debug release](https://github.com/JathinShyam/NordAIRemapper/releases/tag/latest-debug)
+
 I got hooked on the idea after watching [this YouTube video about customizing the Nothing Essential Key](https://www.youtube.com/watch?v=YhY94x3HL7o&t=356s). That world already has remappers (often paid on the Play Store). I searched for the same experience on Nord 5, found nothing that fit, and decided to solve it myself.
 
 Sounds easy. On this phone, it wasn’t.
